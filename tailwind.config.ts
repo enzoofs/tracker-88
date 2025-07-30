@@ -61,7 +61,42 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				status: {
+					production: 'hsl(var(--status-production))',
+					'production-foreground': 'hsl(var(--status-production-foreground))',
+					shipping: 'hsl(var(--status-shipping))',
+					'shipping-foreground': 'hsl(var(--status-shipping-foreground))',
+					transit: 'hsl(var(--status-transit))',
+					'transit-foreground': 'hsl(var(--status-transit-foreground))',
+					delivered: 'hsl(var(--status-delivered))',
+					'delivered-foreground': 'hsl(var(--status-delivered-foreground))',
+					alert: 'hsl(var(--status-alert))',
+					'alert-foreground': 'hsl(var(--status-alert-foreground))'
+				},
+				priority: {
+					high: 'hsl(var(--priority-high))',
+					normal: 'hsl(var(--priority-normal))',
+					low: 'hsl(var(--priority-low))'
+				},
+				temp: {
+					cold: 'hsl(var(--temp-cold))',
+					ambient: 'hsl(var(--temp-ambient))',
+					controlled: 'hsl(var(--temp-controlled))'
 				}
+			},
+			backgroundImage: {
+				'gradient-ocean': 'var(--gradient-ocean)',
+				'gradient-logistics': 'var(--gradient-logistics)',
+				'gradient-success': 'var(--gradient-success)'
+			},
+			boxShadow: {
+				'card': 'var(--shadow-card)',
+				'map': 'var(--shadow-map)'
+			},
+			transitionTimingFunction: {
+				'smooth': 'var(--transition-smooth)',
+				'bounce': 'var(--transition-bounce)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
