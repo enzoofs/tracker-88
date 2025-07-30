@@ -97,8 +97,10 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
   };
 
   const isArrivingToday = (so: SO) => {
-    // Simple logic - could be enhanced with real arrival data
-    return Math.random() > 0.9; // 10% chance for demo
+    // Check if SO is arriving today based on data_ultima_atualizacao
+    const lastUpdate = new Date(so.dataUltimaAtualizacao);
+    const today = new Date();
+    return lastUpdate.toDateString() === today.toDateString() && so.statusCliente === 'Em Trânsito';
   };
 
   const uniqueClientes = [...new Set(data.map(so => so.cliente))];

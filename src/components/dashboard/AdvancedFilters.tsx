@@ -144,67 +144,63 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Date Range */}
-        <div className="space-y-3">
-          <Label className="flex items-center gap-2 text-sm font-medium">
-            <Calendar className="h-4 w-4" />
-            Período
-          </Label>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="startDate" className="text-xs text-muted-foreground">
-                Data Inicial
-              </Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={filters.dateRange.start}
-                onChange={(e) => updateFilters({
-                  dateRange: { ...filters.dateRange, start: e.target.value }
-                })}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="endDate" className="text-xs text-muted-foreground">
-                Data Final
-              </Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={filters.dateRange.end}
-                onChange={(e) => updateFilters({
-                  dateRange: { ...filters.dateRange, end: e.target.value }
-                })}
-                className="mt-1"
-              />
-            </div>
+      <CardContent className="space-y-4">
+        {/* Compact Row 1: Date Range */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="startDate" className="text-xs text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              Data Inicial
+            </Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={filters.dateRange.start}
+              onChange={(e) => updateFilters({
+                dateRange: { ...filters.dateRange, start: e.target.value }
+              })}
+              className="mt-1 text-sm"
+            />
+          </div>
+          <div>
+            <Label htmlFor="endDate" className="text-xs text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              Data Final
+            </Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={filters.dateRange.end}
+              onChange={(e) => updateFilters({
+                dateRange: { ...filters.dateRange, end: e.target.value }
+              })}
+              className="mt-1 text-sm"
+            />
           </div>
         </div>
 
-        <Separator />
-
-        {/* Client Multi-Select */}
-        <div className="space-y-3">
-          <Label className="flex items-center gap-2 text-sm font-medium">
-            <Users className="h-4 w-4" />
-            Clientes
-          </Label>
+        {/* Compact Row 2: Client and Status Multi-Select */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Client Multi-Select */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              Clientes
+            </Label>
           
-          <Popover open={showClientSelect} onOpenChange={setShowClientSelect}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-left font-normal"
-              >
-                {filters.selectedClients.length === 0 ? (
-                  <span className="text-muted-foreground">Selecionar clientes...</span>
-                ) : (
-                  <span>{filters.selectedClients.length} cliente(s) selecionado(s)</span>
-                )}
-              </Button>
-            </PopoverTrigger>
+            <Popover open={showClientSelect} onOpenChange={setShowClientSelect}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal text-sm h-8"
+                >
+                  {filters.selectedClients.length === 0 ? (
+                    <span className="text-muted-foreground">Clientes...</span>
+                  ) : (
+                    <span>{filters.selectedClients.length} selecionado(s)</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
               <Command>
                 <CommandInput placeholder="Buscar cliente..." />
@@ -235,52 +231,50 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
             </PopoverContent>
           </Popover>
 
-          {/* Selected Clients */}
-          {filters.selectedClients.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {filters.selectedClients.map((client) => (
-                <Badge
-                  key={client}
-                  variant="secondary"
-                  className="flex items-center gap-1 pr-1"
-                >
-                  {client}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 ml-1 hover:bg-transparent"
-                    onClick={() => handleClientSelect(client)}
+            {/* Selected Clients */}
+            {filters.selectedClients.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {filters.selectedClients.map((client) => (
+                  <Badge
+                    key={client}
+                    variant="secondary"
+                    className="flex items-center gap-1 pr-1 text-xs"
                   >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
+                    {client.length > 12 ? `${client.substring(0, 12)}...` : client}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 ml-1 hover:bg-transparent"
+                      onClick={() => handleClientSelect(client)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
 
-        <Separator />
-
-        {/* Status Multi-Select */}
-        <div className="space-y-3">
-          <Label className="flex items-center gap-2 text-sm font-medium">
-            <Package className="h-4 w-4" />
-            Status
-          </Label>
+          {/* Status Multi-Select */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <Package className="h-3 w-3" />
+              Status
+            </Label>
           
-          <Popover open={showStatusSelect} onOpenChange={setShowStatusSelect}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-left font-normal"
-              >
-                {filters.selectedStatuses.length === 0 ? (
-                  <span className="text-muted-foreground">Selecionar status...</span>
-                ) : (
-                  <span>{filters.selectedStatuses.length} status selecionado(s)</span>
-                )}
-              </Button>
-            </PopoverTrigger>
+            <Popover open={showStatusSelect} onOpenChange={setShowStatusSelect}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal text-sm h-8"
+                >
+                  {filters.selectedStatuses.length === 0 ? (
+                    <span className="text-muted-foreground">Status...</span>
+                  ) : (
+                    <span>{filters.selectedStatuses.length} selecionado(s)</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
               <Command>
                 <CommandList>
@@ -312,49 +306,32 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
             </PopoverContent>
           </Popover>
 
-          {/* Selected Statuses */}
-          {filters.selectedStatuses.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {filters.selectedStatuses.map((status) => (
-                <Badge
-                  key={status}
-                  variant="secondary"
-                  className="flex items-center gap-1 pr-1"
-                >
-                  {getStatusIcon(status)}
-                  {status}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 ml-1 hover:bg-transparent"
-                    onClick={() => handleStatusSelect(status)}
+            {/* Selected Statuses */}
+            {filters.selectedStatuses.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {filters.selectedStatuses.map((status) => (
+                  <Badge
+                    key={status}
+                    variant="secondary"
+                    className="flex items-center gap-1 pr-1 text-xs"
                   >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <Separator />
-
-        {/* Tracking Search */}
-        <div className="space-y-3">
-          <Label className="flex items-center gap-2 text-sm font-medium">
-            <Search className="h-4 w-4" />
-            Busca por Tracking
-          </Label>
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Digite o número de tracking..."
-              value={filters.trackingSearch}
-              onChange={(e) => updateFilters({ trackingSearch: e.target.value })}
-              className="pl-10"
-            />
+                    {getStatusIcon(status)}
+                    {status}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 ml-1 hover:bg-transparent"
+                      onClick={() => handleStatusSelect(status)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+
       </CardContent>
     </Card>
   );

@@ -82,7 +82,7 @@ const LogisticsDashboard: React.FC = () => {
   const [selectedSO, setSelectedSO] = useState<any>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('sos');
   const [filteredSOs, setFilteredSOs] = useState<any[]>([]);
   const [availableClients, setAvailableClients] = useState<string[]>([]);
   const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
@@ -125,27 +125,40 @@ const LogisticsDashboard: React.FC = () => {
         trackingNumbers: envio.tracking_numbers
       })) || [];
 
+      // Load cargo-SO relationships
+      const { data: cargoSOsData, error: cargoSOsError } = await supabase
+        .from('carga_sales_orders')
+        .select('numero_carga, so_number')
+        .order('numero_carga');
+
+      if (cargoSOsError) throw cargoSOsError;
+
       // Transform cargas data with realistic coordinates
-      const transformedCargas = cargasData?.map((carga) => ({
-        id: carga.id,
-        numero: carga.numero_carga?.toString() || '',
-        origem: {
-          lat: -23.5505 + (Math.random() - 0.5) * 5,
-          lng: -46.6333 + (Math.random() - 0.5) * 10,
-          nome: 'São Paulo, BR'
-        },
-        destino: {
-          lat: 40.7128 + (Math.random() - 0.5) * 10,
-          lng: -74.0060 + (Math.random() - 0.5) * 20,
-          nome: 'Nova York, EUA'
-        },
-        status: carga.status || 'Em Trânsito',
-        temperatura: carga.tipo_temperatura,
-        dataChegadaPrevista: carga.data_chegada_prevista || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        sosVinculadas: Math.floor(Math.random() * 10) + 1,
-        mawb: carga.mawb,
-        hawb: carga.hawb
-      })) || [];
+      const transformedCargas = cargasData?.map((carga) => {
+        // Count SOs linked to this cargo
+        const linkedSOs = cargoSOsData?.filter(cso => cso.numero_carga === carga.numero_carga) || [];
+        
+        return {
+          id: carga.id,
+          numero: carga.numero_carga?.toString() || '',
+          origem: {
+            lat: -23.5505 + (Math.random() - 0.5) * 5,
+            lng: -46.6333 + (Math.random() - 0.5) * 10,
+            nome: 'São Paulo, BR'
+          },
+          destino: {
+            lat: 40.7128 + (Math.random() - 0.5) * 10,
+            lng: -74.0060 + (Math.random() - 0.5) * 20,
+            nome: 'Nova York, EUA'
+          },
+          status: carga.status || 'Em Trânsito',
+          temperatura: carga.tipo_temperatura,
+          dataChegadaPrevista: carga.data_chegada_prevista || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          sosVinculadas: linkedSOs.length,
+          mawb: carga.mawb,
+          hawb: carga.hawb
+        };
+      }) || [];
 
       // Calculate overview metrics
       const activeSOs = transformedSOs.length;
@@ -241,42 +254,62 @@ const LogisticsDashboard: React.FC = () => {
       filtered = filtered.filter(so => filters.selectedStatuses.includes(so.statusCliente));
     }
 
-    // Filter by tracking search
-    if (filters.trackingSearch.trim()) {
-      const searchTerm = filters.trackingSearch.toLowerCase();
-      filtered = filtered.filter(so => 
-        so.trackingNumbers?.toLowerCase().includes(searchTerm) ||
-        so.salesOrder.toLowerCase().includes(searchTerm)
-      );
-    }
 
     setFilteredSOs(filtered);
   };
 
   const handleCargoClick = async (cargo: any) => {
     try {
+      // Load cargo-SO relationships and then the SO data
+      const { data: cargoSORelations, error: cargoSOError } = await supabase
+        .from('carga_sales_orders')
+        .select('so_number')
+        .eq('numero_carga', parseInt(cargo.numero))
+        .limit(10);
+
+      if (cargoSOError) throw cargoSOError;
+
+      // Get SO numbers for this cargo
+      const soNumbers = cargoSORelations?.map(rel => rel.so_number) || [];
+      
+      // Load SO data
+      const { data: enviosData, error: enviosError } = await supabase
+        .from('envios_processados')
+        .select('*')
+        .in('sales_order', soNumbers)
+        .limit(10);
+
+      if (enviosError) throw enviosError;
+
+      const linkedSOs = enviosData?.map(envio => ({
+        id: envio.id.toString(),
+        salesOrder: envio.sales_order,
+        cliente: envio.cliente,
+        produtos: envio.produtos || '',
+        statusAtual: envio.status_atual,
+        trackingNumbers: envio.tracking_numbers,
+        prioridade: (Math.random() > 0.8 ? 'high' : Math.random() > 0.6 ? 'normal' : 'low') as 'high' | 'normal' | 'low'
+      })) || [];
+
       // Load detailed cargo data with SOs and history
       const cargoDetails = {
         ...cargo,
-        sosVinculadas: data.sos.slice(0, cargo.sosVinculadas).map(so => ({
-          ...so,
-          prioridade: so.prioridade as 'high' | 'normal' | 'low'
-        })),
+        sosVinculadas: linkedSOs,
         historico: [
-          {
-            id: '1',
-            evento: 'Carga Embarcada',
-            dataEvento: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-            detalhes: { porto: cargo.origem.nome },
-            fonte: 'Sistema Portuário'
-          },
-          {
-            id: '2',
-            evento: 'Em Trânsito Internacional',
-            dataEvento: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            detalhes: { status: 'Navegando' },
-            fonte: 'Rastreamento Marítimo'
-          },
+            {
+              id: '1',
+              evento: 'Carga Embarcada',
+              dataEvento: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+              detalhes: { aeroporto: cargo.origem.nome },
+              fonte: 'Sistema Aeroportuário'
+            },
+            {
+              id: '2',
+              evento: 'Em Trânsito Internacional',
+              dataEvento: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+              detalhes: { status: 'Em voo' },
+              fonte: 'Rastreamento Aéreo'
+            },
           {
             id: '3',
             evento: 'Chegada Prevista Atualizada',
@@ -374,13 +407,13 @@ const LogisticsDashboard: React.FC = () => {
       <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
             <TabsTrigger value="sos" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Sales Orders
+            </TabsTrigger>
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Overview
             </TabsTrigger>
             <TabsTrigger value="cargas" className="flex items-center gap-2">
               <Ship className="h-4 w-4" />
@@ -391,10 +424,6 @@ const LogisticsDashboard: React.FC = () => {
               Analytics
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="overview">
-            <Overview data={data.overview} />
-          </TabsContent>
 
           <TabsContent value="sos">
             <div className="space-y-6">
@@ -408,6 +437,10 @@ const LogisticsDashboard: React.FC = () => {
                 onSOClick={handleSOClick}
               />
             </div>
+          </TabsContent>
+
+          <TabsContent value="overview">
+            <Overview data={data.overview} />
           </TabsContent>
 
           <TabsContent value="cargas">
