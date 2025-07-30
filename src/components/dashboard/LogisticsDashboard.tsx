@@ -11,10 +11,13 @@ import {
   RefreshCw, 
   Download,
   Globe,
-  TrendingUp
+  TrendingUp,
+  LogOut,
+  User
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 import Overview from './Overview';
 import SOTable from './SOTable';
@@ -57,6 +60,7 @@ interface DashboardData {
 }
 
 const LogisticsDashboard: React.FC = () => {
+  const { user, signOut } = useAuth();
   const [data, setData] = useState<DashboardData>({
     overview: {
       activeSOs: 0,
@@ -77,14 +81,14 @@ const LogisticsDashboard: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load SOs data
-      const { data: sosData, error: sosError } = await supabase
-        .from('v_status_consolidado')
+      // Load real data from Supabase
+      const { data: enviosData, error: enviosError } = await supabase
+        .from('envios_processados')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (sosError) throw sosError;
+      if (enviosError) throw enviosError;
 
       // Load cargas data
       const { data: cargasData, error: cargasError } = await supabase
@@ -95,28 +99,28 @@ const LogisticsDashboard: React.FC = () => {
 
       if (cargasError) throw cargasError;
 
-      // Transform SO data
-      const transformedSOs = sosData?.map((so, index) => ({
-        id: `so-${index}`,
-        salesOrder: so.sales_order || '',
-        cliente: so.cliente || '',
-        produtos: so.produtos || '',
-        statusAtual: so.status_interno || '',
-        statusCliente: so.status_publico || '',
-        ultimaLocalizacao: so.ultima_localizacao || '',
-        dataUltimaAtualizacao: so.data_ultima_atualizacao || new Date().toISOString(),
+      // Transform envios data to SO format
+      const transformedSOs = enviosData?.map((envio) => ({
+        id: envio.id.toString(),
+        salesOrder: envio.sales_order,
+        cliente: envio.cliente,
+        produtos: envio.produtos || '',
+        statusAtual: envio.status_atual,
+        statusCliente: envio.status_cliente,
+        ultimaLocalizacao: envio.ultima_localizacao || '',
+        dataUltimaAtualizacao: envio.data_ultima_atualizacao || envio.updated_at,
         temperatura: (Math.random() > 0.7 ? 'cold' : Math.random() > 0.5 ? 'controlled' : 'ambient') as 'cold' | 'ambient' | 'controlled',
         prioridade: (Math.random() > 0.8 ? 'high' : Math.random() > 0.6 ? 'normal' : 'low') as 'high' | 'normal' | 'low',
-        trackingNumbers: so.tracking_numbers
+        trackingNumbers: envio.tracking_numbers
       })) || [];
 
-      // Transform cargas data
-      const transformedCargas = cargasData?.map((carga, index) => ({
+      // Transform cargas data with realistic coordinates
+      const transformedCargas = cargasData?.map((carga) => ({
         id: carga.id,
         numero: carga.numero_carga?.toString() || '',
         origem: {
-          lat: -23.5505 + (Math.random() - 0.5) * 10,
-          lng: -46.6333 + (Math.random() - 0.5) * 20,
+          lat: -23.5505 + (Math.random() - 0.5) * 5,
+          lng: -46.6333 + (Math.random() - 0.5) * 10,
           nome: 'São Paulo, BR'
         },
         destino: {
@@ -126,7 +130,7 @@ const LogisticsDashboard: React.FC = () => {
         },
         status: carga.status || 'Em Trânsito',
         temperatura: carga.tipo_temperatura,
-        dataChegadaPrevista: carga.data_chegada_prevista || new Date().toISOString(),
+        dataChegadaPrevista: carga.data_chegada_prevista || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         sosVinculadas: Math.floor(Math.random() * 10) + 1,
         mawb: carga.mawb,
         hawb: carga.hawb
@@ -239,6 +243,11 @@ const LogisticsDashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4" />
+                <span>{user?.email}</span>
+              </div>
+              
               <Badge variant="outline" className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-status-delivered rounded-full animate-pulse"></div>
                 Sistema Online
@@ -258,6 +267,16 @@ const LogisticsDashboard: React.FC = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Exportar
               </Button>
+
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={signOut}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
             </div>
           </div>
         </div>
@@ -266,7 +285,7 @@ const LogisticsDashboard: React.FC = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Overview
@@ -278,10 +297,6 @@ const LogisticsDashboard: React.FC = () => {
             <TabsTrigger value="cargas" className="flex items-center gap-2">
               <Ship className="h-4 w-4" />
               Cargas
-            </TabsTrigger>
-            <TabsTrigger value="mapa" className="flex items-center gap-2">
-              <Map className="h-4 w-4" />
-              Mapa
             </TabsTrigger>
           </TabsList>
 
@@ -297,13 +312,6 @@ const LogisticsDashboard: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="cargas">
-            <CargoMap 
-              cargas={data.cargas}
-              onCargoClick={handleCargoClick}
-            />
-          </TabsContent>
-
-          <TabsContent value="mapa">
             <CargoMap 
               cargas={data.cargas}
               onCargoClick={handleCargoClick}
