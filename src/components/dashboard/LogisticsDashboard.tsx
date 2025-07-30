@@ -261,26 +261,34 @@ const LogisticsDashboard: React.FC = () => {
 
   const handleCargoClick = async (cargo: any) => {
     try {
-      // Load cargo-SO relationships and then the SO data
+      console.log(`🔍 Carregando detalhes da carga ${cargo.numero}...`);
+      
+      // Load cargo-SO relationships - SEM LIMIT para pegar todas as SOs
       const { data: cargoSORelations, error: cargoSOError } = await supabase
         .from('carga_sales_orders')
         .select('so_number')
-        .eq('numero_carga', parseInt(cargo.numero))
-        .limit(10);
+        .eq('numero_carga', parseInt(cargo.numero));
 
       if (cargoSOError) throw cargoSOError;
+
+      console.log(`📦 Encontradas ${cargoSORelations?.length || 0} SOs vinculadas à carga ${cargo.numero}`);
 
       // Get SO numbers for this cargo
       const soNumbers = cargoSORelations?.map(rel => rel.so_number) || [];
       
-      // Load SO data
+      if (soNumbers.length === 0) {
+        console.warn(`⚠️ Nenhuma SO encontrada para a carga ${cargo.numero}`);
+      }
+      
+      // Load SO data - SEM LIMIT para pegar todas as SOs vinculadas
       const { data: enviosData, error: enviosError } = await supabase
         .from('envios_processados')
         .select('*')
-        .in('sales_order', soNumbers)
-        .limit(10);
+        .in('sales_order', soNumbers);
 
       if (enviosError) throw enviosError;
+
+      console.log(`✅ Carregados dados de ${enviosData?.length || 0} SOs da tabela envios_processados`);
 
       const linkedSOs = enviosData?.map(envio => ({
         id: envio.id.toString(),
@@ -301,15 +309,15 @@ const LogisticsDashboard: React.FC = () => {
               id: '1',
               evento: 'Carga Embarcada',
               dataEvento: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-              detalhes: { aeroporto: cargo.origem.nome },
-              fonte: 'Sistema Aeroportuário'
+              detalhes: {},
+              fonte: 'Sistema de Controle'
             },
             {
               id: '2',
               evento: 'Em Trânsito Internacional',
               dataEvento: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-              detalhes: { status: 'Em voo' },
-              fonte: 'Rastreamento Aéreo'
+              detalhes: {},
+              fonte: 'Rastreamento Internacional'
             },
           {
             id: '3',

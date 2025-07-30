@@ -85,26 +85,18 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
     if (!detalhes || typeof detalhes !== 'object') return '';
     
     const formatters: { [key: string]: (value: any) => string } = {
-      porto: (value) => `Aeroporto: ${value}`,
-      aeroporto: (value) => `Aeroporto: ${value}`,
-      status: (value) => {
-        const statusMap: { [key: string]: string } = {
-          'Navegando': 'Status: Em voo',
-          'Em voo': 'Status: Em voo'
-        };
-        return statusMap[value] || `Status: ${value}`;
-      },
       nova_data: (value) => `Nova previsão: ${new Date(value).toLocaleDateString('pt-BR')}`,
       temperatura: (value) => `Temperatura: ${value}°C`,
-      localizacao: (value) => `Localização: ${value}`,
       observacoes: (value) => `Observações: ${value}`
     };
 
     return Object.entries(detalhes)
+      .filter(([key, value]) => value !== null && value !== undefined && value !== '')
       .map(([key, value]) => {
         const formatter = formatters[key];
-        return formatter ? formatter(value) : `${key}: ${value}`;
+        return formatter ? formatter(value) : '';
       })
+      .filter(text => text !== '')
       .join(' • ');
   };
 
