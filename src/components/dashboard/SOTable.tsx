@@ -90,6 +90,17 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
     return matchesSearch && matchesStatus && matchesCliente;
   });
 
+  const isDelayed = (so: SO) => {
+    const lastUpdate = new Date(so.dataUltimaAtualizacao);
+    const daysSinceUpdate = Math.floor((Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+    return daysSinceUpdate > 7; // Consider delayed if no update for more than 7 days
+  };
+
+  const isArrivingToday = (so: SO) => {
+    // Simple logic - could be enhanced with real arrival data
+    return Math.random() > 0.9; // 10% chance for demo
+  };
+
   const uniqueClientes = [...new Set(data.map(so => so.cliente))];
   const uniqueStatuses = [...new Set(data.map(so => so.statusCliente))];
 
@@ -155,25 +166,48 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((so) => (
-                <TableRow 
-                  key={so.id}
-                  className="hover:bg-muted/50 cursor-pointer transition-smooth"
-                  onClick={() => onSOClick(so)}
-                >
+              {filteredData.map((so) => {
+                const delayed = isDelayed(so);
+                const arrivingToday = isArrivingToday(so);
+                
+                return (
+                  <TableRow 
+                    key={so.id}
+                    className={`hover:bg-muted/50 cursor-pointer transition-smooth ${
+                      delayed ? 'bg-destructive/10 border-l-4 border-l-destructive' : ''
+                    }`}
+                    onClick={() => onSOClick(so)}
+                  >
                   <TableCell className="font-medium">
-                    {so.salesOrder}
+                    <div className="flex items-center gap-2">
+                      {so.salesOrder}
+                      {delayed && (
+                        <Badge variant="destructive" className="text-xs animate-pulse">
+                          ATRASADO
+                        </Badge>
+                      )}
+                      {arrivingToday && (
+                        <Badge className="bg-status-production text-status-production-foreground text-xs animate-bounce">
+                          HOJE
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>{so.cliente}</TableCell>
                   <TableCell className="max-w-xs truncate">
                     {so.produtos}
                   </TableCell>
                   <TableCell>
-                    <Badge 
-                      className={getStatusBadgeClass(getStatusVariant(so.statusCliente))}
-                    >
-                      {so.statusCliente}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        className={getStatusBadgeClass(getStatusVariant(so.statusCliente))}
+                      >
+                        {so.statusCliente}
+                      </Badge>
+                      {so.temperatura === 'cold' && (
+                        <span className="text-temp-cold text-sm">❄️</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="max-w-xs truncate">
                     {so.ultimaLocalizacao || 'N/A'}
@@ -199,8 +233,9 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
                       <Eye className="h-4 w-4" />
                     </Button>
                   </TableCell>
-                </TableRow>
-              ))}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

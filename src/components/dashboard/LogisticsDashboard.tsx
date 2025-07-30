@@ -13,7 +13,8 @@ import {
   Globe,
   TrendingUp,
   LogOut,
-  User
+  User,
+  Bell
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +24,8 @@ import Overview from './Overview';
 import SOTable from './SOTable';
 import CargoMap from './CargoMap';
 import CargoDetails from './CargoDetails';
+import NotificationCenter from './NotificationCenter';
+import SODetails from './SODetails';
 
 interface DashboardData {
   overview: {
@@ -74,6 +77,9 @@ const LogisticsDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [selectedCargo, setSelectedCargo] = useState<any>(null);
+  const [selectedSO, setSelectedSO] = useState<any>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
   const { toast } = useToast();
 
@@ -177,11 +183,27 @@ const LogisticsDashboard: React.FC = () => {
   }, []);
 
   const handleSOClick = (so: any) => {
-    toast({
-      title: "SO Selecionada",
-      description: `Visualizando detalhes da SO ${so.salesOrder}`,
-    });
+    setSelectedSO(so);
   };
+
+  const loadNotificationCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('notification_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pendente');
+
+      if (error) throw error;
+      setUnreadNotifications(count || 0);
+    } catch (error) {
+      console.error('Error loading notification count:', error);
+    }
+  };
+
+  // Load notification count on mount
+  useEffect(() => {
+    loadNotificationCount();
+  }, []);
 
   const handleCargoClick = async (cargo: any) => {
     try {
@@ -252,6 +274,24 @@ const LogisticsDashboard: React.FC = () => {
                 <div className="w-2 h-2 bg-status-delivered rounded-full animate-pulse"></div>
                 Sistema Online
               </Badge>
+
+              {/* Notification Bell */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadNotifications > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+                  >
+                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                  </Badge>
+                )}
+              </Button>
               
               <Button 
                 variant="outline" 
@@ -320,6 +360,14 @@ const LogisticsDashboard: React.FC = () => {
         </Tabs>
       </div>
 
+      {/* SO Details Modal */}
+      {selectedSO && (
+        <SODetails 
+          so={selectedSO}
+          onClose={() => setSelectedSO(null)}
+        />
+      )}
+
       {/* Cargo Details Modal */}
       {selectedCargo && (
         <CargoDetails 
@@ -327,6 +375,14 @@ const LogisticsDashboard: React.FC = () => {
           onClose={() => setSelectedCargo(null)}
         />
       )}
+
+      {/* Notification Center */}
+      <NotificationCenter 
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        unreadCount={unreadNotifications}
+        onCountUpdate={setUnreadNotifications}
+      />
 
       {/* Loading Overlay */}
       {loading && (
