@@ -15,6 +15,7 @@ import NotificationCenter from './NotificationCenter';
 import SODetails from './SODetails';
 import Analytics from './Analytics';
 import AdvancedFilters from './AdvancedFilters';
+import ParticleBackground from '../ui/ParticleBackground';
 interface DashboardData {
   overview: {
     activeSOs: number;
@@ -138,7 +139,7 @@ const LogisticsDashboard: React.FC = () => {
 
       // Transform cargas data with realistic coordinates
       const transformedCargas = cargasData?.map(carga => {
-        // Count SOs linked to this cargo
+        // Count SOs linked to this cargo - get actual count from database
         const linkedSOs = cargoSOsData?.filter(cso => cso.numero_carga === carga.numero_carga) || [];
         
         // Generate random icon for each cargo
@@ -342,7 +343,8 @@ const LogisticsDashboard: React.FC = () => {
       });
     }
   };
-  return <div className="min-h-screen bg-gradient-dark">
+  return <div className="min-h-screen bg-gradient-dark relative">
+      <ParticleBackground />
       {/* Modern Tech Header */}
       <div className="border-b border-border/50 bg-gradient-tech/5 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-8">

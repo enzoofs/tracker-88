@@ -8,25 +8,25 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Modern Tech Dark Theme */
-    --background: 220 27% 6%;        /* slate-900 base */
+    /* Modern Tech Dark Theme - Lightened */
+    --background: 220 27% 12%;       /* lighter slate-900 base */
     --foreground: 210 40% 98%;       /* white/gray-100 for text */
 
-    --card: 220 23% 8%;              /* glass morphism dark */
+    --card: 220 23% 16%;             /* lighter glass morphism dark */
     --card-foreground: 210 40% 98%;
 
-    --popover: 220 23% 8%;
+    --popover: 220 23% 16%;
     --popover-foreground: 210 40% 98%;
 
     /* Tech Blue Primary */
     --primary: 217 91% 60%;          /* #3B82F6 tech blue */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 230 15% 12%;        /* dark card variant */
+    --secondary: 230 15% 18%;        /* lighter dark card variant */
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 215 25% 15%;            /* muted backgrounds */
-    --muted-foreground: 215 15% 70%; /* muted text */
+    --muted: 215 25% 22%;            /* lighter muted backgrounds */
+    --muted-foreground: 215 15% 75%; /* lighter muted text */
 
     --accent: 262 83% 58%;           /* #8B5CF6 purple accent */
     --accent-foreground: 0 0% 100%;
@@ -34,8 +34,8 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;        /* coral red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 25% 18%;           /* subtle borders */
-    --input: 215 25% 15%;            /* input backgrounds */
+    --border: 215 25% 24%;           /* lighter subtle borders */
+    --input: 215 25% 20%;            /* lighter input backgrounds */
     --ring: 217 91% 60%;             /* focus rings */
 
     --radius: 0.75rem;               /* larger border radius */

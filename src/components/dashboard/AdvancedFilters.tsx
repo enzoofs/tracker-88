@@ -20,7 +20,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import {
-  Calendar,
+  Calendar as CalendarIcon,
   Filter,
   X,
   Search,
@@ -29,6 +29,7 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FilterOptions {
@@ -162,38 +163,74 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
         {/* Compact Row 1: Date Range */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <Label htmlFor="startDate" className="text-xs text-muted-foreground flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <CalendarIcon className="h-3 w-3" />
               Data Inicial
             </Label>
-            <div className="relative">
-              <Input
-                id="startDate"
-                type="date"
-                value={filters.dateRange.start}
-                onChange={(e) => updateFilters({
-                  dateRange: { ...filters.dateRange, start: e.target.value }
-                })}
-                className="mt-1 text-sm cursor-pointer"
-              />
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal text-sm mt-1 cursor-pointer"
+                >
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {filters.dateRange.start ? 
+                    new Date(filters.dateRange.start).toLocaleDateString('pt-BR') : 
+                    'Selecionar data'
+                  }
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={filters.dateRange.start ? new Date(filters.dateRange.start) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      updateFilters({
+                        dateRange: { ...filters.dateRange, start: date.toISOString().split('T')[0] }
+                      });
+                    }
+                  }}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div>
-            <Label htmlFor="endDate" className="text-xs text-muted-foreground flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <CalendarIcon className="h-3 w-3" />
               Data Final
             </Label>
-            <div className="relative">
-              <Input
-                id="endDate"
-                type="date"
-                value={filters.dateRange.end}
-                onChange={(e) => updateFilters({
-                  dateRange: { ...filters.dateRange, end: e.target.value }
-                })}
-                className="mt-1 text-sm cursor-pointer"
-              />
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal text-sm mt-1 cursor-pointer"
+                >
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {filters.dateRange.end ? 
+                    new Date(filters.dateRange.end).toLocaleDateString('pt-BR') : 
+                    'Selecionar data'
+                  }
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={filters.dateRange.end ? new Date(filters.dateRange.end) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      updateFilters({
+                        dateRange: { ...filters.dateRange, end: date.toISOString().split('T')[0] }
+                      });
+                    }
+                  }}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
