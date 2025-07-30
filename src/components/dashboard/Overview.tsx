@@ -73,22 +73,30 @@ const Overview: React.FC<OverviewProps> = ({ data }) => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Metrics Cards */}
+    <div className="space-y-8 animate-fade-in">
+      {/* Modern KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metricCards.map((metric) => {
+        {metricCards.map((metric, index) => {
           const Icon = metric.icon;
           return (
-            <Card key={metric.title} className={`shadow-card transition-smooth hover:shadow-lg ${getCardStyles(metric.variant)}`}>
+            <Card 
+              key={metric.title} 
+              className="glass hover:shadow-tech hover:scale-105 transition-all duration-300 border-border/50 group animate-fade-in"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {metric.title}
                 </CardTitle>
-                <Icon className={`h-5 w-5 ${getIconColor(metric.variant)}`} />
+                <div className="p-2 rounded-xl bg-gradient-tech shadow-tech">
+                  <Icon className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{metric.value}</div>
-                <Badge variant="outline" className="mt-1 text-xs">
+                <div className="text-3xl font-tech text-foreground group-hover:text-primary transition-colors">
+                  {metric.value}
+                </div>
+                <Badge className="mt-2 bg-primary/10 text-primary border-primary/20">
                   {metric.trend}
                 </Badge>
               </CardContent>

@@ -341,68 +341,61 @@ const LogisticsDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-gradient-logistics">
-        <div className="container mx-auto px-4 py-6">
+    <div className="min-h-screen bg-gradient-dark">
+      {/* Modern Tech Header */}
+      <div className="border-b border-border/50 bg-gradient-tech/5 backdrop-blur-sm">
+        <div className="container mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Globe className="h-8 w-8 text-primary" />
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-2xl bg-gradient-tech shadow-tech">
+                <Globe className="h-8 w-8 text-white" />
+              </div>
               <div>
-                <h1 className="text-2xl font-bold">Global Logi-Sight</h1>
-                <p className="text-muted-foreground">Dashboard de Logística Internacional</p>
+                <h1 className="text-3xl font-tech text-foreground">
+                  Global Logistics
+                </h1>
+                <p className="text-muted-foreground font-medium">
+                  Rastreamento Inteligente de Cargas
+                </p>
               </div>
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4" />
-                <span>{user?.email}</span>
+              {/* Notification Bell with Glow */}
+              <div className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowNotifications(true)}
+                  className="p-3 rounded-xl hover:bg-primary/10 transition-all duration-300 group"
+                >
+                  <Bell className="h-5 w-5 text-foreground group-hover:text-primary transition-colors" />
+                  {unreadNotifications > 0 && (
+                    <Badge 
+                      className="absolute -top-2 -right-2 px-2 py-1 text-xs bg-gradient-alert glow-accent animate-glow-pulse"
+                    >
+                      {unreadNotifications}
+                    </Badge>
+                  )}
+                </Button>
               </div>
-              
-              <Badge variant="outline" className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-status-delivered rounded-full animate-pulse"></div>
-                Sistema Online
-              </Badge>
 
-              {/* Notification Bell */}
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative"
-              >
-                <Bell className="h-4 w-4" />
-                {unreadNotifications > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
-                  >
-                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                  </Badge>
-                )}
-              </Button>
-              
+              {/* User Profile */}
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl glass">
+                <div className="w-8 h-8 rounded-lg bg-gradient-tech flex items-center justify-center">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+                <div className="text-sm">
+                  <div className="font-tech text-foreground">Admin User</div>
+                  <div className="text-xs text-muted-foreground">Administrador</div>
+                </div>
+              </div>
+
+              {/* Logout Button */}
               <Button 
                 variant="outline" 
-                size="sm" 
-                onClick={loadDashboardData}
-                disabled={loading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Atualizar
-              </Button>
-              
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
-
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={signOut}
-                className="text-muted-foreground hover:text-foreground"
+                size="sm"
+                className="px-6 py-2 rounded-xl border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair
@@ -412,17 +405,33 @@ const LogisticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="sos">Sales Orders</TabsTrigger>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="cargas">Cargas</TabsTrigger>
+      {/* Main Content with Enhanced Spacing */}
+      <div className="container mx-auto px-6 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          {/* Modern Tab Navigation */}
+          <TabsList className="grid w-full max-w-md grid-cols-3 mx-auto glass p-1 rounded-2xl">
+            <TabsTrigger 
+              value="sos" 
+              className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300"
+            >
+              Sales Orders
+            </TabsTrigger>
+            <TabsTrigger 
+              value="overview"
+              className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300"
+            >
+              Overview
+            </TabsTrigger>
+            <TabsTrigger 
+              value="cargas"
+              className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300"
+            >
+              Cargas
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="sos">
-            <div className="space-y-6">
+          <TabsContent value="sos" className="animate-fade-in">
+            <div className="space-y-8">
               <AdvancedFilters
                 onFiltersChange={handleFiltersChange}
                 availableClients={availableClients}
@@ -435,33 +444,40 @@ const LogisticsDashboard: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="overview">
+          <TabsContent value="overview" className="animate-fade-in">
             <Overview data={data.overview} />
           </TabsContent>
 
-          <TabsContent value="cargas" className="space-y-6">
+          <TabsContent value="cargas" className="space-y-8 animate-fade-in">
             <div className="grid gap-6">
-              {data.cargas.map((cargo) => (
-                <Card key={cargo.id} className="shadow-card hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleCargoClick(cargo)}>
-                  <CardContent className="p-6">
+              {data.cargas.map((cargo, index) => (
+                <Card 
+                  key={cargo.id} 
+                  className="glass hover:shadow-tech hover:scale-[1.02] transition-all duration-300 cursor-pointer group animate-fade-in border-border/50"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                  onClick={() => handleCargoClick(cargo)}
+                >
+                  <CardContent className="p-8">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-full ${cargo.temperatura ? 'bg-temp-cold/10' : 'bg-primary/10'}`}>
-                          <Ship className={`h-6 w-6 ${cargo.temperatura ? 'text-temp-cold' : 'text-primary'}`} />
+                      <div className="flex items-center gap-6">
+                        <div className={`p-4 rounded-2xl ${cargo.temperatura ? 'bg-gradient-tech' : 'bg-gradient-tech'} shadow-tech`}>
+                          <Ship className="h-7 w-7 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold">Carga {cargo.numero}</h3>
-                          <p className="text-sm text-muted-foreground">
+                          <h3 className="text-xl font-tech text-foreground group-hover:text-primary transition-colors">
+                            Carga {cargo.numero}
+                          </h3>
+                          <p className="text-muted-foreground font-medium mt-1">
                             {cargo.origem.nome} → {cargo.destino.nome}
                           </p>
                         </div>
                       </div>
                       
                       <div className="text-right">
-                        <Badge className="bg-status-transit text-status-transit-foreground mb-2">
+                        <Badge className="bg-gradient-tech text-white mb-3 px-4 py-2 rounded-xl font-medium shadow-tech">
                           {cargo.status}
                         </Badge>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-mono-metric text-foreground font-semibold">
                           {cargo.sosVinculadas} SOs vinculadas
                         </p>
                       </div>
@@ -498,13 +514,13 @@ const LogisticsDashboard: React.FC = () => {
         onCountUpdate={setUnreadNotifications}
       />
 
-      {/* Loading Overlay */}
+      {/* Loading Overlay with Modern Design */}
       {loading && (
-        <div className="fixed inset-0 bg-background/50 backdrop-blur-sm z-40 flex items-center justify-center">
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <RefreshCw className="h-5 w-5 animate-spin text-primary" />
-              <span>Carregando dados...</span>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-lg z-40 flex items-center justify-center">
+          <Card className="glass p-8 border-border/50">
+            <div className="flex items-center gap-4">
+              <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+              <span className="font-tech text-lg text-foreground">Carregando dados...</span>
             </div>
           </Card>
         </div>
