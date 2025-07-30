@@ -72,6 +72,66 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
     });
   };
 
+  const formatDetailsText = (detalhes?: string) => {
+    if (!detalhes) return null;
+    
+    try {
+      const data = JSON.parse(detalhes);
+      const formatted = Object.entries(data).map(([key, value]) => {
+        const keyTranslations: Record<string, string> = {
+          porto: 'Aeroporto',
+          status: 'Status',
+          nova_data: 'Nova previsão',
+          localizacao: 'Localização',
+          temperatura: 'Temperatura',
+          observacoes: 'Observações'
+        };
+        
+        const translatedKey = keyTranslations[key] || key;
+        
+        if (key === 'nova_data' && typeof value === 'string') {
+          const date = new Date(value);
+          return `${translatedKey}: ${date.toLocaleDateString('pt-BR')}`;
+        }
+        
+        if (key === 'status' && value === 'Navegando') {
+          return `${translatedKey}: Em voo`;
+        }
+        
+        return `${translatedKey}: ${value}`;
+      });
+      
+      return formatted.join(' • ');
+    } catch {
+      return detalhes;
+    }
+  };
+
+  // Remove duplicates and keep only the most recent event of each type
+  const removeDuplicateEvents = (events: TimelineEvent[]) => {
+    const eventMap = new Map<string, TimelineEvent>();
+    
+    // Sort events by date (most recent first)
+    const sortedEvents = [...events].sort((a, b) => 
+      new Date(b.data).getTime() - new Date(a.data).getTime()
+    );
+    
+    // Keep only the most recent event of each type
+    sortedEvents.forEach(event => {
+      const eventType = event.tipo.toLowerCase().replace(/[^a-z]/g, '_');
+      if (!eventMap.has(eventType)) {
+        eventMap.set(eventType, event);
+      }
+    });
+    
+    // Return events sorted chronologically (oldest first)
+    return Array.from(eventMap.values()).sort((a, b) => 
+      new Date(a.data).getTime() - new Date(b.data).getTime()
+    );
+  };
+
+  const uniqueEvents = removeDuplicateEvents(events);
+
   const isDelayed = (dataReal: string, dataPrevista?: string) => {
     if (!dataPrevista) return false;
     return new Date(dataReal) > new Date(dataPrevista);
@@ -81,10 +141,10 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
     <div className={`relative ${className}`}>
       {/* Timeline horizontal */}
       <div className="flex items-center justify-between mb-6">
-        {events.map((event, index) => (
+        {uniqueEvents.map((event, index) => (
           <div key={event.id} className="flex flex-col items-center relative">
             {/* Linha conectora */}
-            {index < events.length - 1 && (
+            {index < uniqueEvents.length - 1 && (
               <div className={`absolute top-6 left-1/2 w-20 h-0.5 transform translate-x-1/2 ${
                 event.status === 'completed' ? 'bg-status-delivered' : 'bg-border'
               }`} />
@@ -132,7 +192,7 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
       {/* Lista detalhada */}
       <div className="space-y-3">
         <h4 className="font-semibold text-sm">Histórico Detalhado</h4>
-        {events.filter(e => e.status !== 'upcoming').map((event) => (
+        {uniqueEvents.filter(e => e.status !== 'upcoming').map((event) => (
           <div key={event.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
             <div className="mt-0.5">
               {getStatusIcon(event.status)}
@@ -149,7 +209,7 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
               
               {event.detalhes && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  {event.detalhes}
+                  {formatDetailsText(event.detalhes)}
                 </p>
               )}
               

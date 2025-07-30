@@ -26,6 +26,8 @@ import CargoMap from './CargoMap';
 import CargoDetails from './CargoDetails';
 import NotificationCenter from './NotificationCenter';
 import SODetails from './SODetails';
+import Analytics from './Analytics';
+import AdvancedFilters from './AdvancedFilters';
 
 interface DashboardData {
   overview: {
@@ -81,6 +83,9 @@ const LogisticsDashboard: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
+  const [filteredSOs, setFilteredSOs] = useState<any[]>([]);
+  const [availableClients, setAvailableClients] = useState<string[]>([]);
+  const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
   const { toast } = useToast();
 
   const loadDashboardData = async () => {
@@ -154,6 +159,10 @@ const LogisticsDashboard: React.FC = () => {
         deliveries: Math.floor(Math.random() * 20) + 5
       }));
 
+      // Extract unique clients and statuses for filters
+      const uniqueClients = Array.from(new Set(transformedSOs.map(so => so.cliente))).sort();
+      const uniqueStatuses = Array.from(new Set(transformedSOs.map(so => so.statusCliente))).sort();
+
       setData({
         overview: {
           activeSOs,
@@ -165,6 +174,10 @@ const LogisticsDashboard: React.FC = () => {
         sos: transformedSOs,
         cargas: transformedCargas
       });
+
+      setFilteredSOs(transformedSOs);
+      setAvailableClients(uniqueClients);
+      setAvailableStatuses(uniqueStatuses);
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -204,6 +217,41 @@ const LogisticsDashboard: React.FC = () => {
   useEffect(() => {
     loadNotificationCount();
   }, []);
+
+  const handleFiltersChange = (filters: any) => {
+    let filtered = [...data.sos];
+
+    // Filter by date range
+    if (filters.dateRange.start && filters.dateRange.end) {
+      const startDate = new Date(filters.dateRange.start);
+      const endDate = new Date(filters.dateRange.end);
+      filtered = filtered.filter(so => {
+        const soDate = new Date(so.dataUltimaAtualizacao);
+        return soDate >= startDate && soDate <= endDate;
+      });
+    }
+
+    // Filter by selected clients
+    if (filters.selectedClients.length > 0) {
+      filtered = filtered.filter(so => filters.selectedClients.includes(so.cliente));
+    }
+
+    // Filter by selected statuses
+    if (filters.selectedStatuses.length > 0) {
+      filtered = filtered.filter(so => filters.selectedStatuses.includes(so.statusCliente));
+    }
+
+    // Filter by tracking search
+    if (filters.trackingSearch.trim()) {
+      const searchTerm = filters.trackingSearch.toLowerCase();
+      filtered = filtered.filter(so => 
+        so.trackingNumbers?.toLowerCase().includes(searchTerm) ||
+        so.salesOrder.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    setFilteredSOs(filtered);
+  };
 
   const handleCargoClick = async (cargo: any) => {
     try {
@@ -325,7 +373,7 @@ const LogisticsDashboard: React.FC = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Overview
@@ -338,6 +386,10 @@ const LogisticsDashboard: React.FC = () => {
               <Ship className="h-4 w-4" />
               Cargas
             </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -345,10 +397,17 @@ const LogisticsDashboard: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="sos">
-            <SOTable 
-              data={data.sos} 
-              onSOClick={handleSOClick}
-            />
+            <div className="space-y-6">
+              <AdvancedFilters
+                onFiltersChange={handleFiltersChange}
+                availableClients={availableClients}
+                availableStatuses={availableStatuses}
+              />
+              <SOTable 
+                data={filteredSOs} 
+                onSOClick={handleSOClick}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="cargas">
@@ -356,6 +415,10 @@ const LogisticsDashboard: React.FC = () => {
               cargas={data.cargas}
               onCargoClick={handleCargoClick}
             />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <Analytics />
           </TabsContent>
         </Tabs>
       </div>
