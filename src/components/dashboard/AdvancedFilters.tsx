@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { sanitizeSearchQuery, isValidDate } from '@/lib/security';
 import {
   Popover,
   PopoverContent,
@@ -69,6 +70,19 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
   }, [filters, onFiltersChange]);
 
   const updateFilters = (newFilters: Partial<FilterOptions>) => {
+    // Validate date inputs
+    if (newFilters.dateRange) {
+      const { start, end } = newFilters.dateRange;
+      if (start && !isValidDate(start)) return;
+      if (end && !isValidDate(end)) return;
+      if (start && end && new Date(start) > new Date(end)) return;
+    }
+    
+    // Sanitize tracking search
+    if (newFilters.trackingSearch !== undefined) {
+      newFilters.trackingSearch = sanitizeSearchQuery(newFilters.trackingSearch);
+    }
+    
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
 

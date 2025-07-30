@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { sanitizeInput, sanitizeObject } from '@/lib/security';
 import { 
   Bell, 
   X, 
@@ -57,20 +58,20 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
       if (error) throw error;
       
-      // Transform data to match our interface
+      // Transform and sanitize data to match our interface
       const transformedNotifications = data?.map(item => ({
         id: item.id,
-        sales_order: item.sales_order || '',
-        cliente: item.cliente || '',
-        tipo_notificacao: item.tipo_notificacao || '',
-        titulo: item.titulo || '',
-        mensagem: item.mensagem || '',
+        sales_order: sanitizeInput(item.sales_order || '', 50),
+        cliente: sanitizeInput(item.cliente || '', 100),
+        tipo_notificacao: sanitizeInput(item.tipo_notificacao || '', 50),
+        titulo: sanitizeInput(item.titulo || '', 200),
+        mensagem: sanitizeInput(item.mensagem || '', 500),
         data_evento: item.data_evento || '',
         prioridade: (item.prioridade === 'alta' || item.prioridade === 'normal' || item.prioridade === 'baixa' 
           ? item.prioridade : 'normal') as 'alta' | 'normal' | 'baixa',
         status: (item.status === 'pendente' || item.status === 'lida' 
           ? item.status : 'pendente') as 'pendente' | 'lida',
-        detalhes: item.detalhes
+        detalhes: item.detalhes ? sanitizeObject(item.detalhes) : null
       })) || [];
       
       setNotifications(transformedNotifications);

@@ -109,27 +109,48 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
     });
   };
 
-  const formatDetailsText = (detalhes?: string) => {
-    if (!detalhes) return null;
+  const formatDetailsText = (detalhes?: string): string | null => {
+    if (!detalhes || typeof detalhes !== 'string') return null;
     
-    // Se for string simples, retornar apenas se for útil
-    if (typeof detalhes === 'string' && !detalhes.startsWith('{')) {
-      return detalhes.length > 100 ? null : detalhes;
+    // Sanitize input - prevent XSS and limit length
+    const sanitizedDetails = detalhes.trim().slice(0, 1000);
+    
+    // Se for string simples, sanitizar e retornar apenas se for útil
+    if (!sanitizedDetails.startsWith('{') && !sanitizedDetails.startsWith('[')) {
+      const cleaned = sanitizedDetails.replace(/[<>'"&]/g, ''); // Basic XSS prevention
+      return cleaned.length > 100 || cleaned.includes('undefined') ? null : cleaned;
     }
     
     try {
-      const data = JSON.parse(detalhes);
+      // Safe JSON parsing with validation
+      const data = JSON.parse(sanitizedDetails);
       
-      // Filtrar apenas dados relevantes
+      // Validate that it's a safe object (not array or null)
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        return null;
+      }
+      
+      // Safely extract only relevant keys
       const relevantKeys = ['porto', 'aeroporto', 'status', 'nova_data', 'localizacao', 'temperatura', 'observacoes'];
       const filteredData = Object.entries(data).filter(([key]) => 
-        relevantKeys.includes(key.toLowerCase()) || key.length < 20
+        typeof key === 'string' && 
+        (relevantKeys.includes(key.toLowerCase()) || key.length < 20)
       );
       
       if (filteredData.length === 0) return null;
       
+      const safeString = (value: unknown): string => {
+        if (typeof value === 'string') {
+          return value.slice(0, 50).replace(/[<>'"&]/g, ''); // XSS prevention
+        }
+        if (typeof value === 'number') {
+          return String(value);
+        }
+        return '';
+      };
+      
       const formatted = filteredData.map(([key, value]) => {
-        // Pular valores vazios ou nulos
+        // Skip empty or null values
         if (!value || value === '' || value === null) return null;
         
         const keyTranslations: Record<string, string> = {
@@ -142,11 +163,16 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
           observacoes: 'Observações'
         };
         
-        const translatedKey = keyTranslations[key.toLowerCase()] || key;
+        const translatedKey = keyTranslations[key.toLowerCase()] || safeString(key);
         
         if (key.toLowerCase() === 'nova_data' && typeof value === 'string') {
-          const date = new Date(value);
-          return `${translatedKey}: ${date.toLocaleDateString('pt-BR')}`;
+          try {
+            const date = new Date(value);
+            if (isNaN(date.getTime())) return null; // Invalid date
+            return `${translatedKey}: ${date.toLocaleDateString('pt-BR')}`;
+          } catch {
+            return null;
+          }
         }
         
         if (key.toLowerCase() === 'status') {
@@ -154,20 +180,21 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
             'Navegando': 'Em voo',
             'Em voo': 'Em voo'
           };
-          return `${translatedKey}: ${statusMap[String(value)] || String(value)}`;
+          const safeValue = safeString(value);
+          return `${translatedKey}: ${statusMap[safeValue] || safeValue}`;
         }
         
-        // Limitar tamanho do valor
-        const valueStr = String(value);
-        if (valueStr.length > 50) return null;
+        const safeValue = safeString(value);
+        if (!safeValue) return null;
         
-        return `${translatedKey}: ${valueStr}`;
+        return `${translatedKey}: ${safeValue}`;
       }).filter(Boolean);
       
       return formatted.length > 0 ? formatted.join(' • ') : null;
-    } catch {
-      // Se não for JSON válido, retornar apenas se for texto curto e útil
-      return detalhes.length < 100 && !detalhes.includes('undefined') ? detalhes : null;
+    } catch (error) {
+      // Safe fallback for invalid JSON - sanitize the raw string
+      const cleaned = sanitizedDetails.replace(/[<>'"&]/g, '');
+      return cleaned.length < 100 && !cleaned.includes('undefined') ? cleaned : null;
     }
   };
 
