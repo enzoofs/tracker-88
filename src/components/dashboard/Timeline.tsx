@@ -31,24 +31,61 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
     const iconClass = status === 'completed' ? 'text-status-delivered' : 
                      status === 'current' ? 'text-primary' : 'text-muted-foreground';
     
-    switch (tipo.toLowerCase()) {
+    // Mapear eventos para status padronizados
+    const eventStatus = mapEventToStatus(tipo);
+    
+    switch (eventStatus) {
       case 'em_producao':
-      case 'producao_finalizada':
+        return <div className={`text-2xl ${iconClass}`}>🏭</div>;
+      case 'no_armazem':
         return <Package className={`h-5 w-5 ${iconClass}`} />;
-      case 'saido_fornecedor':
-      case 'embarcado':
-        return <Plane className={`h-5 w-5 ${iconClass}`} />;
-      case 'em_transito_internacional':
-        return <Ship className={`h-5 w-5 ${iconClass}`} />;
-      case 'chegada_brasil':
-      case 'desembaraco_concluido':
-        return <MapPin className={`h-5 w-5 ${iconClass}`} />;
+      case 'em_importacao':
+        return <div className={`text-2xl ${iconClass}`}>✈️</div>;
       case 'em_rota_entrega':
-      case 'saiu_para_entrega':
-        return <Truck className={`h-5 w-5 ${iconClass}`} />;
+        return <div className={`text-2xl ${iconClass}`}>🚚</div>;
+      case 'entregue':
+        return <div className={`text-2xl ${iconClass}`}>✅</div>;
       default:
         return <Circle className={`h-5 w-5 ${iconClass}`} />;
     }
+  };
+
+  const mapEventToStatus = (evento: string) => {
+    const eventoLower = evento.toLowerCase();
+    
+    if (eventoLower.includes('produção') || eventoLower.includes('producao')) {
+      return 'em_producao';
+    }
+    if (eventoLower.includes('armazém') || eventoLower.includes('armazem') || 
+        eventoLower.includes('finalizada') || eventoLower.includes('saído') || 
+        eventoLower.includes('saido')) {
+      return 'no_armazem';
+    }
+    if (eventoLower.includes('embarcado') || eventoLower.includes('trânsito') || 
+        eventoLower.includes('transito') || eventoLower.includes('chegada') ||
+        eventoLower.includes('desembaraço') || eventoLower.includes('desembaraco')) {
+      return 'em_importacao';
+    }
+    if (eventoLower.includes('rota') || eventoLower.includes('entrega') && !eventoLower.includes('entregue')) {
+      return 'em_rota_entrega';
+    }
+    if (eventoLower.includes('entregue') || eventoLower.includes('destino')) {
+      return 'entregue';
+    }
+    
+    return 'em_importacao'; // default
+  };
+
+  const getStatusTitle = (evento: string) => {
+    const status = mapEventToStatus(evento);
+    const titleMap = {
+      'em_producao': 'Em Produção',
+      'no_armazem': 'No Armazém',
+      'em_importacao': 'Em Importação',
+      'em_rota_entrega': 'Em Rota de Entrega',
+      'entregue': 'Entregue'
+    };
+    return titleMap[status] || evento;
   };
 
   const getStatusIcon = (status: string) => {
@@ -75,11 +112,29 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
   const formatDetailsText = (detalhes?: string) => {
     if (!detalhes) return null;
     
+    // Se for string simples, retornar apenas se for útil
+    if (typeof detalhes === 'string' && !detalhes.startsWith('{')) {
+      return detalhes.length > 100 ? null : detalhes;
+    }
+    
     try {
       const data = JSON.parse(detalhes);
-      const formatted = Object.entries(data).map(([key, value]) => {
+      
+      // Filtrar apenas dados relevantes
+      const relevantKeys = ['porto', 'aeroporto', 'status', 'nova_data', 'localizacao', 'temperatura', 'observacoes'];
+      const filteredData = Object.entries(data).filter(([key]) => 
+        relevantKeys.includes(key.toLowerCase()) || key.length < 20
+      );
+      
+      if (filteredData.length === 0) return null;
+      
+      const formatted = filteredData.map(([key, value]) => {
+        // Pular valores vazios ou nulos
+        if (!value || value === '' || value === null) return null;
+        
         const keyTranslations: Record<string, string> = {
           porto: 'Aeroporto',
+          aeroporto: 'Aeroporto',
           status: 'Status',
           nova_data: 'Nova previsão',
           localizacao: 'Localização',
@@ -87,23 +142,32 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
           observacoes: 'Observações'
         };
         
-        const translatedKey = keyTranslations[key] || key;
+        const translatedKey = keyTranslations[key.toLowerCase()] || key;
         
-        if (key === 'nova_data' && typeof value === 'string') {
+        if (key.toLowerCase() === 'nova_data' && typeof value === 'string') {
           const date = new Date(value);
           return `${translatedKey}: ${date.toLocaleDateString('pt-BR')}`;
         }
         
-        if (key === 'status' && value === 'Navegando') {
-          return `${translatedKey}: Em voo`;
+        if (key.toLowerCase() === 'status') {
+          const statusMap: Record<string, string> = {
+            'Navegando': 'Em voo',
+            'Em voo': 'Em voo'
+          };
+          return `${translatedKey}: ${statusMap[String(value)] || String(value)}`;
         }
         
-        return `${translatedKey}: ${value}`;
-      });
+        // Limitar tamanho do valor
+        const valueStr = String(value);
+        if (valueStr.length > 50) return null;
+        
+        return `${translatedKey}: ${valueStr}`;
+      }).filter(Boolean);
       
-      return formatted.join(' • ');
+      return formatted.length > 0 ? formatted.join(' • ') : null;
     } catch {
-      return detalhes;
+      // Se não for JSON válido, retornar apenas se for texto curto e útil
+      return detalhes.length < 100 && !detalhes.includes('undefined') ? detalhes : null;
     }
   };
 
@@ -164,7 +228,7 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
               <div className={`text-xs font-medium ${
                 event.status === 'upcoming' ? 'text-muted-foreground' : 'text-foreground'
               }`}>
-                {event.titulo}
+                {getStatusTitle(event.titulo)}
               </div>
               
               {event.data && (
@@ -200,14 +264,14 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
             
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <h5 className="font-medium text-sm">{event.titulo}</h5>
+                <h5 className="font-medium text-sm">{getStatusTitle(event.titulo)}</h5>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
                   {formatDate(event.data)}
                 </div>
               </div>
               
-              {event.detalhes && (
+              {event.detalhes && formatDetailsText(event.detalhes) && (
                 <p className="text-xs text-muted-foreground mt-1">
                   {formatDetailsText(event.detalhes)}
                 </p>

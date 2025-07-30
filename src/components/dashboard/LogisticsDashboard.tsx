@@ -22,7 +22,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 
 import Overview from './Overview';
 import SOTable from './SOTable';
-import CargoMap from './CargoMap';
+
 import CargoDetails from './CargoDetails';
 import NotificationCenter from './NotificationCenter';
 import SODetails from './SODetails';
@@ -406,23 +406,10 @@ const LogisticsDashboard: React.FC = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-            <TabsTrigger value="sos" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Sales Orders
-            </TabsTrigger>
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="cargas" className="flex items-center gap-2">
-              <Ship className="h-4 w-4" />
-              Cargas
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="sos">Sales Orders</TabsTrigger>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="cargas">Cargas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sos">
@@ -443,15 +430,37 @@ const LogisticsDashboard: React.FC = () => {
             <Overview data={data.overview} />
           </TabsContent>
 
-          <TabsContent value="cargas">
-            <CargoMap 
-              cargas={data.cargas}
-              onCargoClick={handleCargoClick}
-            />
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <Analytics />
+          <TabsContent value="cargas" className="space-y-6">
+            <div className="grid gap-6">
+              {data.cargas.map((cargo) => (
+                <Card key={cargo.id} className="shadow-card hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleCargoClick(cargo)}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-full ${cargo.temperatura ? 'bg-temp-cold/10' : 'bg-primary/10'}`}>
+                          <Ship className={`h-6 w-6 ${cargo.temperatura ? 'text-temp-cold' : 'text-primary'}`} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold">Carga {cargo.numero}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {cargo.origem.nome} → {cargo.destino.nome}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <Badge className="bg-status-transit text-status-transit-foreground mb-2">
+                          {cargo.status}
+                        </Badge>
+                        <p className="text-sm text-muted-foreground">
+                          {cargo.sosVinculadas} SOs vinculadas
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
         </Tabs>
       </div>
