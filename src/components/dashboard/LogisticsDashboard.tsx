@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Ship, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut, User, Bell } from 'lucide-react';
+import { BarChart3, Ship, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut, User, Bell, Plane, Box, Zap, Atom, Microscope } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -58,6 +58,10 @@ interface DashboardData {
     sosVinculadas: number;
     mawb?: string;
     hawb?: string;
+    icon: {
+      type: string;
+      component: any;
+    };
   }>;
 }
 const LogisticsDashboard: React.FC = () => {
@@ -136,25 +140,37 @@ const LogisticsDashboard: React.FC = () => {
       const transformedCargas = cargasData?.map(carga => {
         // Count SOs linked to this cargo
         const linkedSOs = cargoSOsData?.filter(cso => cso.numero_carga === carga.numero_carga) || [];
+        
+        // Generate random icon for each cargo
+        const iconOptions = [
+          { type: 'plane', component: Plane },
+          { type: 'box', component: Box },
+          { type: 'zap', component: Zap },
+          { type: 'atom', component: Atom },
+          { type: 'microscope', component: Microscope }
+        ];
+        const randomIcon = iconOptions[Math.floor(Math.random() * iconOptions.length)];
+        
         return {
           id: carga.id,
           numero: carga.numero_carga?.toString() || '',
           origem: {
             lat: -23.5505 + (Math.random() - 0.5) * 5,
             lng: -46.6333 + (Math.random() - 0.5) * 10,
-            nome: 'São Paulo, BR'
+            nome: 'Centro de Distribuição'
           },
           destino: {
             lat: 40.7128 + (Math.random() - 0.5) * 10,
             lng: -74.0060 + (Math.random() - 0.5) * 20,
-            nome: 'Nova York, EUA'
+            nome: 'Destino Final'
           },
           status: carga.status || 'Em Trânsito',
           temperatura: carga.tipo_temperatura,
           dataChegadaPrevista: carga.data_chegada_prevista || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           sosVinculadas: linkedSOs.length,
           mawb: carga.mawb,
-          hawb: carga.hawb
+          hawb: carga.hawb,
+          icon: randomIcon
         };
       }) || [];
 
@@ -292,6 +308,8 @@ const LogisticsDashboard: React.FC = () => {
       const cargoDetails = {
         ...cargo,
         sosVinculadas: linkedSOs,
+        // Update the count to match actual loaded SOs
+        sosVinculadasCount: linkedSOs.length,
         historico: [{
           id: '1',
           evento: 'Carga Embarcada',
@@ -408,15 +426,15 @@ const LogisticsDashboard: React.FC = () => {
                   <CardContent className="p-8">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-6">
-                        <div className={`p-4 rounded-2xl ${cargo.temperatura ? 'bg-gradient-tech' : 'bg-gradient-tech'} shadow-tech`}>
-                          <Ship className="h-7 w-7 text-white" />
+                        <div className={`p-4 rounded-2xl ${cargo.temperatura ? 'bg-gradient-tech' : 'bg-gradient-tech'} shadow-tech flex items-center justify-center`}>
+                          <cargo.icon.component className="h-7 w-7 text-white" />
                         </div>
                         <div>
                           <h3 className="text-xl font-tech text-foreground group-hover:text-primary transition-colors">
                             Carga {cargo.numero}
                           </h3>
                           <p className="text-muted-foreground font-medium mt-1">
-                            {cargo.origem.nome} → {cargo.destino.nome}
+                            Transporte de produtos biotecnológicos
                           </p>
                         </div>
                       </div>
@@ -426,7 +444,7 @@ const LogisticsDashboard: React.FC = () => {
                           {cargo.status}
                         </Badge>
                         <p className="text-mono-metric text-foreground font-semibold">
-                          {cargo.sosVinculadas} SOs vinculadas
+                          {cargo.sosVinculadas} SO{cargo.sosVinculadas !== 1 ? 's' : ''} vinculada{cargo.sosVinculadas !== 1 ? 's' : ''}
                         </p>
                       </div>
                     </div>

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Filter, Thermometer, AlertTriangle, Eye } from 'lucide-react';
+import { Search, Filter, Thermometer, AlertTriangle, Eye, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface SO {
   id: string;
@@ -30,6 +30,8 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [clienteFilter, setClienteFilter] = useState('all');
+  const [sortBy, setSortBy] = useState<keyof SO | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const getStatusVariant = (status: string) => {
     switch (status.toLowerCase()) {
@@ -78,6 +80,15 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
     return <Thermometer className={`h-4 w-4 ${colorClass}`} />;
   };
 
+  const handleSort = (column: keyof SO) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortDirection('asc');
+    }
+  };
+
   const filteredData = data.filter(so => {
     const matchesSearch = 
       so.salesOrder.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -88,6 +99,20 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
     const matchesCliente = clienteFilter === 'all' || so.cliente === clienteFilter;
     
     return matchesSearch && matchesStatus && matchesCliente;
+  }).sort((a, b) => {
+    if (!sortBy) return 0;
+    
+    const aValue = a[sortBy];
+    const bValue = b[sortBy];
+    
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      const result = aValue.localeCompare(bValue);
+      return sortDirection === 'asc' ? result : -result;
+    }
+    
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
   });
 
   const isDelayed = (so: SO) => {
@@ -157,12 +182,72 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>SO</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Produtos</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Localização</TableHead>
-                <TableHead>Última Atualização</TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  onClick={() => handleSort('salesOrder')}
+                >
+                  <div className="flex items-center gap-1">
+                    SO
+                    {sortBy === 'salesOrder' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  onClick={() => handleSort('cliente')}
+                >
+                  <div className="flex items-center gap-1">
+                    Cliente
+                    {sortBy === 'cliente' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  onClick={() => handleSort('produtos')}
+                >
+                  <div className="flex items-center gap-1">
+                    Produtos
+                    {sortBy === 'produtos' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  onClick={() => handleSort('statusCliente')}
+                >
+                  <div className="flex items-center gap-1">
+                    Status
+                    {sortBy === 'statusCliente' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  onClick={() => handleSort('ultimaLocalizacao')}
+                >
+                  <div className="flex items-center gap-1">
+                    Localização
+                    {sortBy === 'ultimaLocalizacao' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  onClick={() => handleSort('dataUltimaAtualizacao')}
+                >
+                  <div className="flex items-center gap-1">
+                    Última Atualização
+                    {sortBy === 'dataUltimaAtualizacao' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
                 <TableHead className="text-center">Indicadores</TableHead>
                 <TableHead className="text-center">Ações</TableHead>
               </TableRow>

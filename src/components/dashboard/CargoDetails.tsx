@@ -122,23 +122,7 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <div className="p-6 space-y-6">
             {/* Cargo Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="shadow-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-status-shipping" />
-                    Rota
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm">
-                    <div className="font-medium">{cargo.origem.nome}</div>
-                    <div className="text-muted-foreground">↓</div>
-                    <div className="font-medium">{cargo.destino.nome}</div>
-                  </div>
-                </CardContent>
-              </Card>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="shadow-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-sm">

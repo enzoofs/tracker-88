@@ -166,30 +166,34 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <Calendar className="h-3 w-3" />
               Data Inicial
             </Label>
-            <Input
-              id="startDate"
-              type="date"
-              value={filters.dateRange.start}
-              onChange={(e) => updateFilters({
-                dateRange: { ...filters.dateRange, start: e.target.value }
-              })}
-              className="mt-1 text-sm"
-            />
+            <div className="relative">
+              <Input
+                id="startDate"
+                type="date"
+                value={filters.dateRange.start}
+                onChange={(e) => updateFilters({
+                  dateRange: { ...filters.dateRange, start: e.target.value }
+                })}
+                className="mt-1 text-sm cursor-pointer"
+              />
+            </div>
           </div>
           <div>
             <Label htmlFor="endDate" className="text-xs text-muted-foreground flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               Data Final
             </Label>
-            <Input
-              id="endDate"
-              type="date"
-              value={filters.dateRange.end}
-              onChange={(e) => updateFilters({
-                dateRange: { ...filters.dateRange, end: e.target.value }
-              })}
-              className="mt-1 text-sm"
-            />
+            <div className="relative">
+              <Input
+                id="endDate"
+                type="date"
+                value={filters.dateRange.end}
+                onChange={(e) => updateFilters({
+                  dateRange: { ...filters.dateRange, end: e.target.value }
+                })}
+                className="mt-1 text-sm cursor-pointer"
+              />
+            </div>
           </div>
         </div>
 
