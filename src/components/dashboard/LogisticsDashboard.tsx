@@ -384,7 +384,7 @@ const LogisticsDashboard: React.FC = () => {
               </div>
 
               {/* Logout Button */}
-              <Button variant="outline" size="sm" className="px-6 py-2 rounded-xl border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300">
+              <Button variant="outline" size="sm" onClick={signOut} className="px-6 py-2 rounded-xl border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300">
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair
               </Button>
@@ -442,12 +442,9 @@ const LogisticsDashboard: React.FC = () => {
                       </div>
                       
                       <div className="text-right">
-                        <Badge className="bg-gradient-tech text-white mb-3 px-4 py-2 rounded-xl font-medium shadow-tech">
+                        <Badge className="bg-gradient-tech text-white px-4 py-2 rounded-xl font-medium shadow-tech">
                           {cargo.status}
                         </Badge>
-                        <p className="text-mono-metric text-foreground font-semibold">
-                          {cargo.sosVinculadas} SO{cargo.sosVinculadas !== 1 ? 's' : ''} vinculada{cargo.sosVinculadas !== 1 ? 's' : ''}
-                        </p>
                       </div>
                     </div>
                   </CardContent>
