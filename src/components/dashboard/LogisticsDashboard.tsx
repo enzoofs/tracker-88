@@ -412,7 +412,7 @@ const LogisticsDashboard: React.FC = () => {
           <TabsContent value="sos" className="animate-fade-in">
             <div className="space-y-8">
               <AdvancedFilters onFiltersChange={handleFiltersChange} availableClients={availableClients} availableStatuses={availableStatuses} />
-              <SOTable data={filteredSOs} onSOClick={handleSOClick} />
+              <SOTable data={filteredSOs} onSOClick={handleSOClick} isLoading={loading} />
             </div>
           </TabsContent>
 

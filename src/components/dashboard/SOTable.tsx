@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { Search, Filter, Thermometer, AlertTriangle, Eye, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface SO {
@@ -24,12 +25,14 @@ interface SO {
 interface SOTableProps {
   data: SO[];
   onSOClick: (so: SO) => void;
+  isLoading?: boolean;
 }
 
-const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
+const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [clienteFilter, setClienteFilter] = useState('all');
+  const [prioridadeFilter, setPrioridadeFilter] = useState('all');
   const [sortBy, setSortBy] = useState<keyof SO | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -93,12 +96,14 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
     const matchesSearch = 
       so.salesOrder.toLowerCase().includes(searchTerm.toLowerCase()) ||
       so.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      so.produtos.toLowerCase().includes(searchTerm.toLowerCase());
+      so.produtos.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      so.ultimaLocalizacao?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || so.statusCliente === statusFilter;
     const matchesCliente = clienteFilter === 'all' || so.cliente === clienteFilter;
+    const matchesPrioridade = prioridadeFilter === 'all' || so.prioridade === prioridadeFilter;
     
-    return matchesSearch && matchesStatus && matchesCliente;
+    return matchesSearch && matchesStatus && matchesCliente && matchesPrioridade;
   }).sort((a, b) => {
     if (!sortBy) return 0;
     
@@ -130,6 +135,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
 
   const uniqueClientes = [...new Set(data.map(so => so.cliente))];
   const uniqueStatuses = [...new Set(data.map(so => so.statusCliente))];
+  const uniquePrioridades = [...new Set(data.map(so => so.prioridade))];
 
   return (
     <Card className="shadow-card">
@@ -140,45 +146,80 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
         </CardTitle>
         
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por SO, cliente ou produto..."
+              placeholder="Buscar por SO, cliente, produto ou localização..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
+              className="pl-8 transition-all duration-300 focus:ring-2 focus:ring-primary/20"
             />
           </div>
           
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Status</SelectItem>
-              {uniqueStatuses.map(status => (
-                <SelectItem key={status} value={status}>{status}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Select value={clienteFilter} onValueChange={setClienteFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Cliente" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Clientes</SelectItem>
-              {uniqueClientes.map(cliente => (
-                <SelectItem key={cliente} value={cliente}>{cliente}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="z-50">
+                <SelectItem value="all">Todos os Status</SelectItem>
+                {uniqueStatuses.map(status => (
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={clienteFilter} onValueChange={setClienteFilter}>
+              <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
+                <SelectValue placeholder="Cliente" />
+              </SelectTrigger>
+              <SelectContent className="z-50">
+                <SelectItem value="all">Todos os Clientes</SelectItem>
+                {uniqueClientes.map(cliente => (
+                  <SelectItem key={cliente} value={cliente}>{cliente}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={prioridadeFilter} onValueChange={setPrioridadeFilter}>
+              <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
+                <SelectValue placeholder="Prioridade" />
+              </SelectTrigger>
+              <SelectContent className="z-50">
+                <SelectItem value="all">Todas as Prioridades</SelectItem>
+                {uniquePrioridades.map(prioridade => (
+                  <SelectItem key={prioridade} value={prioridade}>
+                    <div className="flex items-center gap-2">
+                      {prioridade === 'high' && <AlertTriangle className="h-4 w-4 text-priority-high" />}
+                      {prioridade === 'high' ? 'Alta' : prioridade === 'normal' ? 'Normal' : 'Baixa'}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('all');
+                setClienteFilter('all');
+                setPrioridadeFilter('all');
+              }}
+              className="transition-all duration-300 hover:bg-muted/50"
+            >
+              Limpar Filtros
+            </Button>
+          </div>
         </div>
       </CardHeader>
       
       <CardContent className="p-0">
         <div className="overflow-x-auto">
+          {isLoading ? (
+            <TableSkeleton rows={5} columns={8} />
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -257,14 +298,14 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
                 const delayed = isDelayed(so);
                 const arrivingToday = isArrivingToday(so);
                 
-                return (
-                  <TableRow 
-                    key={so.id}
-                    className={`hover:bg-muted/50 cursor-pointer transition-smooth ${
-                      delayed ? 'bg-destructive/10 border-l-4 border-l-destructive' : ''
-                    }`}
-                    onClick={() => onSOClick(so)}
-                  >
+                 return (
+                   <TableRow 
+                     key={so.id}
+                     className={`hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-[1.01] hover:shadow-sm ${
+                       delayed ? 'bg-destructive/10 border-l-4 border-l-destructive animate-pulse' : ''
+                     } ${arrivingToday ? 'bg-status-production/10 border-l-4 border-l-status-production' : ''}`}
+                     onClick={() => onSOClick(so)}
+                   >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       {so.salesOrder}
@@ -325,11 +366,16 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick }) => {
               })}
             </TableBody>
           </Table>
+          )}
         </div>
         
-        {filteredData.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            Nenhuma SO encontrada com os filtros aplicados.
+        {!isLoading && filteredData.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground animate-fade-in">
+            <div className="flex flex-col items-center gap-3">
+              <Search className="h-12 w-12 text-muted-foreground/50" />
+              <p className="text-lg font-medium">Nenhuma SO encontrada</p>
+              <p className="text-sm">Tente ajustar os filtros para encontrar resultados.</p>
+            </div>
           </div>
         )}
       </CardContent>
