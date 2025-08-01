@@ -14,6 +14,8 @@ import CargoDetails from './CargoDetails';
 import NotificationCenter from './NotificationCenter';
 import SODetails from './SODetails';
 import Analytics from './Analytics';
+import AdvancedAnalytics from './AdvancedAnalytics';
+import SmartAlerts from './SmartAlerts';
 import AdvancedFilters from './AdvancedFilters';
 import ParticleBackground from '../ui/ParticleBackground';
 interface DashboardData {
@@ -397,7 +399,7 @@ const LogisticsDashboard: React.FC = () => {
       <div className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           {/* Modern Tab Navigation */}
-          <TabsList className="grid w-full max-w-md grid-cols-3 mx-auto glass p-1 rounded-2xl">
+          <TabsList className="grid w-full max-w-6xl grid-cols-6 mx-auto glass p-1 rounded-2xl">
             <TabsTrigger value="sos" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
               Sales Orders
             </TabsTrigger>
@@ -406,6 +408,15 @@ const LogisticsDashboard: React.FC = () => {
             </TabsTrigger>
             <TabsTrigger value="cargas" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
               Cargas
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="advanced-analytics" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
+              Analytics+
+            </TabsTrigger>
+            <TabsTrigger value="smart-alerts" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
+              Alertas
             </TabsTrigger>
           </TabsList>
 
@@ -450,6 +461,18 @@ const LogisticsDashboard: React.FC = () => {
                   </CardContent>
                 </Card>)}
             </div>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="animate-fade-in">
+            <Analytics />
+          </TabsContent>
+
+          <TabsContent value="advanced-analytics" className="animate-fade-in">
+            <AdvancedAnalytics />
+          </TabsContent>
+
+          <TabsContent value="smart-alerts" className="animate-fade-in">
+            <SmartAlerts />
           </TabsContent>
         </Tabs>
       </div>
