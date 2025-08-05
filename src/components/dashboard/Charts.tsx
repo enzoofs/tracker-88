@@ -41,7 +41,7 @@ const Charts: React.FC = () => {
       </div>
 
       <Tabs defaultValue="executive" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3 max-w-4xl mx-auto">
           <TabsTrigger value="executive">Visão Geral & Dashboard Executivo</TabsTrigger>
           <TabsTrigger value="trends">Análise de Tendências</TabsTrigger>
           <TabsTrigger value="charts">Gráficos</TabsTrigger>
@@ -90,19 +90,19 @@ const Charts: React.FC = () => {
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5 text-status-delivered" />
-                  Pedidos por Fornecedor
+                  <BarChart3 className="h-5 w-5 text-secondary" />
+                  Status dos Pedidos
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {data.pedidosPorFornecedor.length > 0 ? (
+                {data.statusDistribution.length > 0 ? (
                   <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={data.pedidosPorFornecedor} layout="horizontal">
+                    <BarChart data={data.statusDistribution} layout="horizontal">
                       <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                       <XAxis type="number" className="text-xs" />
-                      <YAxis dataKey="fornecedor" type="category" className="text-xs" width={100} />
+                      <YAxis dataKey="status" type="category" className="text-xs" width={120} />
                       <Tooltip />
-                      <Bar dataKey="pedidos" fill="hsl(var(--status-delivered))" />
+                      <Bar dataKey="quantidade" fill="hsl(var(--secondary))" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
