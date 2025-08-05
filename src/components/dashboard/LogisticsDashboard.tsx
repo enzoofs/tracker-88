@@ -398,18 +398,15 @@ const LogisticsDashboard: React.FC = () => {
       <div className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           {/* Modern Tab Navigation */}
-          <TabsList className="grid w-full max-w-6xl grid-cols-5 mx-auto glass p-1 rounded-2xl">
+          <TabsList className="grid w-full max-w-6xl grid-cols-4 mx-auto glass p-1 rounded-2xl">
             <TabsTrigger value="sos" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
               Sales Orders
-            </TabsTrigger>
-            <TabsTrigger value="overview" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
-              Overview
             </TabsTrigger>
             <TabsTrigger value="cargas" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
               Cargas
             </TabsTrigger>
             <TabsTrigger value="charts" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
-              Analytics & Relatórios
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="reports" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
               Relatórios
@@ -418,14 +415,12 @@ const LogisticsDashboard: React.FC = () => {
 
           <TabsContent value="sos" className="animate-fade-in">
             <div className="space-y-8">
+              <Overview data={data.overview} />
               <AdvancedFilters onFiltersChange={handleFiltersChange} availableClients={availableClients} availableStatuses={availableStatuses} />
               <SOTable data={filteredSOs} onSOClick={handleSOClick} isLoading={loading} />
             </div>
           </TabsContent>
 
-          <TabsContent value="overview" className="animate-fade-in">
-            <Overview data={data.overview} />
-          </TabsContent>
 
           <TabsContent value="cargas" className="space-y-8 animate-fade-in">
             <div className="grid gap-6">

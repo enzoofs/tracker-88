@@ -323,7 +323,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                   </TableCell>
                   <TableCell>{so.cliente}</TableCell>
                   <TableCell className="max-w-xs truncate">
-                    {so.produtos}
+                    {so.produtos && so.produtos.length > 0 ? so.produtos : 'N/A'}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
