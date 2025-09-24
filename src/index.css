@@ -8,81 +8,81 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Modern Tech Dark Theme - Lightened */
-    --background: 220 27% 12%;       /* lighter slate-900 base */
-    --foreground: 210 40% 98%;       /* white/gray-100 for text */
+    /* Corporate Theme - Empresa Colors */
+    --background: 0 0% 98%;           /* light gray background */
+    --foreground: 0 0% 9%;            /* dark text */
 
-    --card: 220 23% 16%;             /* lighter glass morphism dark */
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;                /* white cards */
+    --card-foreground: 0 0% 9%;
 
-    --popover: 220 23% 16%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
 
-    /* Tech Blue Primary */
-    --primary: 217 91% 60%;          /* #3B82F6 tech blue */
+    /* Corporate Blue Primary - #39bde6 */
+    --primary: 198 77% 56%;           /* corporate light blue */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 230 15% 18%;        /* lighter dark card variant */
-    --secondary-foreground: 210 40% 98%;
+    /* Corporate Dark Blue Secondary - #253786 */
+    --secondary: 230 54% 34%;         /* corporate dark blue */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 215 25% 22%;            /* lighter muted backgrounds */
-    --muted-foreground: 215 15% 75%; /* lighter muted text */
+    --muted: 210 40% 96%;             /* very light muted */
+    --muted-foreground: 215 16% 47%;  /* muted text */
 
-    --accent: 262 83% 58%;           /* #8B5CF6 purple accent */
+    --accent: 198 77% 56%;            /* same as primary for consistency */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;        /* coral red */
+    --destructive: 0 84% 60%;         /* red for errors */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 25% 24%;           /* lighter subtle borders */
-    --input: 215 25% 20%;            /* lighter input backgrounds */
-    --ring: 217 91% 60%;             /* focus rings */
+    --border: 220 13% 91%;            /* subtle borders */
+    --input: 0 0% 100%;               /* white inputs */
+    --ring: 198 77% 56%;              /* focus rings */
 
-    --radius: 0.75rem;               /* larger border radius */
+    --radius: 0.375rem;               /* smaller, more corporate radius */
 
-    /* Enhanced Status Colors */
-    --status-production: 45 93% 58%;      /* amber for production */
-    --status-production-foreground: 0 0% 0%;
+    /* Enhanced Status Colors - Corporate */
+    --status-production: 45 93% 47%;       /* amber for production */
+    --status-production-foreground: 0 0% 100%;
     
-    --status-shipping: 217 91% 60%;       /* tech blue */
+    --status-shipping: 198 77% 56%;        /* corporate blue */
     --status-shipping-foreground: 0 0% 100%;
     
-    --status-transit: 262 83% 58%;        /* purple */
+    --status-transit: 230 54% 34%;         /* dark blue */
     --status-transit-foreground: 0 0% 100%;
     
-    --status-delivered: 160 84% 39%;      /* emerald green */
+    --status-delivered: 142 76% 36%;       /* green */
     --status-delivered-foreground: 0 0% 100%;
     
-    --status-alert: 0 84% 60%;            /* coral red */
+    --status-alert: 0 84% 60%;             /* red */
     --status-alert-foreground: 0 0% 100%;
 
-    /* Priority Colors with Glow */
+    /* Priority Colors */
     --priority-high: 0 84% 60%;
-    --priority-normal: 45 93% 58%;
-    --priority-low: 160 84% 39%;
+    --priority-normal: 45 93% 47%;
+    --priority-low: 142 76% 36%;
 
     /* Temperature Colors */
-    --temp-cold: 200 100% 70%;
-    --temp-ambient: 45 93% 58%;
-    --temp-controlled: 262 83% 58%;
+    --temp-cold: 198 77% 56%;
+    --temp-ambient: 45 93% 47%;
+    --temp-controlled: 230 54% 34%;
 
-    /* Modern Gradients */
-    --gradient-tech: linear-gradient(135deg, hsl(217 91% 60%), hsl(262 83% 58%));
-    --gradient-dark: linear-gradient(135deg, hsl(220 27% 6%), hsl(220 23% 8%));
-    --gradient-glass: linear-gradient(135deg, hsl(220 23% 8% / 0.8), hsl(215 25% 15% / 0.6));
-    --gradient-success: linear-gradient(135deg, hsl(160 84% 39%), hsl(142 76% 36%));
-    --gradient-alert: linear-gradient(135deg, hsl(0 84% 60%), hsl(15 90% 55%));
+    /* Corporate Gradients - Subtle */
+    --gradient-corporate: linear-gradient(135deg, hsl(198 77% 56%), hsl(230 54% 34%));
+    --gradient-light: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 13% 95%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 69% 58%));
+    --gradient-alert: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 72% 51%));
     
-    /* Enhanced Shadows & Effects */
-    --shadow-glass: 0 8px 32px 0 hsl(0 0% 0% / 0.37);
-    --shadow-tech: 0 25px 50px -12px hsl(217 91% 60% / 0.25);
-    --shadow-glow: 0 0 40px hsl(217 91% 60% / 0.3);
-    --shadow-card: 0 4px 16px -4px hsl(0 0% 0% / 0.1), 0 2px 8px -2px hsl(0 0% 0% / 0.06);
+    /* Corporate Shadows - Clean & Subtle */
+    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px 0 hsl(0 0% 0% / 0.06);
+    --shadow-corporate: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.06);
+    --shadow-hover: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -2px hsl(0 0% 0% / 0.05);
     
-    /* Smooth Animations */
-    --transition-all: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-transform: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-glow: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Smooth Corporate Animations */
+    --transition-all: all 0.2s ease-in-out;
+    --transition-transform: transform 0.15s ease-in-out;
+    --transition-hover: all 0.15s ease-in-out;
 
     /* Sidebar Modern */
     --sidebar-background: 220 27% 6%;
@@ -96,26 +96,26 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Same modern theme for dark mode consistency */
-    --background: 220 27% 6%;
-    --foreground: 210 40% 98%;
-    --card: 220 23% 8%;
-    --card-foreground: 210 40% 98%;
-    --popover: 220 23% 8%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
+    /* Corporate Dark Theme */
+    --background: 0 0% 9%;            /* very dark background */
+    --foreground: 0 0% 98%;           /* light text */
+    --card: 0 0% 4%;                  /* dark cards */
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 198 77% 56%;           /* corporate blue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 230 15% 12%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 215 25% 15%;
-    --muted-foreground: 215 15% 70%;
-    --accent: 262 83% 58%;
+    --secondary: 230 54% 34%;         /* dark blue */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 63%;
+    --accent: 198 77% 56%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 215 25% 18%;
-    --input: 215 25% 15%;
-    --ring: 217 91% 60%;
+    --border: 0 0% 15%;
+    --input: 0 0% 9%;
+    --ring: 198 77% 56%;
   }
 }
 
@@ -125,35 +125,36 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-gradient-dark text-foreground font-medium;
-    background-attachment: fixed;
+    @apply bg-background text-foreground;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 
-  /* Glass Morphism Utility */
-  .glass {
-    background: var(--gradient-glass);
-    backdrop-filter: blur(12px);
+  /* Corporate Card Utility */
+  .corporate-card {
+    background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
+    box-shadow: var(--shadow-card);
   }
 
-  /* Glow Effects */
-  .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  /* Corporate Hover Effects */
+  .hover-corporate {
+    transition: var(--transition-hover);
   }
 
-  .glow-accent {
-    box-shadow: 0 0 20px hsl(var(--accent) / 0.3);
+  .hover-corporate:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-1px);
   }
 
-  /* Professional Typography */
-  .text-tech {
-    font-family: 'Inter', 'system-ui', sans-serif;
-    font-weight: 600;
-    letter-spacing: -0.025em;
+  /* Corporate Typography */
+  .text-corporate {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
 
-  .text-mono-metric {
-    font-family: 'JetBrains Mono', 'Monaco', monospace;
+  .text-corporate-mono {
+    font-family: 'Source Code Pro', 'Monaco', monospace;
     font-variant-numeric: tabular-nums;
   }
 }

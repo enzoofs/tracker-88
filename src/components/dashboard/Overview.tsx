@@ -81,22 +81,22 @@ const Overview: React.FC<OverviewProps> = ({ data }) => {
           return (
             <Card 
               key={metric.title} 
-              className="glass hover:shadow-tech hover:scale-105 transition-all duration-300 border-border/50 group animate-fade-in"
+              className="corporate-card hover-corporate border-border/50 group animate-fade-in"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-sm font-corporate text-muted-foreground">
                   {metric.title}
                 </CardTitle>
-                <div className="p-2 rounded-xl bg-gradient-tech shadow-tech">
+                <div className="p-2 rounded-lg bg-gradient-corporate shadow-corporate">
                   <Icon className="h-5 w-5 text-white" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-tech text-foreground group-hover:text-primary transition-colors">
+                <div className="text-3xl font-corporate font-semibold text-foreground group-hover:text-primary transition-colors">
                   {metric.value}
                 </div>
-                <Badge className="mt-2 bg-primary/10 text-primary border-primary/20">
+                <Badge className="mt-2 bg-primary/10 text-primary border-primary/20 font-corporate">
                   {metric.trend}
                 </Badge>
               </CardContent>
@@ -107,32 +107,32 @@ const Overview: React.FC<OverviewProps> = ({ data }) => {
 
 
       {/* Real-time Status */}
-      <Card className="shadow-card bg-gradient-logistics">
+      <Card className="shadow-corporate bg-gradient-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-corporate">
             <Ship className="h-5 w-5 text-primary" />
             Status em Tempo Real
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 rounded-lg bg-background/10">
-              <div className="text-2xl font-bold text-status-production">
+            <div className="text-center p-4 rounded-lg bg-muted/30 hover-corporate">
+              <div className="text-2xl font-corporate font-bold text-status-production">
                 {Math.floor(data.activeSOs * 0.3)}
               </div>
-              <div className="text-sm text-muted-foreground">Em Produção</div>
+              <div className="text-sm text-muted-foreground font-corporate">Em Produção</div>
             </div>
-            <div className="text-center p-4 rounded-lg bg-background/10">
-              <div className="text-2xl font-bold text-status-shipping">
+            <div className="text-center p-4 rounded-lg bg-muted/30 hover-corporate">
+              <div className="text-2xl font-corporate font-bold text-status-shipping">
                 {Math.floor(data.activeSOs * 0.4)}
               </div>
-              <div className="text-sm text-muted-foreground">Em Importação</div>
+              <div className="text-sm text-muted-foreground font-corporate">Em Importação</div>
             </div>
-            <div className="text-center p-4 rounded-lg bg-background/10">
-              <div className="text-2xl font-bold text-status-transit">
+            <div className="text-center p-4 rounded-lg bg-muted/30 hover-corporate">
+              <div className="text-2xl font-corporate font-bold text-status-transit">
                 {Math.floor(data.activeSOs * 0.3)}
               </div>
-              <div className="text-sm text-muted-foreground">Em Trânsito</div>
+              <div className="text-sm text-muted-foreground font-corporate">Em Trânsito</div>
             </div>
           </div>
         </CardContent>

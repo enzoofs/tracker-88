@@ -86,22 +86,21 @@ export default {
 				}
 			},
 			backgroundImage: {
-				'gradient-tech': 'var(--gradient-tech)',
-				'gradient-dark': 'var(--gradient-dark)',
-				'gradient-glass': 'var(--gradient-glass)',
+				'gradient-corporate': 'var(--gradient-corporate)',
+				'gradient-light': 'var(--gradient-light)',
+				'gradient-card': 'var(--gradient-card)',
 				'gradient-success': 'var(--gradient-success)',
 				'gradient-alert': 'var(--gradient-alert)'
 			},
 			boxShadow: {
-				'glass': 'var(--shadow-glass)',
-				'tech': 'var(--shadow-tech)',
-				'glow': 'var(--shadow-glow)',
-				'card': 'var(--shadow-card)'
+				'card': 'var(--shadow-card)',
+				'corporate': 'var(--shadow-corporate)',
+				'hover': 'var(--shadow-hover)'
 			},
 			transitionTimingFunction: {
 				'smooth': 'var(--transition-all)',
 				'transform': 'var(--transition-transform)',
-				'glow': 'var(--transition-glow)'
+				'hover': 'var(--transition-hover)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -111,8 +110,8 @@ export default {
 				'2xl': 'calc(var(--radius) + 8px)'
 			},
 			fontFamily: {
-				'tech': ['Inter', 'system-ui', 'sans-serif'],
-				'mono': ['JetBrains Mono', 'Monaco', 'monospace']
+				'corporate': ['Roboto', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+				'mono': ['Source Code Pro', 'Monaco', 'monospace']
 			},
 			keyframes: {
 				'accordion-down': {
