@@ -121,14 +121,14 @@ const LogisticsDashboard: React.FC = () => {
         id: envio.id.toString(),
         salesOrder: envio.sales_order,
         cliente: envio.cliente,
-        produtos: envio.produtos || '',
+        produtos: typeof envio.produtos === 'string' ? envio.produtos : JSON.stringify(envio.produtos || ''),
         statusAtual: envio.status_atual,
         statusCliente: envio.status_cliente,
         ultimaLocalizacao: envio.ultima_localizacao || '',
         dataUltimaAtualizacao: envio.data_ultima_atualizacao || envio.updated_at,
         temperatura: (Math.random() > 0.7 ? 'cold' : Math.random() > 0.5 ? 'controlled' : 'ambient') as 'cold' | 'ambient' | 'controlled',
         prioridade: (Math.random() > 0.8 ? 'high' : Math.random() > 0.6 ? 'normal' : 'low') as 'high' | 'normal' | 'low',
-        trackingNumbers: envio.tracking_numbers
+        trackingNumbers: Array.isArray(envio.tracking_numbers) ? envio.tracking_numbers.join(', ') : envio.tracking_numbers || ''
       })) || [];
 
       // Load cargo-SO relationships
@@ -279,7 +279,7 @@ const LogisticsDashboard: React.FC = () => {
       const {
         data: cargoSORelations,
         error: cargoSOError
-      } = await supabase.from('carga_sales_orders').select('so_number').eq('numero_carga', parseInt(cargo.numero));
+      } = await supabase.from('carga_sales_orders').select('so_number').eq('numero_carga', cargo.numero);
       if (cargoSOError) throw cargoSOError;
       console.log(`📦 Encontradas ${cargoSORelations?.length || 0} SOs vinculadas à carga ${cargo.numero}`);
 

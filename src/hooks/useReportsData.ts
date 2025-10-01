@@ -120,8 +120,8 @@ export const useReportsData = (timeRange: string = '30d') => {
       // Process fornecedores (simplified from produtos field)
       const fornecedorMap = new Map<string, number>();
       enviosData?.forEach(envio => {
-        const produtos = envio.produtos || '';
-        const fornecedor = produtos.split(',')[0]?.trim() || 'Não informado';
+        const produtosStr = typeof envio.produtos === 'string' ? envio.produtos : JSON.stringify(envio.produtos || '');
+        const fornecedor = produtosStr.split(',')[0]?.trim() || 'Não informado';
         fornecedorMap.set(fornecedor, (fornecedorMap.get(fornecedor) || 0) + 1);
       });
 

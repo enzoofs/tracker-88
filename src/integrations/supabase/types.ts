@@ -14,7 +14,357 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      carga_historico: {
+        Row: {
+          created_at: string | null
+          data_evento: string | null
+          descricao: string | null
+          evento: string
+          id: string
+          localizacao: string | null
+          numero_carga: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_evento?: string | null
+          descricao?: string | null
+          evento: string
+          id?: string
+          localizacao?: string | null
+          numero_carga: string
+        }
+        Update: {
+          created_at?: string | null
+          data_evento?: string | null
+          descricao?: string | null
+          evento?: string
+          id?: string
+          localizacao?: string | null
+          numero_carga?: string
+        }
+        Relationships: []
+      }
+      carga_sales_orders: {
+        Row: {
+          created_at: string | null
+          id: string
+          numero_carga: string
+          so_number: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          numero_carga: string
+          so_number: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          numero_carga?: string
+          so_number?: string
+        }
+        Relationships: []
+      }
+      cargas: {
+        Row: {
+          created_at: string | null
+          data_chegada_prevista: string | null
+          data_embarque: string | null
+          destino: string | null
+          hawb: string | null
+          id: string
+          mawb: string | null
+          numero_carga: string
+          origem: string | null
+          status: string | null
+          tipo_temperatura: string | null
+          transportadora: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_chegada_prevista?: string | null
+          data_embarque?: string | null
+          destino?: string | null
+          hawb?: string | null
+          id?: string
+          mawb?: string | null
+          numero_carga: string
+          origem?: string | null
+          status?: string | null
+          tipo_temperatura?: string | null
+          transportadora?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_chegada_prevista?: string | null
+          data_embarque?: string | null
+          destino?: string | null
+          hawb?: string | null
+          id?: string
+          mawb?: string | null
+          numero_carga?: string
+          origem?: string | null
+          status?: string | null
+          tipo_temperatura?: string | null
+          transportadora?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      clientes: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      envios_processados: {
+        Row: {
+          cliente: string
+          created_at: string | null
+          data_ultima_atualizacao: string | null
+          erp_order: string | null
+          id: string
+          produtos: Json | null
+          sales_order: string
+          status: string | null
+          status_atual: string | null
+          status_cliente: string | null
+          tracking_numbers: string[] | null
+          ultima_localizacao: string | null
+          updated_at: string | null
+          valor_total: number | null
+          web_order: string | null
+        }
+        Insert: {
+          cliente: string
+          created_at?: string | null
+          data_ultima_atualizacao?: string | null
+          erp_order?: string | null
+          id?: string
+          produtos?: Json | null
+          sales_order: string
+          status?: string | null
+          status_atual?: string | null
+          status_cliente?: string | null
+          tracking_numbers?: string[] | null
+          ultima_localizacao?: string | null
+          updated_at?: string | null
+          valor_total?: number | null
+          web_order?: string | null
+        }
+        Update: {
+          cliente?: string
+          created_at?: string | null
+          data_ultima_atualizacao?: string | null
+          erp_order?: string | null
+          id?: string
+          produtos?: Json | null
+          sales_order?: string
+          status?: string | null
+          status_atual?: string | null
+          status_cliente?: string | null
+          tracking_numbers?: string[] | null
+          ultima_localizacao?: string | null
+          updated_at?: string | null
+          valor_total?: number | null
+          web_order?: string | null
+        }
+        Relationships: []
+      }
+      notificacoes: {
+        Row: {
+          cliente: string | null
+          created_at: string | null
+          enviado_em: string | null
+          id: string
+          mensagem: string | null
+          sales_order: string | null
+          tipo: string | null
+          titulo: string | null
+        }
+        Insert: {
+          cliente?: string | null
+          created_at?: string | null
+          enviado_em?: string | null
+          id?: string
+          mensagem?: string | null
+          sales_order?: string | null
+          tipo?: string | null
+          titulo?: string | null
+        }
+        Update: {
+          cliente?: string | null
+          created_at?: string | null
+          enviado_em?: string | null
+          id?: string
+          mensagem?: string | null
+          sales_order?: string | null
+          tipo?: string | null
+          titulo?: string | null
+        }
+        Relationships: []
+      }
+      notification_queue: {
+        Row: {
+          cliente: string | null
+          created_at: string | null
+          data_evento: string | null
+          detalhes: Json | null
+          id: number
+          mensagem: string
+          prioridade: string | null
+          sales_order: string | null
+          status: string | null
+          tipo_notificacao: string
+          titulo: string
+        }
+        Insert: {
+          cliente?: string | null
+          created_at?: string | null
+          data_evento?: string | null
+          detalhes?: Json | null
+          id?: number
+          mensagem: string
+          prioridade?: string | null
+          sales_order?: string | null
+          status?: string | null
+          tipo_notificacao: string
+          titulo: string
+        }
+        Update: {
+          cliente?: string | null
+          created_at?: string | null
+          data_evento?: string | null
+          detalhes?: Json | null
+          id?: number
+          mensagem?: string
+          prioridade?: string | null
+          sales_order?: string | null
+          status?: string | null
+          tipo_notificacao?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          role: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shipment_history: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          location: string | null
+          sales_order: string
+          status: string
+          timestamp: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          sales_order: string
+          status: string
+          timestamp?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          sales_order?: string
+          status?: string
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
+      tracking_master: {
+        Row: {
+          created_at: string | null
+          id: string
+          numero_carga: string | null
+          sales_order: string | null
+          status: string | null
+          tipo: string | null
+          tracking_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          numero_carga?: string | null
+          sales_order?: string | null
+          status?: string | null
+          tipo?: string | null
+          tracking_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          numero_carga?: string | null
+          sales_order?: string | null
+          status?: string | null
+          tipo?: string | null
+          tracking_number?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
