@@ -1,1 +1,4 @@
 project_id = "aldwmdfveivkfxxvfoua"
+
+[functions.ingest-envios]
+verify_jwt = false
