@@ -91,6 +91,7 @@ const LogisticsDashboard: React.FC = () => {
   const [filteredSOs, setFilteredSOs] = useState<any[]>([]);
   const [availableClients, setAvailableClients] = useState<string[]>([]);
   const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const {
     toast
   } = useToast();
@@ -210,6 +211,7 @@ const LogisticsDashboard: React.FC = () => {
       setFilteredSOs(transformedSOs);
       setAvailableClients(uniqueClients);
       setAvailableStatuses(uniqueStatuses);
+      setLastUpdate(new Date());
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -425,6 +427,9 @@ const LogisticsDashboard: React.FC = () => {
                 <p className="text-muted-foreground font-medium">
                   Rastreamento Inteligente de Cargas
                 </p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
+                </p>
               </div>
             </div>
             
@@ -464,12 +469,9 @@ const LogisticsDashboard: React.FC = () => {
       <div className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           {/* Modern Tab Navigation */}
-          <TabsList className="grid w-full max-w-6xl grid-cols-4 mx-auto glass p-1 rounded-2xl">
+          <TabsList className="grid w-full max-w-6xl grid-cols-3 mx-auto glass p-1 rounded-2xl">
             <TabsTrigger value="sos" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
               Sales Orders
-            </TabsTrigger>
-            <TabsTrigger value="cargas" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
-              Cargas
             </TabsTrigger>
             <TabsTrigger value="charts" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
               Analytics
@@ -505,37 +507,6 @@ const LogisticsDashboard: React.FC = () => {
           </TabsContent>
 
 
-          <TabsContent value="cargas" className="space-y-8 animate-fade-in">
-            <div className="grid gap-6">
-              {data.cargas.map((cargo, index) => <Card key={cargo.id} className="glass hover:shadow-tech hover:scale-[1.02] transition-all duration-300 cursor-pointer group animate-fade-in border-border/50" style={{
-              animationDelay: `${index * 100}ms`
-            }} onClick={() => handleCargoClick(cargo)}>
-                  <CardContent className="p-8">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-6">
-                        <div className={`p-4 rounded-2xl ${cargo.temperatura ? 'bg-gradient-tech' : 'bg-gradient-tech'} shadow-tech flex items-center justify-center`}>
-                          <cargo.icon.component className="h-7 w-7 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-tech text-foreground group-hover:text-primary transition-colors">
-                            Carga {cargo.numero}
-                          </h3>
-                          <p className="text-muted-foreground font-medium mt-1">
-                            Transporte de produtos biotecnológicos
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <Badge className="bg-gradient-tech text-white px-4 py-2 rounded-xl font-medium shadow-tech">
-                          {cargo.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>)}
-            </div>
-          </TabsContent>
 
           <TabsContent value="charts" className="animate-fade-in">
             <Charts />

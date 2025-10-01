@@ -135,6 +135,12 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
     return lastUpdate.toDateString() === today.toDateString() && so.statusCliente === 'Em Trânsito';
   };
 
+  const isNewSO = (so: SO) => {
+    const createdAt = new Date(so.dataUltimaAtualizacao);
+    const hoursSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+    return hoursSinceCreation <= 24; // Consider new if created in last 24 hours
+  };
+
   const uniqueClientes = [...new Set(data.map(so => so.cliente))];
   const uniqueStatuses = [...new Set(data.map(so => so.statusCliente))];
   const uniquePrioridades = [...new Set(data.map(so => so.prioridade))];
@@ -299,18 +305,26 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
               {filteredData.map((so) => {
                 const delayed = isDelayed(so);
                 const arrivingToday = isArrivingToday(so);
+                const isNew = isNewSO(so);
                 
                  return (
                    <TableRow 
                      key={so.id}
                      className={`hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-[1.01] hover:shadow-sm ${
                        delayed ? 'bg-destructive/10 border-l-4 border-l-destructive animate-pulse' : ''
-                     } ${arrivingToday ? 'bg-status-production/10 border-l-4 border-l-status-production' : ''}`}
+                     } ${arrivingToday ? 'bg-status-production/10 border-l-4 border-l-status-production' : ''} ${
+                       isNew ? 'bg-primary/5 border-l-4 border-l-primary' : ''
+                     }`}
                      onClick={() => onSOClick(so)}
                    >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       {so.salesOrder}
+                      {isNew && (
+                        <Badge className="bg-primary text-primary-foreground text-xs animate-pulse">
+                          NOVO
+                        </Badge>
+                      )}
                       {delayed && (
                         <Badge variant="destructive" className="text-xs animate-pulse">
                           ATRASADO
