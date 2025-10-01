@@ -223,6 +223,72 @@ const LogisticsDashboard: React.FC = () => {
   };
   useEffect(() => {
     loadDashboardData();
+
+    // Auto-refresh a cada 30 segundos
+    const refreshInterval = setInterval(() => {
+      console.log('🔄 Auto-refresh: Atualizando dados...');
+      loadDashboardData();
+    }, 30000);
+
+    // Setup Realtime listeners
+    const enviosChannel = supabase
+      .channel('envios-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'envios_processados'
+        },
+        (payload) => {
+          console.log('📨 Novo evento em envios_processados:', payload);
+          toast({
+            title: "Dados Atualizados",
+            description: "Novos dados recebidos do N8N!",
+          });
+          loadDashboardData();
+        }
+      )
+      .subscribe();
+
+    const cargasChannel = supabase
+      .channel('cargas-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cargas'
+        },
+        (payload) => {
+          console.log('📨 Novo evento em cargas:', payload);
+          loadDashboardData();
+        }
+      )
+      .subscribe();
+
+    const notifChannel = supabase
+      .channel('notif-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notification_queue'
+        },
+        (payload) => {
+          console.log('🔔 Nova notificação:', payload);
+          loadNotificationCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(refreshInterval);
+      supabase.removeChannel(enviosChannel);
+      supabase.removeChannel(cargasChannel);
+      supabase.removeChannel(notifChannel);
+    };
   }, []);
   const handleSOClick = (so: any) => {
     setSelectedSO(so);
@@ -415,7 +481,24 @@ const LogisticsDashboard: React.FC = () => {
 
           <TabsContent value="sos" className="animate-fade-in">
             <div className="space-y-8">
-              <Overview data={data.overview} />
+              <div className="flex items-center justify-between">
+                <Overview data={data.overview} />
+                <Button
+                  onClick={() => {
+                    toast({
+                      title: "Atualizando...",
+                      description: "Buscando novos dados",
+                    });
+                    loadDashboardData();
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Atualizar
+                </Button>
+              </div>
               <AdvancedFilters onFiltersChange={handleFiltersChange} availableClients={availableClients} availableStatuses={availableStatuses} />
               <SOTable data={filteredSOs} onSOClick={handleSOClick} isLoading={loading} />
             </div>

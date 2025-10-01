@@ -18,7 +18,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 
 interface AuthPageProps {
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
 const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
@@ -57,7 +57,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
         }
       } else {
         setMessage({ type: 'success', text: 'Login realizado com sucesso!' });
-        onSuccess();
+        onSuccess?.();
       }
     } catch (error) {
       setMessage({ type: 'error', text: 'Erro inesperado. Tente novamente.' });

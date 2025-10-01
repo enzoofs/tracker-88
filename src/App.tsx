@@ -11,10 +11,21 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={user ? <Index /> : <AuthPage />} />
+        <Route path="/" element={user ? <Index /> : <AuthPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
