@@ -434,6 +434,23 @@ const LogisticsDashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-4">
+              {/* Refresh Button */}
+              <Button
+                onClick={() => {
+                  toast({
+                    title: "Atualizando...",
+                    description: "Buscando novos dados",
+                  });
+                  loadDashboardData();
+                }}
+                variant="ghost"
+                size="sm"
+                className="gap-2 px-3 py-2 rounded-xl hover:bg-primary/10 transition-all duration-300"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span className="text-sm">Atualizar</span>
+              </Button>
+
               {/* Notification Bell with Glow */}
               <div className="relative">
                 <Button variant="ghost" size="sm" onClick={() => setShowNotifications(true)} className="p-3 rounded-xl hover:bg-primary/10 transition-all duration-300 group">
@@ -483,24 +500,7 @@ const LogisticsDashboard: React.FC = () => {
 
           <TabsContent value="sos" className="animate-fade-in">
             <div className="space-y-8">
-              <div className="flex items-center justify-between">
-                <Overview data={data.overview} />
-                <Button
-                  onClick={() => {
-                    toast({
-                      title: "Atualizando...",
-                      description: "Buscando novos dados",
-                    });
-                    loadDashboardData();
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Atualizar
-                </Button>
-              </div>
+              <Overview data={data.overview} />
               <AdvancedFilters onFiltersChange={handleFiltersChange} availableClients={availableClients} availableStatuses={availableStatuses} />
               <SOTable data={filteredSOs} onSOClick={handleSOClick} isLoading={loading} />
             </div>
