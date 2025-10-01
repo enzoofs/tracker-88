@@ -14,7 +14,7 @@ interface SO {
   cliente: string;
   produtos: string;
   statusAtual: string;
-  statusCliente: string;
+  statusCliente: string | null;
   ultimaLocalizacao: string;
   dataUltimaAtualizacao: string;
   temperatura?: 'cold' | 'ambient' | 'controlled';
@@ -36,7 +36,9 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   const [sortBy, setSortBy] = useState<keyof SO | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const getStatusVariant = (status: string) => {
+  const getStatusVariant = (status: string | null) => {
+    if (!status) return 'default';
+    
     switch (status.toLowerCase()) {
       case 'em produção':
         return 'production';
@@ -330,7 +332,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                       <Badge 
                         className={getStatusBadgeClass(getStatusVariant(so.statusCliente))}
                       >
-                        {so.statusCliente}
+                        {so.statusCliente || 'Sem Status'}
                       </Badge>
                       {so.temperatura === 'cold' && (
                         <span className="text-temp-cold text-sm">❄️</span>
