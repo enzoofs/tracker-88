@@ -114,41 +114,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
     }
   };
 
-  const createTestUser = async () => {
-    setIsLoading(true);
-    setMessage(null);
-
-    try {
-      const { error } = await supabase.auth.signUp({
-        email: 'enzo@sintesebio.com.br',
-        password: 'sintese',
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: 'Enzo - Usuário Teste',
-            company: 'Síntese Bio',
-          }
-        }
-      });
-
-      if (error) {
-        if (error.message.includes('User already registered')) {
-          setMessage({ type: 'success', text: 'Usuário teste já existe. Use as credenciais de login.' });
-        } else {
-          setMessage({ type: 'error', text: error.message });
-        }
-      } else {
-        setMessage({ 
-          type: 'success', 
-          text: 'Usuário teste criado: enzo@sintesebio.com.br / sintese' 
-        });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erro ao criar usuário teste.' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-logistics flex items-center justify-center p-4">
@@ -214,22 +179,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                 </Button>
               </form>
 
-              <Separator className="my-4" />
-              
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-2">
-                  Usuário teste disponível:
-                </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={createTestUser}
-                  disabled={isLoading}
-                  className="text-xs"
-                >
-                  Criar/Usar: enzo@sintesebio.com.br
-                </Button>
-              </div>
             </TabsContent>
 
             {/* Signup Tab */}

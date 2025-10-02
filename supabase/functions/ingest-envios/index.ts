@@ -5,6 +5,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Input validation functions
+const sanitizeInput = (input: string, maxLength = 1000): string => {
+  if (typeof input !== 'string') return '';
+  return input
+    .trim()
+    .slice(0, maxLength)
+    .replace(/[<>'"&]/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/data:/gi, '');
+};
+
+const isValidDate = (dateString: string): boolean => {
+  const date = new Date(dateString);
+  return !isNaN(date.getTime()) && date.getFullYear() > 1900 && date.getFullYear() < 2100;
+};
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -41,9 +57,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse request body
-    const payload = await req.json();
-    console.log('Received payload:', JSON.stringify(payload));
+    // Parse request body with size limit
+    const text = await req.text();
+    if (text.length > 100000) {
+      return new Response(
+        JSON.stringify({ error: 'Payload too large' }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const payload = JSON.parse(text);
+    console.log('Received payload for SO:', payload.sales_order);
 
     // Validate required fields
     const requiredFields = [
@@ -67,6 +91,36 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Validate and sanitize inputs
+    const salesOrder = sanitizeInput(payload.sales_order, 100);
+    const erpOrder = sanitizeInput(payload.erp_order, 100);
+    const cliente = sanitizeInput(payload.cliente, 200);
+    const webOrder = sanitizeInput(payload.web_order, 100);
+
+    if (!salesOrder || !erpOrder || !cliente) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid input data' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate dates
+    if (!isValidDate(payload.data_ultima_atualizacao) || !isValidDate(payload.data_processamento)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid date format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate valor_total is a number
+    const valorTotal = parseFloat(payload.valor_total);
+    if (isNaN(valorTotal) || valorTotal < 0) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid valor_total' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -74,20 +128,20 @@ Deno.serve(async (req) => {
 
     // Prepare row for insertion
     const row = {
-      sales_order: payload.sales_order,
-      erp_order: payload.erp_order,
-      cliente: payload.cliente,
+      sales_order: salesOrder,
+      erp_order: erpOrder,
+      cliente: cliente,
       produtos: payload.produtos,
-      valor_total: payload.valor_total,
+      valor_total: valorTotal,
       status: 'Em Produção',
       status_atual: 'Em Produção',
       ultima_localizacao: 'Fornecedor',
       data_ultima_atualizacao: payload.data_ultima_atualizacao,
-      web_order: payload.web_order,
+      web_order: webOrder,
       created_at: payload.data_processamento
     };
 
-    console.log('Inserting row:', JSON.stringify(row));
+    console.log('Inserting sanitized row for SO:', salesOrder);
 
     // Insert into database
     const { data, error } = await supabase
@@ -103,7 +157,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Successfully inserted:', JSON.stringify(data));
+    console.log('Successfully inserted SO:', salesOrder);
 
     return new Response(
       JSON.stringify({ ok: true, data }),
@@ -113,7 +167,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
