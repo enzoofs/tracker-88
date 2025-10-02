@@ -339,14 +339,34 @@ const LogisticsDashboard: React.FC = () => {
     
     let filtered = [...data.sos];
 
-    // Filter by date range
+    // Filter by date range - only if BOTH dates are provided
     if (filters.dateRange.start && filters.dateRange.end) {
       const startDate = new Date(filters.dateRange.start);
+      startDate.setHours(0, 0, 0, 0); // Start of day
+      
       const endDate = new Date(filters.dateRange.end);
+      endDate.setHours(23, 59, 59, 999); // End of day
+      
+      console.log('📅 Filtrando por data:', {
+        start: startDate.toISOString(),
+        end: endDate.toISOString()
+      });
+      
       filtered = filtered.filter(so => {
         const soDate = new Date(so.dataUltimaAtualizacao);
-        return soDate >= startDate && soDate <= endDate;
+        const isInRange = soDate >= startDate && soDate <= endDate;
+        if (!isInRange) {
+          console.log('❌ SO fora do range:', {
+            so: so.salesOrder,
+            soDate: soDate.toISOString(),
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+          });
+        }
+        return isInRange;
       });
+    } else {
+      console.log('ℹ️ Filtro de data não aplicado (datas vazias ou incompletas)');
     }
 
     // Filter by selected clients
