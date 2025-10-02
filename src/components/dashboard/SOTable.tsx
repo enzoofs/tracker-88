@@ -101,7 +101,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
       so.produtos.toLowerCase().includes(searchTerm.toLowerCase()) ||
       so.ultimaLocalizacao?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || so.statusCliente === statusFilter;
+    const matchesStatus = statusFilter === 'all' || (so.statusCliente || 'Sem Status') === statusFilter;
     const matchesCliente = clienteFilter === 'all' || so.cliente === clienteFilter;
     const matchesPrioridade = prioridadeFilter === 'all' || so.prioridade === prioridadeFilter;
     
@@ -142,7 +142,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   };
 
   const uniqueClientes = [...new Set(data.map(so => so.cliente))];
-  const uniqueStatuses = [...new Set(data.map(so => so.statusCliente))];
+  const uniqueStatuses = [...new Set(data.map(so => so.statusCliente || 'Sem Status'))];
   const uniquePrioridades = [...new Set(data.map(so => so.prioridade))];
 
   return (
@@ -226,7 +226,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           {isLoading ? (
-            <TableSkeleton rows={5} columns={8} />
+            <TableSkeleton rows={5} columns={7} />
           ) : (
           <Table>
             <TableHeader>
@@ -298,7 +298,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                   </div>
                 </TableHead>
                 <TableHead className="text-center">Indicadores</TableHead>
-                <TableHead className="text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -364,18 +363,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                       {getPriorityIcon(so.prioridade)}
                       {getTemperatureIcon(so.temperatura)}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSOClick(so);
-                      }}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
                   </TableCell>
                   </TableRow>
                 );
