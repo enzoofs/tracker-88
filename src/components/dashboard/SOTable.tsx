@@ -94,6 +94,10 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
     }
   };
 
+  // Debug logs
+  console.log('📊 SOTable recebeu:', data.length, 'registros');
+  console.log('📋 Dados brutos:', data);
+  
   const filteredData = data.filter(so => {
     const matchesSearch = 
       so.salesOrder.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -101,7 +105,11 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
       so.produtos.toLowerCase().includes(searchTerm.toLowerCase()) ||
       so.ultimaLocalizacao?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || (so.statusCliente || 'Sem Status') === statusFilter;
+    // Simplificar comparação de status - normalizar ambos os lados
+    const statusValue = (so.statusCliente || '').trim().toLowerCase();
+    const filterValue = statusFilter.toLowerCase();
+    const matchesStatus = statusFilter === 'all' || statusValue === filterValue;
+    
     const matchesCliente = clienteFilter === 'all' || so.cliente === clienteFilter;
     const matchesPrioridade = prioridadeFilter === 'all' || so.prioridade === prioridadeFilter;
     
@@ -142,8 +150,12 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   };
 
   const uniqueClientes = [...new Set(data.map(so => so.cliente))];
-  const uniqueStatuses = [...new Set(data.map(so => so.statusCliente || 'Sem Status'))];
+  // Simplificar - usar apenas valores reais de statusCliente, filtrar nulls/vazios
+  const uniqueStatuses = [...new Set(data.map(so => so.statusCliente).filter(s => s && s.trim()))];
   const uniquePrioridades = [...new Set(data.map(so => so.prioridade))];
+  
+  console.log('🔍 Status únicos encontrados:', uniqueStatuses);
+  console.log('✅ Dados após filtragem:', filteredData.length);
 
   return (
     <Card className="shadow-card">
@@ -170,10 +182,10 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
               <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent className="z-50">
+              <SelectContent className="z-50 bg-background">
                 <SelectItem value="all">Todos os Status</SelectItem>
                 {uniqueStatuses.map(status => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                  <SelectItem key={status} value={status.toLowerCase()}>{status}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -182,7 +194,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
               <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
                 <SelectValue placeholder="Cliente" />
               </SelectTrigger>
-              <SelectContent className="z-50">
+              <SelectContent className="z-50 bg-background">
                 <SelectItem value="all">Todos os Clientes</SelectItem>
                 {uniqueClientes.map(cliente => (
                   <SelectItem key={cliente} value={cliente}>{cliente}</SelectItem>
@@ -194,7 +206,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
               <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
                 <SelectValue placeholder="Prioridade" />
               </SelectTrigger>
-              <SelectContent className="z-50">
+              <SelectContent className="z-50 bg-background">
                 <SelectItem value="all">Todas as Prioridades</SelectItem>
                 {uniquePrioridades.map(prioridade => (
                   <SelectItem key={prioridade} value={prioridade}>
