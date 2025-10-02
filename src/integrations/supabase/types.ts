@@ -150,6 +150,8 @@ export type Database = {
           data_ultima_atualizacao: string | null
           erp_order: string | null
           id: string
+          is_at_warehouse: boolean | null
+          is_delivered: boolean | null
           produtos: Json | null
           sales_order: string
           status: string | null
@@ -167,6 +169,8 @@ export type Database = {
           data_ultima_atualizacao?: string | null
           erp_order?: string | null
           id?: string
+          is_at_warehouse?: boolean | null
+          is_delivered?: boolean | null
           produtos?: Json | null
           sales_order: string
           status?: string | null
@@ -184,6 +188,8 @@ export type Database = {
           data_ultima_atualizacao?: string | null
           erp_order?: string | null
           id?: string
+          is_at_warehouse?: boolean | null
+          is_delivered?: boolean | null
           produtos?: Json | null
           sales_order?: string
           status?: string | null

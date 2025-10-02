@@ -2,3 +2,6 @@ project_id = "aldwmdfveivkfxxvfoua"
 
 [functions.ingest-envios]
 verify_jwt = false
+
+[functions.update-tracking]
+verify_jwt = false
