@@ -197,6 +197,12 @@ const LogisticsDashboard: React.FC = () => {
       // Extract unique clients and statuses for filters
       const uniqueClients = Array.from(new Set(transformedSOs.map(so => so.cliente))).sort();
       const uniqueStatuses = Array.from(new Set(transformedSOs.map(so => so.statusCliente))).sort();
+      console.log('✅ Dados carregados do Supabase:', {
+        enviosCount: enviosData?.length || 0,
+        transformedSOsCount: transformedSOs.length,
+        primeiraSO: transformedSOs[0]
+      });
+
       setData({
         overview: {
           activeSOs,
@@ -209,6 +215,9 @@ const LogisticsDashboard: React.FC = () => {
         cargas: transformedCargas
       });
       setFilteredSOs(transformedSOs);
+      
+      console.log('📤 setFilteredSOs chamado com:', transformedSOs.length, 'SOs');
+      
       setAvailableClients(uniqueClients);
       setAvailableStatuses(uniqueStatuses);
       setLastUpdate(new Date());
@@ -315,7 +324,19 @@ const LogisticsDashboard: React.FC = () => {
   useEffect(() => {
     loadNotificationCount();
   }, []);
+  
+  // Debug: Log filteredSOs changes
+  useEffect(() => {
+    console.log('🎯 filteredSOs mudou:', filteredSOs.length, 'SOs');
+    if (filteredSOs.length > 0) {
+      console.log('📋 Primeira SO:', filteredSOs[0]);
+    }
+  }, [filteredSOs]);
+  
   const handleFiltersChange = (filters: any) => {
+    console.log('🔍 Filtros aplicados:', filters);
+    console.log('📊 data.sos disponível:', data.sos.length, 'registros');
+    
     let filtered = [...data.sos];
 
     // Filter by date range
@@ -337,6 +358,8 @@ const LogisticsDashboard: React.FC = () => {
     if (filters.selectedStatuses.length > 0) {
       filtered = filtered.filter(so => filters.selectedStatuses.includes(so.statusCliente));
     }
+    
+    console.log('✅ Após filtros:', filtered.length, 'SOs');
     setFilteredSOs(filtered);
   };
   const handleCargoClick = async (cargo: any) => {
