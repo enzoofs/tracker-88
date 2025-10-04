@@ -116,32 +116,61 @@ export type Database = {
       clientes: {
         Row: {
           created_at: string | null
-          email: string | null
           endereco: string | null
           id: string
           nome: string
-          telefone: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          email?: string | null
           endereco?: string | null
           id?: string
           nome: string
-          telefone?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          email?: string | null
           endereco?: string | null
           id?: string
           nome?: string
-          telefone?: string | null
           updated_at?: string | null
         }
         Relationships: []
+      }
+      clientes_contact_info: {
+        Row: {
+          cliente_id: string
+          created_at: string | null
+          email: string | null
+          id: string
+          telefone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_contact_info_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: true
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_assignments: {
         Row: {
