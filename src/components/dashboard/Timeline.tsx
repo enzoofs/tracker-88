@@ -37,12 +37,14 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
     switch (eventStatus) {
       case 'em_producao':
         return <div className={`text-2xl ${iconClass}`}>🏭</div>;
+      case 'fedex':
+        return <div className={`text-2xl ${iconClass}`}>📦</div>;
       case 'no_armazem':
         return <Package className={`h-5 w-5 ${iconClass}`} />;
-      case 'em_importacao':
+      case 'voo_internacional':
         return <div className={`text-2xl ${iconClass}`}>✈️</div>;
-      case 'em_rota_entrega':
-        return <div className={`text-2xl ${iconClass}`}>🚚</div>;
+      case 'desembaraco':
+        return <div className={`text-2xl ${iconClass}`}>📋</div>;
       case 'entregue':
         return <div className={`text-2xl ${iconClass}`}>✅</div>;
       default:
@@ -56,33 +58,33 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
     if (eventoLower.includes('produção') || eventoLower.includes('producao')) {
       return 'em_producao';
     }
-    if (eventoLower.includes('armazém') || eventoLower.includes('armazem') || 
-        eventoLower.includes('finalizada') || eventoLower.includes('saído') || 
-        eventoLower.includes('saido')) {
+    if (eventoLower.includes('fedex')) {
+      return 'fedex';
+    }
+    if (eventoLower.includes('armazém') || eventoLower.includes('armazem')) {
       return 'no_armazem';
     }
-    if (eventoLower.includes('embarcado') || eventoLower.includes('trânsito') || 
-        eventoLower.includes('transito') || eventoLower.includes('chegada') ||
-        eventoLower.includes('desembaraço') || eventoLower.includes('desembaraco')) {
-      return 'em_importacao';
+    if (eventoLower.includes('voo') || eventoLower.includes('internacional')) {
+      return 'voo_internacional';
     }
-    if (eventoLower.includes('rota') || eventoLower.includes('entrega') && !eventoLower.includes('entregue')) {
-      return 'em_rota_entrega';
+    if (eventoLower.includes('desembaraço') || eventoLower.includes('desembaraco')) {
+      return 'desembaraco';
     }
     if (eventoLower.includes('entregue') || eventoLower.includes('destino')) {
       return 'entregue';
     }
     
-    return 'em_importacao'; // default
+    return 'em_producao'; // default
   };
 
   const getStatusTitle = (evento: string) => {
     const status = mapEventToStatus(evento);
     const titleMap = {
       'em_producao': 'Em Produção',
+      'fedex': 'FedEx',
       'no_armazem': 'No Armazém',
-      'em_importacao': 'Em Importação',
-      'em_rota_entrega': 'Em Rota de Entrega',
+      'voo_internacional': 'Voo Internacional',
+      'desembaraco': 'Desembaraço',
       'entregue': 'Entregue'
     };
     return titleMap[status] || evento;
@@ -209,16 +211,21 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
     
     // Keep only the most recent event of each type
     sortedEvents.forEach(event => {
-      const eventType = event.tipo.toLowerCase().replace(/[^a-z]/g, '_');
+      const eventType = mapEventToStatus(event.tipo);
       if (!eventMap.has(eventType)) {
         eventMap.set(eventType, event);
       }
     });
     
-    // Return events sorted chronologically (oldest first)
-    return Array.from(eventMap.values()).sort((a, b) => 
-      new Date(a.data).getTime() - new Date(b.data).getTime()
-    );
+    // Define ordem correta dos eventos
+    const eventOrder = ['em_producao', 'fedex', 'no_armazem', 'voo_internacional', 'desembaraco', 'entregue'];
+    
+    // Return events sorted by correct order
+    return Array.from(eventMap.values()).sort((a, b) => {
+      const aOrder = eventOrder.indexOf(mapEventToStatus(a.tipo));
+      const bOrder = eventOrder.indexOf(mapEventToStatus(b.tipo));
+      return aOrder - bOrder;
+    });
   };
 
   const uniqueEvents = removeDuplicateEvents(events);
