@@ -189,6 +189,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                       updateFilters({
                         dateRange: { ...filters.dateRange, start: date.toISOString().split('T')[0] }
                       });
+                      document.body.click();
                     }
                   }}
                   initialFocus
@@ -224,6 +225,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                       updateFilters({
                         dateRange: { ...filters.dateRange, end: date.toISOString().split('T')[0] }
                       });
+                      document.body.click();
                     }
                   }}
                   initialFocus

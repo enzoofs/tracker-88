@@ -8,11 +8,9 @@ import {
   Package, 
   Calendar,
   MapPin,
-  Thermometer,
-  User,
   FileText,
-  AlertTriangle,
-  Clock
+  Clock,
+  DollarSign
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,13 +21,14 @@ interface SO {
   salesOrder: string;
   cliente: string;
   produtos: string;
+  valorTotal?: number;
   statusAtual: string;
-  statusCliente: string;
   ultimaLocalizacao: string;
   dataUltimaAtualizacao: string;
-  temperatura?: 'cold' | 'ambient' | 'controlled';
-  prioridade: 'high' | 'normal' | 'low';
+  erpOrder?: string;
+  webOrder?: string;
   trackingNumbers?: string;
+  isDelivered: boolean;
 }
 
 interface SODetailsProps {
@@ -115,36 +114,6 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
 
   const allEvents = [...timelineEvents, ...addFutureEvents()];
 
-  const getTemperatureIcon = (temperatura?: string) => {
-    if (!temperatura) return null;
-    
-    switch (temperatura) {
-      case 'cold':
-        return <span className="text-temp-cold">❄️</span>;
-      case 'controlled':
-        return <Thermometer className="h-4 w-4 text-temp-controlled" />;
-      default:
-        return <Thermometer className="h-4 w-4 text-temp-ambient" />;
-    }
-  };
-
-  const getPriorityBadge = (prioridade: string) => {
-    switch (prioridade) {
-      case 'high':
-        return (
-          <Badge className="bg-priority-high text-white flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            Alta Prioridade
-          </Badge>
-        );
-      case 'normal':
-        return <Badge variant="outline">Normal</Badge>;
-      case 'low':
-        return <Badge className="bg-priority-low text-white">Baixa</Badge>;
-      default:
-        return <Badge variant="outline">Normal</Badge>;
-    }
-  };
 
   const isDelayed = () => {
     // Simple logic to determine if SO is delayed
@@ -178,7 +147,6 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Smart Alerts */}
             {isDelayed() && (
               <Badge variant="destructive" className="animate-pulse">
                 ATRASADO
@@ -191,13 +159,11 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
               </Badge>
             )}
             
-            {so.temperatura === 'cold' && (
-              <Badge className="bg-temp-cold text-white flex items-center gap-1">
-                ❄️ Temperatura Controlada
+            {so.isDelivered && (
+              <Badge className="bg-status-delivered text-status-delivered-foreground">
+                ENTREGUE
               </Badge>
             )}
-            
-            {getPriorityBadge(so.prioridade)}
             
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="h-4 w-4" />
@@ -208,7 +174,7 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <div className="p-6 space-y-6">
             {/* SO Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="shadow-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-sm">
@@ -217,14 +183,9 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <Badge className="bg-status-transit text-status-transit-foreground">
-                      {so.statusCliente}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground">
-                      {so.statusAtual}
-                    </p>
-                  </div>
+                  <Badge className="bg-status-transit text-status-transit-foreground">
+                    {so.statusAtual}
+                  </Badge>
                 </CardContent>
               </Card>
 
@@ -250,6 +211,21 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-sm">
                     <FileText className="h-4 w-4 text-status-delivered" />
+                    Pedidos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1 text-xs">
+                    <p><span className="font-medium">ERP:</span> {so.erpOrder || 'N/A'}</p>
+                    <p><span className="font-medium">Web:</span> {so.webOrder || 'N/A'}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <DollarSign className="h-4 w-4 text-green-500" />
                     Tracking
                   </CardTitle>
                 </CardHeader>
@@ -257,28 +233,38 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
                   <p className="text-xs font-mono break-all">
                     {so.trackingNumbers || 'Não disponível'}
                   </p>
-                  {getTemperatureIcon(so.temperatura) && (
-                    <div className="flex items-center gap-1 mt-2 text-xs">
-                      {getTemperatureIcon(so.temperatura)}
-                      <span className="capitalize">{so.temperatura}</span>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
 
-            {/* Products */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" />
-                  Produtos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm">{so.produtos}</p>
-              </CardContent>
-            </Card>
+            {/* Products and Value */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    Produtos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm">{so.produtos}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-green-500" />
+                    Valor Total
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold text-green-600">
+                    {so.valorTotal ? `R$ ${Number(so.valorTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'N/A'}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Timeline */}
             <Card className="shadow-card">

@@ -33,13 +33,14 @@ interface DashboardData {
     salesOrder: string;
     cliente: string;
     produtos: string;
+    valorTotal?: number;
     statusAtual: string;
-    statusCliente: string;
     ultimaLocalizacao: string;
     dataUltimaAtualizacao: string;
-    temperatura?: 'cold' | 'ambient' | 'controlled';
-    prioridade: 'high' | 'normal' | 'low';
+    erpOrder?: string;
+    webOrder?: string;
     trackingNumbers?: string;
+    isDelivered: boolean;
   }>;
   cargas: Array<{
     id: string;
@@ -123,13 +124,14 @@ const LogisticsDashboard: React.FC = () => {
         salesOrder: envio.sales_order,
         cliente: envio.cliente,
         produtos: typeof envio.produtos === 'string' ? envio.produtos : JSON.stringify(envio.produtos || ''),
+        valorTotal: envio.valor_total,
         statusAtual: envio.status_atual,
-        statusCliente: envio.status_cliente,
         ultimaLocalizacao: envio.ultima_localizacao || '',
         dataUltimaAtualizacao: envio.data_ultima_atualizacao || envio.updated_at,
-        temperatura: (Math.random() > 0.7 ? 'cold' : Math.random() > 0.5 ? 'controlled' : 'ambient') as 'cold' | 'ambient' | 'controlled',
-        prioridade: (Math.random() > 0.8 ? 'high' : Math.random() > 0.6 ? 'normal' : 'low') as 'high' | 'normal' | 'low',
-        trackingNumbers: Array.isArray(envio.tracking_numbers) ? envio.tracking_numbers.join(', ') : envio.tracking_numbers || ''
+        erpOrder: envio.erp_order,
+        webOrder: envio.web_order,
+        trackingNumbers: Array.isArray(envio.tracking_numbers) ? envio.tracking_numbers.join(', ') : envio.tracking_numbers || '',
+        isDelivered: envio.status_atual === 'Entregue'
       })) || [];
 
       // Load cargo-SO relationships
@@ -179,9 +181,9 @@ const LogisticsDashboard: React.FC = () => {
 
       // Calculate overview metrics
       const activeSOs = transformedSOs.length;
-      const inTransit = transformedSOs.filter(so => so.statusCliente === 'Em Trânsito').length;
+      const inTransit = transformedSOs.filter(so => so.statusAtual === 'Em Trânsito').length;
       const expectedArrivals = transformedCargas.length;
-      const criticalShipments = transformedSOs.filter(so => so.prioridade === 'high').length;
+      const criticalShipments = transformedSOs.filter(so => !so.isDelivered && so.ultimaLocalizacao).length;
 
       // Generate trend data
       const deliveryTrend = Array.from({
@@ -196,7 +198,7 @@ const LogisticsDashboard: React.FC = () => {
 
       // Extract unique clients and statuses for filters
       const uniqueClients = Array.from(new Set(transformedSOs.map(so => so.cliente))).sort();
-      const uniqueStatuses = Array.from(new Set(transformedSOs.map(so => so.statusCliente))).sort();
+      const uniqueStatuses = Array.from(new Set(transformedSOs.map(so => so.statusAtual))).sort();
       console.log('✅ Dados carregados do Supabase:', {
         enviosCount: enviosData?.length || 0,
         transformedSOsCount: transformedSOs.length,
@@ -376,7 +378,7 @@ const LogisticsDashboard: React.FC = () => {
 
     // Filter by selected statuses
     if (filters.selectedStatuses.length > 0) {
-      filtered = filtered.filter(so => filters.selectedStatuses.includes(so.statusCliente));
+      filtered = filtered.filter(so => filters.selectedStatuses.includes(so.statusAtual));
     }
     
     console.log('✅ Após filtros:', filtered.length, 'SOs');

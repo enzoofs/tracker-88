@@ -6,20 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { Search, Filter, Thermometer, AlertTriangle, Eye, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, Filter, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface SO {
   id: string;
   salesOrder: string;
   cliente: string;
   produtos: string;
+  valorTotal?: number;
   statusAtual: string;
-  statusCliente: string | null;
   ultimaLocalizacao: string;
   dataUltimaAtualizacao: string;
-  temperatura?: 'cold' | 'ambient' | 'controlled';
-  prioridade: 'high' | 'normal' | 'low';
+  erpOrder?: string;
+  webOrder?: string;
   trackingNumbers?: string;
+  isDelivered: boolean;
 }
 
 interface SOTableProps {
@@ -32,7 +33,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [clienteFilter, setClienteFilter] = useState('all');
-  const [prioridadeFilter, setPrioridadeFilter] = useState('all');
   const [sortBy, setSortBy] = useState<keyof SO | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -68,22 +68,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
     }
   };
 
-  const getPriorityIcon = (prioridade: string) => {
-    if (prioridade === 'high') {
-      return <AlertTriangle className="h-4 w-4 text-priority-high" />;
-    }
-    return null;
-  };
-
-  const getTemperatureIcon = (temperatura?: string) => {
-    if (!temperatura) return null;
-    
-    const colorClass = temperatura === 'cold' ? 'text-temp-cold' : 
-                      temperatura === 'controlled' ? 'text-temp-controlled' : 
-                      'text-temp-ambient';
-    
-    return <Thermometer className={`h-4 w-4 ${colorClass}`} />;
-  };
 
   const handleSort = (column: keyof SO) => {
     if (sortBy === column) {
@@ -102,18 +86,15 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
     const matchesSearch = 
       so.salesOrder.toLowerCase().includes(searchTerm.toLowerCase()) ||
       so.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      so.produtos.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      so.ultimaLocalizacao?.toLowerCase().includes(searchTerm.toLowerCase());
+      so.produtos.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Simplificar comparação de status - normalizar ambos os lados
-    const statusValue = (so.statusCliente || '').trim().toLowerCase();
+    const statusValue = (so.statusAtual || '').trim().toLowerCase();
     const filterValue = statusFilter.toLowerCase();
     const matchesStatus = statusFilter === 'all' || statusValue === filterValue;
     
     const matchesCliente = clienteFilter === 'all' || so.cliente === clienteFilter;
-    const matchesPrioridade = prioridadeFilter === 'all' || so.prioridade === prioridadeFilter;
     
-    return matchesSearch && matchesStatus && matchesCliente && matchesPrioridade;
+    return matchesSearch && matchesStatus && matchesCliente;
   }).sort((a, b) => {
     if (!sortBy) return 0;
     
@@ -137,10 +118,9 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   };
 
   const isArrivingToday = (so: SO) => {
-    // Check if SO is arriving today based on data_ultima_atualizacao
     const lastUpdate = new Date(so.dataUltimaAtualizacao);
     const today = new Date();
-    return lastUpdate.toDateString() === today.toDateString() && so.statusCliente === 'Em Trânsito';
+    return lastUpdate.toDateString() === today.toDateString() && so.statusAtual === 'Em Trânsito';
   };
 
   const isNewSO = (so: SO) => {
@@ -150,9 +130,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   };
 
   const uniqueClientes = [...new Set(data.map(so => so.cliente))];
-  // Simplificar - usar apenas valores reais de statusCliente, filtrar nulls/vazios
-  const uniqueStatuses = [...new Set(data.map(so => so.statusCliente).filter(s => s && s.trim()))];
-  const uniquePrioridades = [...new Set(data.map(so => so.prioridade))];
+  const uniqueStatuses = [...new Set(data.map(so => so.statusAtual).filter(s => s && s.trim()))];
   
   console.log('🔍 Status únicos encontrados:', uniqueStatuses);
   console.log('✅ Dados após filtragem:', filteredData.length);
@@ -177,7 +155,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
             />
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
                 <SelectValue placeholder="Status" />
@@ -202,30 +180,12 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
               </SelectContent>
             </Select>
 
-            <Select value={prioridadeFilter} onValueChange={setPrioridadeFilter}>
-              <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
-                <SelectValue placeholder="Prioridade" />
-              </SelectTrigger>
-              <SelectContent className="z-50 bg-background">
-                <SelectItem value="all">Todas as Prioridades</SelectItem>
-                {uniquePrioridades.map(prioridade => (
-                  <SelectItem key={prioridade} value={prioridade}>
-                    <div className="flex items-center gap-2">
-                      {prioridade === 'high' && <AlertTriangle className="h-4 w-4 text-priority-high" />}
-                      {prioridade === 'high' ? 'Alta' : prioridade === 'normal' ? 'Normal' : 'Baixa'}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
             <Button 
               variant="outline" 
               onClick={() => {
                 setSearchTerm('');
                 setStatusFilter('all');
                 setClienteFilter('all');
-                setPrioridadeFilter('all');
               }}
               className="transition-all duration-300 hover:bg-muted/50"
             >
@@ -278,22 +238,22 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 </TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
-                  onClick={() => handleSort('statusCliente')}
+                  onClick={() => handleSort('valorTotal')}
                 >
                   <div className="flex items-center gap-1">
-                    Status
-                    {sortBy === 'statusCliente' && (
+                    Valor Total
+                    {sortBy === 'valorTotal' && (
                       sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
                     )}
                   </div>
                 </TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
-                  onClick={() => handleSort('ultimaLocalizacao')}
+                  onClick={() => handleSort('statusAtual')}
                 >
                   <div className="flex items-center gap-1">
-                    Localização
-                    {sortBy === 'ultimaLocalizacao' && (
+                    Status
+                    {sortBy === 'statusAtual' && (
                       sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
                     )}
                   </div>
@@ -309,7 +269,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                     )}
                   </div>
                 </TableHead>
-                <TableHead className="text-center">Indicadores</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -352,29 +311,18 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                   <TableCell className="max-w-xs truncate">
                     {so.produtos && so.produtos.length > 0 ? so.produtos : 'N/A'}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge 
-                        className={getStatusBadgeClass(getStatusVariant(so.statusCliente))}
-                      >
-                        {so.statusCliente || 'Sem Status'}
-                      </Badge>
-                      {so.temperatura === 'cold' && (
-                        <span className="text-temp-cold text-sm">❄️</span>
-                      )}
-                    </div>
+                  <TableCell className="text-sm font-medium">
+                    {so.valorTotal ? `R$ ${Number(so.valorTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'N/A'}
                   </TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {so.ultimaLocalizacao || 'N/A'}
+                  <TableCell>
+                    <Badge 
+                      className={getStatusBadgeClass(getStatusVariant(so.statusAtual))}
+                    >
+                      {so.statusAtual || 'Sem Status'}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(so.dataUltimaAtualizacao).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
-                      {getPriorityIcon(so.prioridade)}
-                      {getTemperatureIcon(so.temperatura)}
-                    </div>
                   </TableCell>
                   </TableRow>
                 );
