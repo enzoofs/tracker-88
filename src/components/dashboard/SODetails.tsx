@@ -169,64 +169,111 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
     const futureEvents = [];
     const currentStatus = so.statusAtual.toLowerCase();
     
-    // Calcula data prevista de entrega (14 dias após armazém)
-    const armazemEvent = timelineEvents.find(e => 
-      e.titulo.toLowerCase().includes('armazém') || e.titulo.toLowerCase().includes('armazem')
-    );
+    // Se ainda está em produção, não adicionar previsões
+    if (currentStatus.includes('produção') || currentStatus.includes('producao')) {
+      return futureEvents;
+    }
     
-    const dataPrevistoEntrega = armazemEvent 
-      ? new Date(new Date(armazemEvent.data).getTime() + 14 * 24 * 60 * 60 * 1000)
-      : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    // Encontrar a última data real para calcular previsões
+    const lastEvent = timelineEvents[timelineEvents.length - 1];
+    const lastDate = lastEvent ? new Date(lastEvent.data) : new Date();
+    
+    // Prazos após saída da fábrica:
+    // 1 dia para armazém
+    // 5 dias para voo internacional (após chegar no armazém)
+    // 2 dias para desembaraço (após voo)
+    // 1 dia para entrega no armazém final (após desembaraço)
+    // 5 dias para entrega no cliente (após armazém final)
     
     if (!currentStatus.includes('entregue')) {
-      // Adiciona eventos futuros conforme necessário
-      if (!currentStatus.includes('fedex') && !currentStatus.includes('armazém') && !currentStatus.includes('armazem')) {
-        futureEvents.push({
-          id: 'future_fedex',
-          tipo: 'fedex',
-          titulo: 'FedEx',
-          data: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'upcoming' as const
-        });
-      }
-      
+      // Se não chegou no armazém ainda
       if (!currentStatus.includes('armazém') && !currentStatus.includes('armazem')) {
         futureEvents.push({
           id: 'future_armazem',
           tipo: 'no_armazem',
           titulo: 'No Armazém',
-          data: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+          data: new Date(lastDate.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
           status: 'upcoming' as const
         });
-      }
-      
-      if (!currentStatus.includes('voo') && !currentStatus.includes('internacional')) {
+        
         futureEvents.push({
           id: 'future_voo',
           tipo: 'voo_internacional',
           titulo: 'Voo Internacional',
-          data: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
+          data: new Date(lastDate.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString(), // 1 + 5
           status: 'upcoming' as const
         });
-      }
-      
-      if (!currentStatus.includes('desembaraço') && !currentStatus.includes('desembaraco')) {
+        
         futureEvents.push({
           id: 'future_desembaraco',
           tipo: 'desembaraco',
           titulo: 'Desembaraço',
-          data: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+          data: new Date(lastDate.getTime() + 8 * 24 * 60 * 60 * 1000).toISOString(), // 1 + 5 + 2
+          status: 'upcoming' as const
+        });
+        
+        futureEvents.push({
+          id: 'future_delivered',
+          tipo: 'entregue',
+          titulo: 'Entregue',
+          data: new Date(lastDate.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 1 + 5 + 2 + 1 + 5
+          status: 'upcoming' as const
+        });
+      } 
+      // Se já está no armazém
+      else if (!currentStatus.includes('voo') && !currentStatus.includes('internacional')) {
+        futureEvents.push({
+          id: 'future_voo',
+          tipo: 'voo_internacional',
+          titulo: 'Voo Internacional',
+          data: new Date(lastDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'upcoming' as const
+        });
+        
+        futureEvents.push({
+          id: 'future_desembaraco',
+          tipo: 'desembaraco',
+          titulo: 'Desembaraço',
+          data: new Date(lastDate.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 5 + 2
+          status: 'upcoming' as const
+        });
+        
+        futureEvents.push({
+          id: 'future_delivered',
+          tipo: 'entregue',
+          titulo: 'Entregue',
+          data: new Date(lastDate.getTime() + 13 * 24 * 60 * 60 * 1000).toISOString(), // 5 + 2 + 1 + 5
           status: 'upcoming' as const
         });
       }
-      
-      futureEvents.push({
-        id: 'future_delivered',
-        tipo: 'entregue',
-        titulo: 'Entregue',
-        data: dataPrevistoEntrega.toISOString(),
-        status: 'upcoming' as const
-      });
+      // Se já está em voo
+      else if (!currentStatus.includes('desembaraço') && !currentStatus.includes('desembaraco')) {
+        futureEvents.push({
+          id: 'future_desembaraco',
+          tipo: 'desembaraco',
+          titulo: 'Desembaraço',
+          data: new Date(lastDate.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'upcoming' as const
+        });
+        
+        futureEvents.push({
+          id: 'future_delivered',
+          tipo: 'entregue',
+          titulo: 'Entregue',
+          data: new Date(lastDate.getTime() + 8 * 24 * 60 * 60 * 1000).toISOString(), // 2 + 1 + 5
+          status: 'upcoming' as const
+        });
+      }
+      // Se já está em desembaraço
+      else if (!currentStatus.includes('entregue') && !currentStatus.includes('destino')) {
+        futureEvents.push({
+          id: 'future_delivered',
+          tipo: 'entregue',
+          titulo: 'Entregue',
+          data: new Date(lastDate.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString(), // 1 + 5
+          status: 'upcoming' as const
+        });
+      }
     }
     
     return futureEvents;
@@ -236,23 +283,58 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
 
   // Calcula nível de alerta baseado em atrasos
   const getAlertLevel = () => {
-    const armazemEvent = timelineEvents.find(e => 
-      e.titulo.toLowerCase().includes('armazém') || e.titulo.toLowerCase().includes('armazem')
-    );
+    // Não mostrar alerta se ainda está em produção ou já foi entregue
+    if (so.isDelivered) return null;
     
-    if (!armazemEvent || so.isDelivered) return null;
+    const currentStatus = so.statusAtual.toLowerCase();
+    if (currentStatus.includes('produção') || currentStatus.includes('producao')) {
+      return null;
+    }
     
-    const armazemDate = new Date(armazemEvent.data);
-    const today = new Date();
-    const daysSinceArmazem = Math.floor((today.getTime() - armazemDate.getTime()) / (1000 * 60 * 60 * 24));
+    const lastUpdate = new Date(so.dataUltimaAtualizacao);
+    const now = new Date();
+    const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 1000)) / 24;
     
-    // Sistema de 3 níveis de alerta
-    if (daysSinceArmazem >= 14) {
-      return { level: 3, message: 'CRÍTICO: Prazo de entrega excedido', color: 'destructive' };
-    } else if (daysSinceArmazem >= 12) {
-      return { level: 2, message: 'ATENÇÃO: Próximo do prazo limite', color: 'warning' };
-    } else if (daysSinceArmazem >= 10) {
-      return { level: 1, message: 'AVISO: Monitorar prazo de entrega', color: 'default' };
+    // Calcular atraso baseado no status atual e prazos esperados
+    let expectedDays = 0;
+    let stage = '';
+    
+    if (currentStatus.includes('fedex') || currentStatus.includes('saiu')) {
+      expectedDays = 1; // Deveria chegar no armazém em 1 dia
+      stage = 'chegada no armazém';
+    } else if (currentStatus.includes('armazém') || currentStatus.includes('armazem')) {
+      expectedDays = 5; // Deveria estar em voo em 5 dias
+      stage = 'voo internacional';
+    } else if (currentStatus.includes('voo') || currentStatus.includes('internacional')) {
+      expectedDays = 2; // Deveria estar em desembaraço em 2 dias
+      stage = 'desembaraço';
+    } else if (currentStatus.includes('desembaraço') || currentStatus.includes('desembaraco')) {
+      expectedDays = 6; // Deveria ser entregue em 6 dias (1 + 5)
+      stage = 'entrega';
+    }
+    
+    if (expectedDays === 0) return null;
+    
+    const daysOverdue = Math.floor(daysSinceUpdate - expectedDays);
+    
+    if (daysOverdue > 5) {
+      return { 
+        level: 3, 
+        message: `CRÍTICO: ${daysOverdue} dias de atraso - ${stage}`, 
+        color: 'destructive' 
+      };
+    } else if (daysOverdue > 2) {
+      return { 
+        level: 2, 
+        message: `ATENÇÃO: ${daysOverdue} dias de atraso - ${stage}`, 
+        color: 'warning' 
+      };
+    } else if (daysOverdue > 0) {
+      return { 
+        level: 1, 
+        message: `AVISO: ${daysOverdue} dia(s) de atraso - ${stage}`, 
+        color: 'default' 
+      };
     }
     
     return null;

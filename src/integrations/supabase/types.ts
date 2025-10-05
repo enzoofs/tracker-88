@@ -364,6 +364,7 @@ export type Database = {
           sales_order: string
           status: string
           timestamp: string | null
+          tracking_number: string | null
         }
         Insert: {
           created_at?: string | null
@@ -373,6 +374,7 @@ export type Database = {
           sales_order: string
           status: string
           timestamp?: string | null
+          tracking_number?: string | null
         }
         Update: {
           created_at?: string | null
@@ -382,6 +384,7 @@ export type Database = {
           sales_order?: string
           status?: string
           timestamp?: string | null
+          tracking_number?: string | null
         }
         Relationships: []
       }
