@@ -205,47 +205,6 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
               </CardContent>
             </Card>
 
-            {/* Histórico */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  Histórico de Eventos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {cargo.historico.map((evento, index) => (
-                    <div key={evento.id} className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className="w-3 h-3 bg-primary rounded-full"></div>
-                        {index < cargo.historico.length - 1 && (
-                          <div className="w-0.5 h-12 bg-border mt-2"></div>
-                        )}
-                      </div>
-                      <div className="flex-1 pb-4">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium">{evento.evento}</h4>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(evento.dataEvento)}
-                          </span>
-                        </div>
-                        {evento.detalhes && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {formatDetails(evento.detalhes)}
-                          </p>
-                        )}
-                        {evento.fonte && (
-                          <Badge variant="outline" className="mt-2 text-xs">
-                            {evento.fonte}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

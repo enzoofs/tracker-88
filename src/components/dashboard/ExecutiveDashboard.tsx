@@ -180,61 +180,32 @@ const ExecutiveDashboard: React.FC = () => {
       </div>
 
       {/* Top Performers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
-              Top Clientes por Valor
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {data.topPerformers.clientes.map((cliente, index) => (
-                <div key={cliente.nome} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`px-2 py-1 rounded-md border ${getBadgeColor(cliente.badge)} flex items-center gap-1`}>
-                      {getBadgeIcon(cliente.badge)}
-                      <span className="text-xs font-medium">#{index + 1}</span>
-                    </div>
-                    <span className="font-medium">{cliente.nome}</span>
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-yellow-500" />
+            Top Clientes por Valor
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {data.topPerformers.clientes.map((cliente, index) => (
+              <div key={cliente.nome} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`px-2 py-1 rounded-md border ${getBadgeColor(cliente.badge)} flex items-center gap-1`}>
+                    {getBadgeIcon(cliente.badge)}
+                    <span className="text-xs font-medium">#{index + 1}</span>
                   </div>
-                  <span className="font-bold text-status-delivered">
-                    {formatCurrency(cliente.valor)}
-                  </span>
+                  <span className="font-medium">{cliente.nome}</span>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-primary" />
-              Top Representantes por Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {data.topPerformers.representantes.map((rep, index) => (
-                <div key={rep.nome} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`px-2 py-1 rounded-md border ${getBadgeColor(rep.badge)} flex items-center gap-1`}>
-                      {getBadgeIcon(rep.badge)}
-                      <span className="text-xs font-medium">#{index + 1}</span>
-                    </div>
-                    <span className="font-medium">{rep.nome}</span>
-                  </div>
-                  <span className="font-bold text-primary">
-                    {formatCurrency(rep.valor)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                <span className="font-bold text-status-delivered">
+                  {formatCurrency(cliente.valor)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Métricas de Performance */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

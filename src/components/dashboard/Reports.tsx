@@ -160,10 +160,9 @@ const Reports: React.FC = () => {
 
       {/* Relatórios Tabulares */}
       <Tabs defaultValue="clientes" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
-          <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
-          <TabsTrigger value="representantes">Representantes</TabsTrigger>
+          <TabsTrigger value="produtos">Produtos</TabsTrigger>
           <TabsTrigger value="entregas">Entregas</TabsTrigger>
         </TabsList>
 
@@ -210,17 +209,17 @@ const Reports: React.FC = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="fornecedores" className="space-y-4">
+        <TabsContent value="produtos" className="space-y-4">
           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Building className="h-5 w-5" />
-                Relatório de Fornecedores
+                Relatório de Produtos
               </CardTitle>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => exportToExcel('Fornecedores', data.fornecedores)}
+                onClick={() => exportToExcel('Produtos', data.fornecedores)}
               >
                 <Download className="h-4 w-4 mr-2" />
                 Exportar
@@ -249,49 +248,6 @@ const Reports: React.FC = () => {
                           {fornecedor.tempoMedioEntrega.toFixed(0)} dias
                         </span>
                       </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="representantes" className="space-y-4">
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5" />
-                Relatório de Representantes
-              </CardTitle>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => exportToExcel('Representantes', data.representantes)}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Representante</TableHead>
-                    <TableHead>Total Pedidos</TableHead>
-                    <TableHead>Valor Total</TableHead>
-                    <TableHead>Clientes Únicos</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.representantes.map((rep, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{rep.representante}</TableCell>
-                      <TableCell>{rep.totalPedidos}</TableCell>
-                      <TableCell className="font-bold text-status-delivered">
-                        {formatCurrency(rep.valorTotal)}
-                      </TableCell>
-                      <TableCell>{rep.clientesUnicos}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

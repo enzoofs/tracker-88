@@ -2,7 +2,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import { BarChart3, Users, Building } from 'lucide-react';
 import { useChartsData } from '@/hooks/useChartsData';
@@ -97,13 +97,26 @@ const Charts: React.FC = () => {
               <CardContent>
                 {data.statusDistribution.length > 0 ? (
                   <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={data.statusDistribution} layout="horizontal">
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis type="number" className="text-xs" />
-                      <YAxis dataKey="status" type="category" className="text-xs" width={120} />
+                    <PieChart>
+                      <Pie
+                        data={data.statusDistribution}
+                        dataKey="quantidade"
+                        nameKey="status"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={120}
+                        label={({ status, quantidade }) => `${status}: ${quantidade}`}
+                      >
+                        {data.statusDistribution.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={['hsl(var(--primary))', 'hsl(var(--status-delivered))', 'hsl(var(--status-shipping))', 'hsl(var(--status-production))', 'hsl(var(--status-transit))'][index % 5]} 
+                          />
+                        ))}
+                      </Pie>
                       <Tooltip />
-                      <Bar dataKey="quantidade" fill="hsl(var(--secondary))" />
-                    </BarChart>
+                      <Legend />
+                    </PieChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-80 flex items-center justify-center text-muted-foreground">
