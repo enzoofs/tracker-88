@@ -27,6 +27,11 @@ interface DashboardData {
       deliveries: number;
     }>;
     criticalShipments: number;
+    statusCounts?: {
+      emProducao: number;
+      emImportacao: number;
+      emTransito: number;
+    };
   };
   sos: Array<{
     id: string;
@@ -78,7 +83,12 @@ const LogisticsDashboard: React.FC = () => {
       inTransit: 0,
       expectedArrivals: 0,
       deliveryTrend: [],
-      criticalShipments: 0
+      criticalShipments: 0,
+      statusCounts: {
+        emProducao: 0,
+        emImportacao: 0,
+        emTransito: 0
+      }
     },
     sos: [],
     cargas: []
@@ -184,6 +194,17 @@ const LogisticsDashboard: React.FC = () => {
       const inTransit = transformedSOs.filter(so => so.statusAtual === 'Em Trânsito').length;
       const expectedArrivals = transformedCargas.length;
       const criticalShipments = transformedSOs.filter(so => !so.isDelivered && so.ultimaLocalizacao).length;
+      
+      // Calculate real status counts
+      const statusCounts = {
+        emProducao: transformedSOs.filter(so => so.statusAtual === 'Em Produção').length,
+        emImportacao: transformedSOs.filter(so => 
+          so.statusAtual === 'No Armazém' || 
+          so.statusAtual === 'Voo Internacional' ||
+          so.statusAtual === 'Desembaraço'
+        ).length,
+        emTransito: transformedSOs.filter(so => so.statusAtual === 'Em Trânsito').length
+      };
 
       // Generate trend data
       const deliveryTrend = Array.from({
@@ -211,7 +232,8 @@ const LogisticsDashboard: React.FC = () => {
           inTransit,
           expectedArrivals,
           deliveryTrend,
-          criticalShipments
+          criticalShipments,
+          statusCounts
         },
         sos: transformedSOs,
         cargas: transformedCargas

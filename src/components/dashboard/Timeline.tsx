@@ -40,7 +40,7 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
       case 'fedex':
         return <div className={`text-2xl ${iconClass}`}>📦</div>;
       case 'no_armazem':
-        return <Package className={`h-5 w-5 ${iconClass}`} />;
+        return <div className={`text-2xl ${iconClass}`}>🏢</div>;
       case 'voo_internacional':
         return <div className={`text-2xl ${iconClass}`}>✈️</div>;
       case 'desembaraco':
@@ -250,8 +250,8 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
             
             {/* Ícone do evento */}
             <div className={`relative z-10 p-3 rounded-full border-2 transition-all ${
-              event.status === 'completed' ? 'bg-status-delivered border-status-delivered' :
-              event.status === 'current' ? 'bg-primary border-primary' :
+              event.status === 'completed' ? 'bg-status-delivered/20 border-status-delivered' :
+              event.status === 'current' ? 'bg-primary/20 border-primary' :
               'bg-muted border-border'
             }`}>
               {getEventIcon(event.tipo, event.status)}

@@ -106,7 +106,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
   };
 
   const clearAllFilters = () => {
-    setFilters({
+    const clearedFilters = {
       dateRange: {
         start: '',
         end: ''
@@ -114,7 +114,9 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
       selectedClients: [],
       selectedStatuses: [],
       trackingSearch: ''
-    });
+    };
+    setFilters(clearedFilters);
+    onFiltersChange(clearedFilters);
   };
 
   const getStatusIcon = (status: string) => {
@@ -185,11 +187,17 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={filters.dateRange.start ? new Date(filters.dateRange.start) : undefined}
+                  selected={filters.dateRange.start ? new Date(filters.dateRange.start + 'T12:00:00') : undefined}
                   onSelect={(date) => {
                     if (date) {
+                      // Use local date string to avoid timezone issues
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      const localDateString = `${year}-${month}-${day}`;
+                      
                       updateFilters({
-                        dateRange: { ...filters.dateRange, start: date.toISOString().split('T')[0] }
+                        dateRange: { ...filters.dateRange, start: localDateString }
                       });
                       setShowStartDatePicker(false);
                     }
@@ -221,11 +229,17 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={filters.dateRange.end ? new Date(filters.dateRange.end) : undefined}
+                  selected={filters.dateRange.end ? new Date(filters.dateRange.end + 'T12:00:00') : undefined}
                   onSelect={(date) => {
                     if (date) {
+                      // Use local date string to avoid timezone issues
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      const localDateString = `${year}-${month}-${day}`;
+                      
                       updateFilters({
-                        dateRange: { ...filters.dateRange, end: date.toISOString().split('T')[0] }
+                        dateRange: { ...filters.dateRange, end: localDateString }
                       });
                       setShowEndDatePicker(false);
                     }

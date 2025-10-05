@@ -11,6 +11,11 @@ interface OverviewProps {
     expectedArrivals: number;
     deliveryTrend: Array<{ date: string; deliveries: number; }>;
     criticalShipments: number;
+    statusCounts?: {
+      emProducao: number;
+      emImportacao: number;
+      emTransito: number;
+    };
   };
 }
 
@@ -118,19 +123,19 @@ const Overview: React.FC<OverviewProps> = ({ data }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 rounded-lg bg-muted/30 hover-corporate">
               <div className="text-2xl font-corporate font-bold text-status-production">
-                {Math.floor(data.activeSOs * 0.3)}
+                {data.statusCounts?.emProducao || 0}
               </div>
               <div className="text-sm text-muted-foreground font-corporate">Em Produção</div>
             </div>
             <div className="text-center p-4 rounded-lg bg-muted/30 hover-corporate">
               <div className="text-2xl font-corporate font-bold text-status-shipping">
-                {Math.floor(data.activeSOs * 0.4)}
+                {data.statusCounts?.emImportacao || 0}
               </div>
               <div className="text-sm text-muted-foreground font-corporate">Em Importação</div>
             </div>
             <div className="text-center p-4 rounded-lg bg-muted/30 hover-corporate">
               <div className="text-2xl font-corporate font-bold text-status-transit">
-                {Math.floor(data.activeSOs * 0.3)}
+                {data.statusCounts?.emTransito || 0}
               </div>
               <div className="text-sm text-muted-foreground font-corporate">Em Trânsito</div>
             </div>
