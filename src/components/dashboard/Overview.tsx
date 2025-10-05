@@ -176,19 +176,19 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 rounded-lg bg-muted/30 hover-corporate">
+            <div className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate">
               <div className="text-2xl font-corporate font-bold text-status-production">
                 {data.statusCounts?.emProducao || 0}
               </div>
               <div className="text-sm text-muted-foreground font-corporate">Em Produção</div>
             </div>
-            <div className="text-center p-4 rounded-lg bg-muted/30 hover-corporate">
+            <div className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate">
               <div className="text-2xl font-corporate font-bold text-status-shipping">
                 {data.statusCounts?.emImportacao || 0}
               </div>
               <div className="text-sm text-muted-foreground font-corporate">Em Importação</div>
             </div>
-            <div className="text-center p-4 rounded-lg bg-muted/30 hover-corporate">
+            <div className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate">
               <div className="text-2xl font-corporate font-bold text-status-transit">
                 {data.statusCounts?.emTransito || 0}
               </div>

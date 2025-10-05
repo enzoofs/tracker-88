@@ -133,6 +133,9 @@ All colors MUST be HSL.
     
     --status-alert: 0 84% 70%;             /* lighter red */
     --status-alert-foreground: 0 0% 100%;
+
+    /* Dark Mode Gradients */
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 12%), hsl(0 0% 8%));
   }
 }
 
