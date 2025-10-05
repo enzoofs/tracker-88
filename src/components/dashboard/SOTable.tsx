@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { Search, Filter, ChevronUp, ChevronDown, AlertTriangle, AlertCircle, AlertOctagon } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAlertLevel } from '@/hooks/useAlertLevel';
+import { getAlertLevel } from '@/hooks/useAlertLevel';
 
 interface SO {
   id: string;
@@ -283,7 +283,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 const delayed = isDelayed(so);
                 const arrivingToday = isArrivingToday(so);
                 const isNew = isNewSO(so);
-                const alertLevel = useAlertLevel(so);
+                const alertLevel = getAlertLevel(so);
                 
                  return (
                    <TableRow 

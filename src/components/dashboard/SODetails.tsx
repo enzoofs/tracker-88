@@ -15,7 +15,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Timeline from './Timeline';
-import { useAlertLevel } from '@/hooks/useAlertLevel';
+import { getAlertLevel } from '@/hooks/useAlertLevel';
 
 interface SO {
   id: string;
@@ -282,7 +282,7 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
 
   const allEvents = [...timelineEvents, ...addFutureEvents()];
 
-  const alertLevel = useAlertLevel(so);
+  const alertLevel = getAlertLevel(so);
 
   const isArrivingToday = () => {
     // Check if any future events are scheduled for today
