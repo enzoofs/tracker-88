@@ -195,8 +195,10 @@ export type Database = {
       }
       envios_processados: {
         Row: {
+          carrier: string | null
           cliente: string
           created_at: string | null
+          data_envio: string | null
           data_ultima_atualizacao: string | null
           erp_order: string | null
           id: string
@@ -204,18 +206,21 @@ export type Database = {
           is_delivered: boolean | null
           produtos: Json | null
           sales_order: string
+          ship_to: string | null
           status: string | null
           status_atual: string | null
           status_cliente: string | null
-          tracking_numbers: string[] | null
+          tracking_numbers: string | null
           ultima_localizacao: string | null
           updated_at: string | null
           valor_total: number | null
           web_order: string | null
         }
         Insert: {
+          carrier?: string | null
           cliente: string
           created_at?: string | null
+          data_envio?: string | null
           data_ultima_atualizacao?: string | null
           erp_order?: string | null
           id?: string
@@ -223,18 +228,21 @@ export type Database = {
           is_delivered?: boolean | null
           produtos?: Json | null
           sales_order: string
+          ship_to?: string | null
           status?: string | null
           status_atual?: string | null
           status_cliente?: string | null
-          tracking_numbers?: string[] | null
+          tracking_numbers?: string | null
           ultima_localizacao?: string | null
           updated_at?: string | null
           valor_total?: number | null
           web_order?: string | null
         }
         Update: {
+          carrier?: string | null
           cliente?: string
           created_at?: string | null
+          data_envio?: string | null
           data_ultima_atualizacao?: string | null
           erp_order?: string | null
           id?: string
@@ -242,10 +250,11 @@ export type Database = {
           is_delivered?: boolean | null
           produtos?: Json | null
           sales_order?: string
+          ship_to?: string | null
           status?: string | null
           status_atual?: string | null
           status_cliente?: string | null
-          tracking_numbers?: string[] | null
+          tracking_numbers?: string | null
           ultima_localizacao?: string | null
           updated_at?: string | null
           valor_total?: number | null
