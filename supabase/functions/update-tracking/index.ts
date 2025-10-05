@@ -30,34 +30,57 @@ Deno.serve(async (req) => {
     const payload = await req.json();
     const salesOrder = sanitizeInput(payload.sales_order, 100);
     
-    console.log('🔄 UPDATE para SO:', salesOrder);
+    if (!salesOrder) {
+      return new Response(
+        JSON.stringify({ error: 'sales_order é obrigatório' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('🔄 UPSERT para SO:', salesOrder, {
+      tracking: payload.tracking_numbers ? '✅' : '❌',
+      status: payload.status_atual
+    });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // UPDATE em envios_processados
+    // UPSERT em envios_processados
     const { data, error } = await supabase
       .from('envios_processados')
-      .update({
+      .upsert({
+        sales_order: salesOrder,
+        erp_order: payload.erp_order || null,
+        web_order: payload.web_order || null,
+        cliente: payload.cliente || 'Cliente não especificado',
+        produtos: payload.produtos || 'Produtos não especificados',
+        valor_total: payload.valor_total || 0,
         tracking_numbers: payload.tracking_numbers ? sanitizeInput(payload.tracking_numbers, 500) : null,
         data_envio: payload.data_envio,
-        status: payload.status,
-        status_atual: payload.status_atual,
-        ultima_localizacao: payload.ultima_localizacao,
-        carrier: payload.carrier,
+        status: payload.status || 'Em Trânsito',
+        status_atual: payload.status_atual || 'Em Trânsito',
+        status_cliente: payload.status_cliente || payload.status_atual || 'Em Trânsito',
+        ultima_localizacao: payload.ultima_localizacao || 'Em Trânsito',
+        carrier: payload.carrier || 'FedEx',
+        ship_to: payload.ship_to || null,
         data_ultima_atualizacao: new Date().toISOString()
+      }, { 
+        onConflict: 'sales_order',
+        ignoreDuplicates: false
       })
-      .eq('sales_order', salesOrder)
-      .select()
-      .single();
+      .select();
 
     if (error) {
-      console.error('❌ Erro ao atualizar:', error);
+      console.error('❌ Erro ao fazer upsert:', {
+        sales_order: salesOrder,
+        error: error.message,
+        code: error.code
+      });
       throw error;
     }
 
-    console.log('✅ Envio atualizado:', salesOrder);
+    console.log('✅ Envio atualizado/criado:', salesOrder);
 
     // INSERT no histórico
     if (payload.tracking_numbers) {
