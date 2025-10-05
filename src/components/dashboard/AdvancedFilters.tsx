@@ -187,7 +187,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={filters.dateRange.start ? new Date(filters.dateRange.start + 'T12:00:00') : undefined}
+                  selected={filters.dateRange.start ? new Date(filters.dateRange.start) : undefined}
                   onSelect={(date) => {
                     if (date) {
                       // Use local date string to avoid timezone issues
@@ -229,7 +229,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={filters.dateRange.end ? new Date(filters.dateRange.end + 'T12:00:00') : undefined}
+                  selected={filters.dateRange.end ? new Date(filters.dateRange.end) : undefined}
                   onSelect={(date) => {
                     if (date) {
                       // Use local date string to avoid timezone issues

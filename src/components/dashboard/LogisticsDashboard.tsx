@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Ship, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut, User, Bell, Plane, Box, Zap, Atom, Microscope } from 'lucide-react';
+import { BarChart3, Ship, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut, User, Bell, Plane, Box, Zap, Atom, Microscope, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -406,6 +407,50 @@ const LogisticsDashboard: React.FC = () => {
     console.log('✅ Após filtros:', filtered.length, 'SOs');
     setFilteredSOs(filtered);
   };
+  const handleExportToXLSX = () => {
+    try {
+      // Prepare data for export
+      const exportData = filteredSOs.map(so => ({
+        'Sales Order': so.salesOrder,
+        'Cliente': so.cliente,
+        'Produtos': so.produtos,
+        'Valor Total': so.valorTotal || 0,
+        'Status Atual': so.statusAtual,
+        'Última Localização': so.ultimaLocalizacao,
+        'Data Atualização': new Date(so.dataUltimaAtualizacao).toLocaleDateString('pt-BR'),
+        'SAP SO': so.erpOrder || '',
+        'WO': so.webOrder || '',
+        'Tracking Numbers': so.trackingNumbers || ''
+      }));
+
+      // Create worksheet
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sales Orders');
+      
+      // Generate filename with current date
+      const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+      const filename = `sintese-tracker-${date}.xlsx`;
+      
+      // Save file
+      XLSX.writeFile(wb, filename);
+      
+      toast({
+        title: "Exportação concluída",
+        description: `Arquivo ${filename} foi baixado com sucesso!`,
+      });
+    } catch (error) {
+      console.error('Error exporting to XLSX:', error);
+      toast({
+        title: "Erro na exportação",
+        description: "Não foi possível exportar os dados.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleCargoClick = async (cargo: any) => {
     try {
       console.log(`🔍 Carregando detalhes da carga ${cargo.numero}...`);
@@ -501,6 +546,17 @@ const LogisticsDashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-4">
+              {/* Export Button */}
+              <Button
+                onClick={handleExportToXLSX}
+                variant="ghost"
+                size="sm"
+                className="gap-2 px-3 py-2 rounded-xl hover:bg-primary/10 transition-all duration-300"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                <span className="text-sm">Exportar</span>
+              </Button>
+
               {/* Refresh Button */}
               <Button
                 onClick={() => {

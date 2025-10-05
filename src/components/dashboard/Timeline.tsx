@@ -298,7 +298,7 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
       {/* Lista detalhada */}
       <div className="space-y-3">
         <h4 className="font-semibold text-sm">Histórico Detalhado</h4>
-        {uniqueEvents.filter(e => e.status !== 'upcoming').map((event) => (
+        {uniqueEvents.map((event) => (
           <div key={event.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
             <div className="mt-0.5">
               {getStatusIcon(event.status)}
