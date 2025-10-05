@@ -69,6 +69,7 @@ All colors MUST be HSL.
 
     /* Corporate Gradients - Subtle */
     --gradient-corporate: linear-gradient(135deg, hsl(198 77% 56%), hsl(230 54% 34%));
+    --gradient-tech: linear-gradient(135deg, hsl(198 77% 56%), hsl(230 54% 34%));
     --gradient-light: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
     --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 13% 95%));
     --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 69% 58%));

@@ -4,11 +4,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Ship, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut, User, Bell, Plane, Box, Zap, Atom, Microscope, FileSpreadsheet } from 'lucide-react';
+import { BarChart3, Ship, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut, User, Bell, Plane, Box, Zap, Atom, Microscope, FileSpreadsheet, Moon, Sun } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useTheme } from '@/components/auth/ThemeProvider';
 import Overview from './Overview';
 import SOTable from './SOTable';
 import CargoDetails from './CargoDetails';
@@ -16,7 +17,6 @@ import NotificationCenter from './NotificationCenter';
 import SODetails from './SODetails';
 import Charts from './Charts';
 import Reports from './Reports';
-import AdvancedFilters from './AdvancedFilters';
 import ParticleBackground from '../ui/ParticleBackground';
 interface DashboardData {
   overview: {
@@ -78,6 +78,7 @@ const LogisticsDashboard: React.FC = () => {
     user,
     signOut
   } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [data, setData] = useState<DashboardData>({
     overview: {
       activeSOs: 0,
@@ -102,8 +103,6 @@ const LogisticsDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('sos');
   const [showDelivered, setShowDelivered] = useState(false);
   const [filteredSOs, setFilteredSOs] = useState<any[]>([]);
-  const [availableClients, setAvailableClients] = useState<string[]>([]);
-  const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const {
     toast
@@ -221,9 +220,6 @@ const LogisticsDashboard: React.FC = () => {
         deliveries: Math.floor(Math.random() * 20) + 5
       }));
 
-      // Extract unique clients and statuses for filters
-      const uniqueClients = Array.from(new Set(transformedSOs.map(so => so.cliente))).sort();
-      const uniqueStatuses = Array.from(new Set(transformedSOs.map(so => so.statusAtual))).sort();
       console.log('✅ Dados carregados do Supabase:', {
         enviosCount: enviosData?.length || 0,
         transformedSOsCount: transformedSOs.length,
@@ -242,12 +238,13 @@ const LogisticsDashboard: React.FC = () => {
         sos: transformedSOs,
         cargas: transformedCargas
       });
-      setFilteredSOs(transformedSOs);
       
-      console.log('📤 setFilteredSOs chamado com:', transformedSOs.length, 'SOs');
+      // Apply delivered filter
+      const filtered = showDelivered ? transformedSOs : transformedSOs.filter(so => !so.isDelivered);
+      setFilteredSOs(filtered);
       
-      setAvailableClients(uniqueClients);
-      setAvailableStatuses(uniqueStatuses);
+      console.log('📤 setFilteredSOs chamado com:', filtered.length, 'SOs');
+      
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -260,6 +257,13 @@ const LogisticsDashboard: React.FC = () => {
       setLoading(false);
     }
   };
+  
+  // Update filtered SOs when showDelivered changes
+  useEffect(() => {
+    const filtered = showDelivered ? data.sos : data.sos.filter(so => !so.isDelivered);
+    setFilteredSOs(filtered);
+  }, [showDelivered, data.sos]);
+  
   useEffect(() => {
     loadDashboardData();
 
@@ -361,57 +365,6 @@ const LogisticsDashboard: React.FC = () => {
     }
   }, [filteredSOs]);
   
-  const handleFiltersChange = (filters: any) => {
-    console.log('🔍 Filtros aplicados:', filters);
-    console.log('📊 data.sos disponível:', data.sos.length, 'registros');
-    
-    let filtered = [...data.sos];
-
-    // Filter out delivered SOs if showDelivered is false
-    if (!showDelivered) {
-      filtered = filtered.filter(so => !so.isDelivered);
-    }
-
-    // Filter by date range - only if BOTH dates are provided
-    if (filters.dateRange.start && filters.dateRange.end) {
-      const startDate = new Date(filters.dateRange.start + 'T00:00:00');
-      const endDate = new Date(filters.dateRange.end + 'T23:59:59');
-      
-      console.log('📅 Filtrando por data:', {
-        start: startDate.toISOString(),
-        end: endDate.toISOString()
-      });
-      
-      filtered = filtered.filter(so => {
-        const soDate = new Date(so.dataUltimaAtualizacao);
-        const isInRange = soDate >= startDate && soDate <= endDate;
-        if (!isInRange) {
-          console.log('❌ SO fora do range:', {
-            so: so.salesOrder,
-            soDate: soDate.toISOString(),
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString()
-          });
-        }
-        return isInRange;
-      });
-    } else {
-      console.log('ℹ️ Filtro de data não aplicado (datas vazias ou incompletas)');
-    }
-
-    // Filter by selected clients
-    if (filters.selectedClients.length > 0) {
-      filtered = filtered.filter(so => filters.selectedClients.includes(so.cliente));
-    }
-
-    // Filter by selected statuses
-    if (filters.selectedStatuses.length > 0) {
-      filtered = filtered.filter(so => filters.selectedStatuses.includes(so.statusAtual));
-    }
-    
-    console.log('✅ Após filtros:', filtered.length, 'SOs');
-    setFilteredSOs(filtered);
-  };
   const handleExportToXLSX = () => {
     try {
       // Prepare data for export
@@ -592,6 +545,20 @@ const LogisticsDashboard: React.FC = () => {
                 <span className="text-sm">Atualizar</span>
               </Button>
 
+              {/* Theme Toggle */}
+              <Button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                variant="ghost"
+                size="sm"
+                className="p-3 rounded-xl hover:bg-primary/10 transition-all duration-300"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </Button>
+
               {/* Notification Bell with Glow */}
               <div className="relative">
                 <Button variant="ghost" size="sm" onClick={() => setShowNotifications(true)} className="p-3 rounded-xl hover:bg-primary/10 transition-all duration-300 group">
@@ -628,13 +595,22 @@ const LogisticsDashboard: React.FC = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           {/* Modern Tab Navigation */}
           <TabsList className="grid w-full max-w-6xl grid-cols-3 mx-auto glass p-1 rounded-2xl">
-            <TabsTrigger value="sos" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
+            <TabsTrigger 
+              value="sos" 
+              className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=inactive]:text-foreground transition-all duration-300"
+            >
               Sales Orders
             </TabsTrigger>
-            <TabsTrigger value="charts" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
+            <TabsTrigger 
+              value="charts" 
+              className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=inactive]:text-foreground transition-all duration-300"
+            >
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="reports" className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=active]:shadow-tech transition-all duration-300">
+            <TabsTrigger 
+              value="reports" 
+              className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=inactive]:text-foreground transition-all duration-300"
+            >
               Relatórios
             </TabsTrigger>
           </TabsList>
@@ -642,12 +618,9 @@ const LogisticsDashboard: React.FC = () => {
           <TabsContent value="sos" className="animate-fade-in">
             <div className="space-y-8">
               <Overview data={data.overview} allSOs={data.sos} />
-              <AdvancedFilters onFiltersChange={handleFiltersChange} availableClients={availableClients} availableStatuses={availableStatuses} />
               <SOTable data={filteredSOs} onSOClick={handleSOClick} isLoading={loading} />
             </div>
           </TabsContent>
-
-
 
           <TabsContent value="charts" className="animate-fade-in">
             <Charts />

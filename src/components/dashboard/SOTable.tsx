@@ -35,6 +35,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [clienteFilter, setClienteFilter] = useState('all');
+  const [productFilter, setProductFilter] = useState('all');
   const [sortBy, setSortBy] = useState<keyof SO | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -100,7 +101,11 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
     
     const matchesCliente = clienteFilter === 'all' || so.cliente === clienteFilter;
     
-    return matchesSearch && matchesStatus && matchesCliente;
+    const matchesProduct =
+      productFilter === 'all' || 
+      so.produtos.split(",").some(p => p.trim() === productFilter);
+    
+    return matchesSearch && matchesStatus && matchesCliente && matchesProduct;
   }).sort((a, b) => {
     if (!sortBy) return 0;
     
@@ -137,6 +142,13 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
 
   const uniqueClientes = [...new Set(data.map(so => so.cliente))];
   const uniqueStatuses = [...new Set(data.map(so => so.statusAtual).filter(s => s && s.trim()))];
+  const uniqueProducts = Array.from(
+    new Set(
+      data.flatMap((so) => 
+        so.produtos.split(",").map((p) => p.trim())
+      )
+    )
+  ).sort();
   
   console.log('🔍 Status únicos encontrados:', uniqueStatuses);
   console.log('✅ Dados após filtragem:', filteredData.length);
@@ -161,7 +173,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
             />
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
                 <SelectValue placeholder="Status" />
@@ -185,6 +197,18 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 ))}
               </SelectContent>
             </Select>
+            
+            <Select value={productFilter} onValueChange={setProductFilter}>
+              <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
+                <SelectValue placeholder="Produto" />
+              </SelectTrigger>
+              <SelectContent className="z-50 bg-background">
+                <SelectItem value="all">Todos os Produtos</SelectItem>
+                {uniqueProducts.map(product => (
+                  <SelectItem key={product} value={product}>{product}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <Button 
               variant="outline" 
@@ -192,6 +216,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 setSearchTerm('');
                 setStatusFilter('all');
                 setClienteFilter('all');
+                setProductFilter('all');
               }}
               className="transition-all duration-300 hover:bg-muted/50"
             >
