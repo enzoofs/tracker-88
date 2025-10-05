@@ -46,41 +46,100 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // UPSERT em envios_processados
-    const { data, error } = await supabase
+    // Check if record exists
+    const { data: existing } = await supabase
       .from('envios_processados')
-      .upsert({
-        sales_order: salesOrder,
-        erp_order: payload.erp_order || null,
-        web_order: payload.web_order || null,
-        cliente: payload.cliente || 'Cliente não especificado',
-        produtos: payload.produtos || 'Produtos não especificados',
-        valor_total: payload.valor_total || 0,
-        tracking_numbers: payload.tracking_numbers ? sanitizeInput(payload.tracking_numbers, 500) : null,
-        data_envio: payload.data_envio,
-        status: payload.status || 'Em Trânsito',
-        status_atual: payload.status_atual || 'Em Trânsito',
-        status_cliente: payload.status_cliente || payload.status_atual || 'Em Trânsito',
-        ultima_localizacao: payload.ultima_localizacao || 'Em Trânsito',
-        carrier: payload.carrier || 'FedEx',
-        ship_to: payload.ship_to || null,
+      .select('*')
+      .eq('sales_order', salesOrder)
+      .single();
+
+    let data, error;
+
+    if (existing) {
+      // UPDATE existing record - only update status and tracking fields
+      console.log('📝 Atualizando SO existente:', salesOrder, {
+        campos_preservados: {
+          cliente: existing.cliente,
+          produtos: existing.produtos ? '✅' : '❌',
+          valor_total: existing.valor_total,
+          erp_order: existing.erp_order,
+          web_order: existing.web_order
+        }
+      });
+
+      const updateData: any = {
         data_ultima_atualizacao: new Date().toISOString()
-      }, { 
-        onConflict: 'sales_order',
-        ignoreDuplicates: false
-      })
-      .select();
+      };
+
+      // Only update status fields
+      if (payload.status) updateData.status = payload.status;
+      if (payload.status_atual) updateData.status_atual = payload.status_atual;
+      if (payload.status_cliente) updateData.status_cliente = payload.status_cliente;
+      if (payload.ultima_localizacao) updateData.ultima_localizacao = payload.ultima_localizacao;
+      
+      // Update tracking info if provided
+      if (payload.tracking_numbers) {
+        updateData.tracking_numbers = sanitizeInput(payload.tracking_numbers, 500);
+      }
+      if (payload.carrier) updateData.carrier = payload.carrier;
+      if (payload.ship_to) updateData.ship_to = payload.ship_to;
+      if (payload.data_envio) updateData.data_envio = payload.data_envio;
+
+      // Update delivery flags based on status
+      if (payload.status_atual) {
+        updateData.is_at_warehouse = payload.status_atual.toLowerCase().includes('armazém');
+        updateData.is_delivered = payload.status_atual.toLowerCase().includes('entregue');
+      }
+
+      const result = await supabase
+        .from('envios_processados')
+        .update(updateData)
+        .eq('sales_order', salesOrder)
+        .select();
+
+      data = result.data;
+      error = result.error;
+
+    } else {
+      // INSERT new record with all data
+      console.log('➕ Criando nova SO:', salesOrder);
+      
+      const result = await supabase
+        .from('envios_processados')
+        .insert({
+          sales_order: salesOrder,
+          erp_order: payload.erp_order || null,
+          web_order: payload.web_order || null,
+          cliente: payload.cliente || 'Cliente não especificado',
+          produtos: payload.produtos || 'Produtos não especificados',
+          valor_total: payload.valor_total || 0,
+          tracking_numbers: payload.tracking_numbers ? sanitizeInput(payload.tracking_numbers, 500) : null,
+          data_envio: payload.data_envio,
+          status: payload.status || 'Em Trânsito',
+          status_atual: payload.status_atual || 'Em Trânsito',
+          status_cliente: payload.status_cliente || payload.status_atual || 'Em Trânsito',
+          ultima_localizacao: payload.ultima_localizacao || 'Em Trânsito',
+          carrier: payload.carrier || 'FedEx',
+          ship_to: payload.ship_to || null,
+          data_ultima_atualizacao: new Date().toISOString()
+        })
+        .select();
+
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) {
-      console.error('❌ Erro ao fazer upsert:', {
+      console.error('❌ Erro ao processar envio:', {
         sales_order: salesOrder,
+        operacao: existing ? 'UPDATE' : 'INSERT',
         error: error.message,
         code: error.code
       });
       throw error;
     }
 
-    console.log('✅ Envio atualizado/criado:', salesOrder);
+    console.log('✅ Envio processado:', salesOrder, existing ? '(atualizado)' : '(criado)');
 
     // INSERT no histórico
     if (payload.tracking_numbers) {

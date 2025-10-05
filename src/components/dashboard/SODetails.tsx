@@ -3,6 +3,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   X, 
   Package, 
@@ -10,7 +27,8 @@ import {
   MapPin,
   FileText,
   Clock,
-  DollarSign
+  DollarSign,
+  Edit
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,7 +58,107 @@ interface SODetailsProps {
 const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
   const [shipmentHistory, setShipmentHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(so.statusAtual);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
+
+  const availableStatuses = [
+    "Em Produção",
+    "Enviado",
+    "Em Importação",
+    "No Armazém",
+    "Em Trânsito",
+    "Entregue",
+    "Atrasado",
+    "Pendente"
+  ];
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .rpc('has_role', { _user_id: user.id, _role: 'admin' });
+        
+        if (error) throw error;
+        setIsAdmin(data === true);
+      } catch (error) {
+        console.error('Error checking admin role:', error);
+      }
+    };
+
+    checkAdminRole();
+  }, []);
+
+  const handleManualStatusUpdate = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      // Update status in envios_processados
+      const { error: updateError } = await supabase
+        .from('envios_processados')
+        .update({
+          status_atual: selectedStatus,
+          status_cliente: selectedStatus,
+          data_ultima_atualizacao: new Date().toISOString()
+        })
+        .eq('sales_order', so.salesOrder);
+
+      if (updateError) throw updateError;
+
+      // Insert into shipment_history
+      const { error: historyError } = await supabase
+        .from('shipment_history')
+        .insert({
+          sales_order: so.salesOrder,
+          status: selectedStatus,
+          location: so.ultimaLocalizacao,
+          tracking_number: so.trackingNumbers || null,
+          description: JSON.stringify({
+            fonte: 'Alteração manual por admin',
+            admin_id: user.id,
+            previous_status: so.statusAtual
+          }),
+          timestamp: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        });
+
+      if (historyError) throw historyError;
+
+      console.log('✅ Status atualizado manualmente:', {
+        so: so.salesOrder,
+        from: so.statusAtual,
+        to: selectedStatus,
+        admin: user.id
+      });
+
+      toast({
+        title: "Status atualizado",
+        description: `Status alterado de "${so.statusAtual}" para "${selectedStatus}"`,
+      });
+
+      setShowConfirmDialog(false);
+      
+      // Reload history and close after a delay
+      setTimeout(() => {
+        loadShipmentHistory();
+        onClose();
+      }, 1000);
+
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: "Erro ao atualizar status",
+        description: "Não foi possível atualizar o status. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const loadShipmentHistory = async () => {
     try {
@@ -309,6 +427,32 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
           </div>
           
           <div className="flex items-center gap-3">
+            {isAdmin && (
+              <div className="flex items-center gap-2 border-r pr-3">
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="w-[180px] h-8 text-xs">
+                    <SelectValue placeholder="Alterar status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableStatuses.map((status) => (
+                      <SelectItem key={status} value={status} className="text-xs">
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  size="sm" 
+                  onClick={() => setShowConfirmDialog(true)}
+                  disabled={selectedStatus === so.statusAtual}
+                  className="h-8 gap-2"
+                >
+                  <Edit className="h-3 w-3" />
+                  Atualizar
+                </Button>
+              </div>
+            )}
+
             {alertLevel && (
               <Badge 
                 variant={alertLevel.color as any}
@@ -456,6 +600,27 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog for Manual Status Update */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar alteração de status</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a alterar manualmente o status da SO <strong>{so.salesOrder}</strong> de 
+              <strong> "{so.statusAtual}"</strong> para <strong>"{selectedStatus}"</strong>.
+              <br /><br />
+              Esta ação será registrada no histórico. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleManualStatusUpdate}>
+              Confirmar Alteração
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

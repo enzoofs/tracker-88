@@ -100,6 +100,7 @@ const LogisticsDashboard: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [activeTab, setActiveTab] = useState('sos');
+  const [showDelivered, setShowDelivered] = useState(false);
   const [filteredSOs, setFilteredSOs] = useState<any[]>([]);
   const [availableClients, setAvailableClients] = useState<string[]>([]);
   const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
@@ -366,6 +367,11 @@ const LogisticsDashboard: React.FC = () => {
     
     let filtered = [...data.sos];
 
+    // Filter out delivered SOs if showDelivered is false
+    if (!showDelivered) {
+      filtered = filtered.filter(so => !so.isDelivered);
+    }
+
     // Filter by date range - only if BOTH dates are provided
     if (filters.dateRange.start && filters.dateRange.end) {
       const startDate = new Date(filters.dateRange.start + 'T00:00:00');
@@ -554,6 +560,19 @@ const LogisticsDashboard: React.FC = () => {
               >
                 <FileSpreadsheet className="h-4 w-4" />
                 <span className="text-sm">Exportar</span>
+              </Button>
+
+              {/* Show Delivered Toggle */}
+              <Button
+                onClick={() => setShowDelivered(!showDelivered)}
+                variant={showDelivered ? "default" : "ghost"}
+                size="sm"
+                className="gap-2 px-3 py-2 rounded-xl transition-all duration-300"
+              >
+                <Package className="h-4 w-4" />
+                <span className="text-sm">
+                  {showDelivered ? "Ocultar Entregues" : `Entregues (${data.sos.filter(so => so.isDelivered).length})`}
+                </span>
               </Button>
 
               {/* Refresh Button */}
