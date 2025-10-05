@@ -15,6 +15,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Timeline from './Timeline';
+import { useAlertLevel } from '@/hooks/useAlertLevel';
 
 interface SO {
   id: string;
@@ -281,66 +282,7 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
 
   const allEvents = [...timelineEvents, ...addFutureEvents()];
 
-  // Calcula nível de alerta baseado em atrasos
-  const getAlertLevel = () => {
-    // Não mostrar alerta se ainda está em produção ou já foi entregue
-    if (so.isDelivered) return null;
-    
-    const currentStatus = so.statusAtual.toLowerCase();
-    if (currentStatus.includes('produção') || currentStatus.includes('producao')) {
-      return null;
-    }
-    
-    const lastUpdate = new Date(so.dataUltimaAtualizacao);
-    const now = new Date();
-    const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 1000)) / 24;
-    
-    // Calcular atraso baseado no status atual e prazos esperados
-    let expectedDays = 0;
-    let stage = '';
-    
-    if (currentStatus.includes('fedex') || currentStatus.includes('saiu')) {
-      expectedDays = 1; // Deveria chegar no armazém em 1 dia
-      stage = 'chegada no armazém';
-    } else if (currentStatus.includes('armazém') || currentStatus.includes('armazem')) {
-      expectedDays = 5; // Deveria estar em voo em 5 dias
-      stage = 'voo internacional';
-    } else if (currentStatus.includes('voo') || currentStatus.includes('internacional')) {
-      expectedDays = 2; // Deveria estar em desembaraço em 2 dias
-      stage = 'desembaraço';
-    } else if (currentStatus.includes('desembaraço') || currentStatus.includes('desembaraco')) {
-      expectedDays = 6; // Deveria ser entregue em 6 dias (1 + 5)
-      stage = 'entrega';
-    }
-    
-    if (expectedDays === 0) return null;
-    
-    const daysOverdue = Math.floor(daysSinceUpdate - expectedDays);
-    
-    if (daysOverdue > 5) {
-      return { 
-        level: 3, 
-        message: `CRÍTICO: ${daysOverdue} dias de atraso - ${stage}`, 
-        color: 'destructive' 
-      };
-    } else if (daysOverdue > 2) {
-      return { 
-        level: 2, 
-        message: `ATENÇÃO: ${daysOverdue} dias de atraso - ${stage}`, 
-        color: 'warning' 
-      };
-    } else if (daysOverdue > 0) {
-      return { 
-        level: 1, 
-        message: `AVISO: ${daysOverdue} dia(s) de atraso - ${stage}`, 
-        color: 'default' 
-      };
-    }
-    
-    return null;
-  };
-
-  const alertLevel = getAlertLevel();
+  const alertLevel = useAlertLevel(so);
 
   const isArrivingToday = () => {
     // Check if any future events are scheduled for today

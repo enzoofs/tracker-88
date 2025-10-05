@@ -136,7 +136,7 @@ const LogisticsDashboard: React.FC = () => {
         cliente: envio.cliente,
         produtos: typeof envio.produtos === 'string' ? envio.produtos : JSON.stringify(envio.produtos || ''),
         valorTotal: envio.valor_total,
-        statusAtual: envio.status_atual,
+        statusAtual: envio.status_atual === 'Enviado' ? 'Em Importação' : envio.status_atual,
         ultimaLocalizacao: envio.ultima_localizacao || '',
         dataUltimaAtualizacao: envio.data_ultima_atualizacao || envio.updated_at,
         erpOrder: envio.erp_order,
@@ -200,6 +200,8 @@ const LogisticsDashboard: React.FC = () => {
       const statusCounts = {
         emProducao: transformedSOs.filter(so => so.statusAtual === 'Em Produção').length,
         emImportacao: transformedSOs.filter(so => 
+          so.statusAtual === 'Em Importação' ||
+          so.statusAtual === 'Enviado' ||
           so.statusAtual === 'No Armazém' || 
           so.statusAtual === 'Voo Internacional' ||
           so.statusAtual === 'Desembaraço'
@@ -366,11 +368,8 @@ const LogisticsDashboard: React.FC = () => {
 
     // Filter by date range - only if BOTH dates are provided
     if (filters.dateRange.start && filters.dateRange.end) {
-      const startDate = new Date(filters.dateRange.start);
-      startDate.setHours(0, 0, 0, 0); // Start of day
-      
-      const endDate = new Date(filters.dateRange.end);
-      endDate.setHours(23, 59, 59, 999); // End of day
+      const startDate = new Date(filters.dateRange.start + 'T00:00:00');
+      const endDate = new Date(filters.dateRange.end + 'T23:59:59');
       
       console.log('📅 Filtrando por data:', {
         start: startDate.toISOString(),
@@ -623,7 +622,7 @@ const LogisticsDashboard: React.FC = () => {
 
           <TabsContent value="sos" className="animate-fade-in">
             <div className="space-y-8">
-              <Overview data={data.overview} />
+              <Overview data={data.overview} allSOs={data.sos} />
               <AdvancedFilters onFiltersChange={handleFiltersChange} availableClients={availableClients} availableStatuses={availableStatuses} />
               <SOTable data={filteredSOs} onSOClick={handleSOClick} isLoading={loading} />
             </div>

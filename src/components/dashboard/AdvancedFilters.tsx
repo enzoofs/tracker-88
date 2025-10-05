@@ -135,7 +135,8 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
   const activeFiltersCount = 
     filters.selectedClients.length + 
     filters.selectedStatuses.length + 
-    (filters.trackingSearch ? 1 : 0);
+    (filters.trackingSearch ? 1 : 0) +
+    (filters.dateRange.start || filters.dateRange.end ? 1 : 0);
 
   return (
     <Card className="shadow-card">
@@ -150,7 +151,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               </Badge>
             )}
           </div>
-          {activeFiltersCount > 0 && (
+          {(activeFiltersCount > 0 || filters.dateRange.start || filters.dateRange.end) && (
             <Button 
               variant="ghost" 
               size="sm" 
@@ -187,7 +188,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={filters.dateRange.start ? new Date(filters.dateRange.start) : undefined}
+                  selected={filters.dateRange.start ? new Date(filters.dateRange.start + 'T00:00:00') : undefined}
                   onSelect={(date) => {
                     if (date) {
                       // Use local date string to avoid timezone issues
@@ -229,7 +230,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={filters.dateRange.end ? new Date(filters.dateRange.end) : undefined}
+                  selected={filters.dateRange.end ? new Date(filters.dateRange.end + 'T23:59:59') : undefined}
                   onSelect={(date) => {
                     if (date) {
                       // Use local date string to avoid timezone issues

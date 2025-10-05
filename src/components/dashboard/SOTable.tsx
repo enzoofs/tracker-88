@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { Search, Filter, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, Filter, ChevronUp, ChevronDown, AlertTriangle, AlertCircle, AlertOctagon } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAlertLevel } from '@/hooks/useAlertLevel';
 
 interface SO {
   id: string;
@@ -41,10 +43,14 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
     
     switch (status.toLowerCase()) {
       case 'em produção':
+      case 'em producao':
         return 'production';
       case 'em importação':
+      case 'em importacao':
+      case 'enviado':
         return 'shipping';
       case 'em trânsito':
+      case 'em transito':
         return 'transit';
       case 'entregue':
         return 'delivered';
@@ -258,6 +264,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                     )}
                   </div>
                 </TableHead>
+                <TableHead>Alerta</TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
                   onClick={() => handleSort('dataUltimaAtualizacao')}
@@ -276,6 +283,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 const delayed = isDelayed(so);
                 const arrivingToday = isArrivingToday(so);
                 const isNew = isNewSO(so);
+                const alertLevel = useAlertLevel(so);
                 
                  return (
                    <TableRow 
@@ -320,6 +328,28 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                     >
                       {so.statusAtual || 'Sem Status'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {alertLevel ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            {alertLevel.level === 3 ? (
+                              <AlertOctagon className="h-5 w-5 text-destructive animate-pulse" />
+                            ) : alertLevel.level === 2 ? (
+                              <AlertTriangle className="h-5 w-5 text-orange-500" />
+                            ) : (
+                              <AlertCircle className="h-5 w-5 text-yellow-500" />
+                            )}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-semibold">{alertLevel.message}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">-</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(so.dataUltimaAtualizacao).toLocaleDateString('pt-BR')}
