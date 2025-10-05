@@ -120,7 +120,6 @@ serve(async (req) => {
         location: ultimaLocalizacao,
         tracking_number: data.tracking_number ? sanitizeInput(data.tracking_number, 100) : null,
         description: JSON.stringify({
-          tracking: data.tracking_number ? sanitizeInput(data.tracking_number, 100) : null,
           status_cliente: statusCliente,
           fonte: 'FedEx Tracking API'
         }),
