@@ -117,6 +117,22 @@ All colors MUST be HSL.
     --border: 0 0% 15%;
     --input: 0 0% 9%;
     --ring: 198 77% 56%;
+
+    /* Status Colors for Dark Mode */
+    --status-production: 45 93% 60%;       /* lighter amber */
+    --status-production-foreground: 0 0% 100%;
+    
+    --status-shipping: 198 77% 65%;        /* lighter blue */
+    --status-shipping-foreground: 0 0% 100%;
+    
+    --status-transit: 230 54% 55%;         /* lighter dark blue */
+    --status-transit-foreground: 0 0% 100%;
+    
+    --status-delivered: 142 76% 45%;       /* lighter green */
+    --status-delivered-foreground: 0 0% 100%;
+    
+    --status-alert: 0 84% 70%;             /* lighter red */
+    --status-alert-foreground: 0 0% 100%;
   }
 }
 

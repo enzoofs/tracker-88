@@ -596,20 +596,23 @@ const LogisticsDashboard: React.FC = () => {
           {/* Modern Tab Navigation */}
           <TabsList className="grid w-full max-w-6xl grid-cols-3 mx-auto glass p-1 rounded-2xl">
             <TabsTrigger 
-              value="sos" 
-              className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=inactive]:text-foreground transition-all duration-300"
+              value="sos"
+              style={activeTab === "sos" ? { background: 'var(--gradient-tech)' } : {}}
+              className="rounded-xl font-tech data-[state=active]:text-white data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-muted/50 transition-all duration-300"
             >
               Sales Orders
             </TabsTrigger>
             <TabsTrigger 
-              value="charts" 
-              className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=inactive]:text-foreground transition-all duration-300"
+              value="charts"
+              style={activeTab === "charts" ? { background: 'var(--gradient-tech)' } : {}}
+              className="rounded-xl font-tech data-[state=active]:text-white data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-muted/50 transition-all duration-300"
             >
               Analytics
             </TabsTrigger>
             <TabsTrigger 
-              value="reports" 
-              className="rounded-xl font-tech data-[state=active]:bg-gradient-tech data-[state=active]:text-white data-[state=inactive]:text-foreground transition-all duration-300"
+              value="reports"
+              style={activeTab === "reports" ? { background: 'var(--gradient-tech)' } : {}}
+              className="rounded-xl font-tech data-[state=active]:text-white data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-muted/50 transition-all duration-300"
             >
               Relatórios
             </TabsTrigger>
