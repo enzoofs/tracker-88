@@ -258,16 +258,24 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
             </div>
             
             {/* Informações do evento */}
-            <div className="mt-2 text-center max-w-24">
+            <div className="mt-2 text-center max-w-24 group relative">
               <div className={`text-xs font-medium ${
                 event.status === 'upcoming' ? 'text-muted-foreground' : 'text-foreground'
               }`}>
                 {getStatusTitle(event.titulo)}
               </div>
               
-              {event.data && (
+              {/* Only show date for completed or current events */}
+              {event.status !== 'upcoming' && event.data && (
                 <div className="text-xs text-muted-foreground mt-1">
                   {formatDate(event.data)}
+                </div>
+              )}
+              
+              {/* Show predicted date on hover for upcoming events */}
+              {event.status === 'upcoming' && event.data && (
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 border pointer-events-none">
+                  Previsão: {formatDate(event.data)}
                 </div>
               )}
               
@@ -304,12 +312,6 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
                   {formatDate(event.data)}
                 </div>
               </div>
-              
-              {event.detalhes && formatDetailsText(event.detalhes) && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatDetailsText(event.detalhes)}
-                </p>
-              )}
               
               {event.dataPrevista && (
                 <div className="text-xs text-muted-foreground mt-1">

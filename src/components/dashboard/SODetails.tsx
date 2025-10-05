@@ -357,8 +357,8 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-1 text-xs">
-                    <p><span className="font-medium">ERP:</span> {so.erpOrder || 'N/A'}</p>
-                    <p><span className="font-medium">Web:</span> {so.webOrder || 'N/A'}</p>
+                    <p><span className="font-medium">SAP SO:</span> {so.erpOrder || 'N/A'}</p>
+                    <p><span className="font-medium">WO:</span> {so.webOrder || 'N/A'}</p>
                   </div>
                 </CardContent>
               </Card>

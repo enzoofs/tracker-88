@@ -65,6 +65,8 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
   const [showClientSelect, setShowClientSelect] = useState(false);
   const [showStatusSelect, setShowStatusSelect] = useState(false);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   useEffect(() => {
     onFiltersChange(filters);
@@ -167,7 +169,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <CalendarIcon className="h-3 w-3" />
               Data Inicial
             </Label>
-            <Popover>
+            <Popover open={showStartDatePicker} onOpenChange={setShowStartDatePicker}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -189,7 +191,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                       updateFilters({
                         dateRange: { ...filters.dateRange, start: date.toISOString().split('T')[0] }
                       });
-                      document.body.click();
+                      setShowStartDatePicker(false);
                     }
                   }}
                   initialFocus
@@ -203,7 +205,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <CalendarIcon className="h-3 w-3" />
               Data Final
             </Label>
-            <Popover>
+            <Popover open={showEndDatePicker} onOpenChange={setShowEndDatePicker}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -225,7 +227,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                       updateFilters({
                         dateRange: { ...filters.dateRange, end: date.toISOString().split('T')[0] }
                       });
-                      document.body.click();
+                      setShowEndDatePicker(false);
                     }
                   }}
                   initialFocus
