@@ -238,7 +238,7 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
   return (
     <div className={`relative ${className}`}>
       {/* Timeline horizontal */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         {uniqueEvents.map((event, index) => (
           <div key={event.id} className="flex flex-col items-center relative">
             {/* Linha conectora */}
@@ -289,39 +289,6 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
                 <Badge variant="default" className="text-xs mt-1 bg-primary">
                   Atual
                 </Badge>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Lista detalhada */}
-      <div className="space-y-3">
-        <h4 className="font-semibold text-sm">Histórico Detalhado</h4>
-        {uniqueEvents.map((event) => (
-          <div key={event.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-            <div className="mt-0.5">
-              {getStatusIcon(event.status)}
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <h5 className="font-medium text-sm">{getStatusTitle(event.titulo)}</h5>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  {formatDate(event.data)}
-                </div>
-              </div>
-              
-              {event.dataPrevista && (
-                <div className="text-xs text-muted-foreground mt-1">
-                  Previsto: {formatDate(event.dataPrevista)}
-                  {isDelayed(event.data, event.dataPrevista) && (
-                    <span className="text-destructive ml-2">
-                      • Atrasado
-                    </span>
-                  )}
-                </div>
               )}
             </div>
           </div>
