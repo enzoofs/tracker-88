@@ -17,6 +17,7 @@ import NotificationCenter from './NotificationCenter';
 import SODetails from './SODetails';
 import Charts from './Charts';
 import Reports from './Reports';
+import CargoCard from './CargoCard';
 import ParticleBackground from '../ui/ParticleBackground';
 interface DashboardData {
   overview: {
@@ -50,27 +51,16 @@ interface DashboardData {
   }>;
   cargas: Array<{
     id: string;
-    numero: string;
-    origem: {
-      lat: number;
-      lng: number;
-      nome: string;
-    };
-    destino: {
-      lat: number;
-      lng: number;
-      nome: string;
-    };
+    numero_carga: string;
+    tipo_temperatura: string;
     status: string;
-    temperatura?: string;
-    dataChegadaPrevista: string;
-    sosVinculadas: number;
+    data_chegada_prevista?: string;
+    origem?: string;
+    destino?: string;
+    transportadora?: string;
     mawb?: string;
     hawb?: string;
-    icon: {
-      type: string;
-      component: any;
-    };
+    so_count?: number;
   }>;
 }
 const LogisticsDashboard: React.FC = () => {
@@ -124,10 +114,27 @@ const LogisticsDashboard: React.FC = () => {
       const {
         data: cargasData,
         error: cargasError
-      } = await supabase.from('cargas').select('*').order('created_at', {
-        ascending: false
-      }).limit(20);
+      } = await supabase
+        .from('cargas')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
       if (cargasError) throw cargasError;
+
+      // Count SOs for each carga
+      const cargasWithCount = await Promise.all(
+        (cargasData || []).map(async (carga) => {
+          const { count } = await supabase
+            .from('carga_sales_orders')
+            .select('*', { count: 'exact', head: true })
+            .eq('numero_carga', carga.numero_carga);
+          
+          return {
+            ...carga,
+            so_count: count || 0
+          };
+        })
+      );
 
       // Transform envios data to SO format
       const transformedSOs = enviosData?.map(envio => ({
@@ -152,43 +159,8 @@ const LogisticsDashboard: React.FC = () => {
       } = await supabase.from('carga_sales_orders').select('numero_carga, so_number').order('numero_carga');
       if (cargoSOsError) throw cargoSOsError;
 
-      // Transform cargas data with realistic coordinates
-      const transformedCargas = cargasData?.map(carga => {
-        // Count SOs linked to this cargo - get actual count from database
-        const linkedSOs = cargoSOsData?.filter(cso => cso.numero_carga === carga.numero_carga) || [];
-        
-        // Generate random icon for each cargo
-        const iconOptions = [
-          { type: 'plane', component: Plane },
-          { type: 'box', component: Box },
-          { type: 'zap', component: Zap },
-          { type: 'atom', component: Atom },
-          { type: 'microscope', component: Microscope }
-        ];
-        const randomIcon = iconOptions[Math.floor(Math.random() * iconOptions.length)];
-        
-        return {
-          id: carga.id,
-          numero: carga.numero_carga?.toString() || '',
-          origem: {
-            lat: -23.5505 + (Math.random() - 0.5) * 5,
-            lng: -46.6333 + (Math.random() - 0.5) * 10,
-            nome: 'Centro de Distribuição'
-          },
-          destino: {
-            lat: 40.7128 + (Math.random() - 0.5) * 10,
-            lng: -74.0060 + (Math.random() - 0.5) * 20,
-            nome: 'Destino Final'
-          },
-          status: carga.status || 'Em Trânsito',
-          temperatura: carga.tipo_temperatura,
-          dataChegadaPrevista: carga.data_chegada_prevista || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          sosVinculadas: linkedSOs.length,
-          mawb: carga.mawb,
-          hawb: carga.hawb,
-          icon: randomIcon
-        };
-      }) || [];
+      // Use cargas with SO count
+      const transformedCargas = cargasWithCount;
 
       // Calculate overview metrics
       const activeSOs = transformedSOs.length;
@@ -594,13 +566,20 @@ const LogisticsDashboard: React.FC = () => {
       <div className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           {/* Modern Tab Navigation */}
-          <TabsList className="grid w-full max-w-6xl grid-cols-3 mx-auto glass p-1 rounded-2xl">
+          <TabsList className="grid w-full max-w-6xl grid-cols-4 mx-auto glass p-1 rounded-2xl">
             <TabsTrigger 
               value="sos"
               style={activeTab === "sos" ? { background: 'var(--gradient-tech)' } : {}}
               className="rounded-xl font-tech data-[state=active]:text-white data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-muted/50 transition-all duration-300"
             >
               Sales Orders
+            </TabsTrigger>
+            <TabsTrigger 
+              value="cargas"
+              style={activeTab === "cargas" ? { background: 'var(--gradient-tech)' } : {}}
+              className="rounded-xl font-tech data-[state=active]:text-white data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-muted/50 transition-all duration-300"
+            >
+              Cargas
             </TabsTrigger>
             <TabsTrigger 
               value="charts"
@@ -622,6 +601,32 @@ const LogisticsDashboard: React.FC = () => {
             <div className="space-y-8">
               <Overview data={data.overview} allSOs={data.sos} />
               <SOTable data={filteredSOs} onSOClick={handleSOClick} isLoading={loading} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="cargas" className="animate-fade-in">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Cargas Consolidadas</h2>
+                <Badge className="bg-primary/10 text-primary">
+                  {data.cargas.length} cargas ativas
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {data.cargas.map((carga) => (
+                  <CargoCard
+                    key={carga.id}
+                    carga={carga}
+                    onClick={() => handleCargoClick(carga)}
+                  />
+                ))}
+              </div>
+              {data.cargas.length === 0 && (
+                <Card className="p-12 text-center">
+                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Nenhuma carga encontrada</p>
+                </Card>
+              )}
             </div>
           </TabsContent>
 

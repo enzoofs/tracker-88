@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.update-tracking]
 verify_jwt = false
+
+[functions.create-carga]
+verify_jwt = false
+
+[functions.link-sos-to-carga]
+verify_jwt = false
