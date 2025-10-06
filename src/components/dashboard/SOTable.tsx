@@ -41,8 +41,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   const [productFilter, setProductFilter] = useState('all');
   const [sortBy, setSortBy] = useState<keyof SO | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
 
   const getStatusVariant = (status: string | null) => {
     if (!status) return 'default';
@@ -110,11 +108,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
       productFilter === 'all' || 
       so.produtos.split(",").some(p => p.trim() === productFilter);
     
-    const matchesDateRange = 
-      (!startDate || new Date(so.dataUltimaAtualizacao) >= new Date(startDate)) &&
-      (!endDate || new Date(so.dataUltimaAtualizacao) <= new Date(endDate));
-    
-    return matchesSearch && matchesStatus && matchesCliente && matchesProduct && matchesDateRange;
+    return matchesSearch && matchesStatus && matchesCliente && matchesProduct;
   }).sort((a, b) => {
     if (!sortBy) return 0;
     
@@ -182,7 +176,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
             />
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
                 <SelectValue placeholder="Status" />
@@ -219,23 +213,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
               </SelectContent>
             </Select>
 
-            <div className="flex gap-2">
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                placeholder="Data início"
-                className="transition-all duration-300 focus:ring-2 focus:ring-primary/20"
-              />
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                placeholder="Data fim"
-                className="transition-all duration-300 focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-
             <Button 
               variant="outline" 
               onClick={() => {
@@ -243,8 +220,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 setStatusFilter('all');
                 setClienteFilter('all');
                 setProductFilter('all');
-                setStartDate('');
-                setEndDate('');
               }}
               className="transition-all duration-300 hover:bg-muted/50"
             >

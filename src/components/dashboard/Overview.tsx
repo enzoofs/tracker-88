@@ -17,14 +17,17 @@ interface OverviewProps {
     statusCounts?: {
       emProducao: number;
       emImportacao: number;
-      emTransito: number;
+      atrasadas: number;
     };
   };
   allSOs?: any[];
 }
 
 const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
-  const criticalSummary = getCriticalSummary(allSOs);
+  // Calcular valor total em movimento
+  const totalValue = allSOs
+    .filter(so => !so.isDelivered)
+    .reduce((sum, so) => sum + (so.valorTotal || 0), 0);
   
   const metricCards = [
     {
@@ -35,13 +38,6 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
       trend: "+12%"
     },
     {
-      title: "Em Trânsito",
-      value: data.inTransit,
-      icon: Truck,
-      variant: "shipping" as const,
-      trend: "+5%"
-    },
-    {
       title: "Chegadas Previstas",
       value: data.expectedArrivals,
       icon: Clock,
@@ -49,12 +45,11 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
       trend: "próximos 7 dias"
     },
     {
-      title: "Críticos",
-      value: criticalSummary.total,
-      icon: AlertCircle,
-      variant: "alert" as const,
-      trend: "atenção",
-      details: criticalSummary
+      title: "Valor em Movimento",
+      value: `R$ ${(totalValue / 1000).toFixed(0)}k`,
+      icon: TrendingUp,
+      variant: "shipping" as const,
+      trend: "total ativo"
     }
   ];
 
@@ -87,10 +82,9 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Modern KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {metricCards.map((metric, index) => {
           const Icon = metric.icon;
-          const isCriticalCard = metric.variant === 'alert';
           
           return (
             <Card 
@@ -110,55 +104,9 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
                 <div className="text-3xl font-corporate font-semibold text-foreground group-hover:text-primary transition-colors">
                   {metric.value}
                 </div>
-                {isCriticalCard && metric.details && metric.details.total > 0 ? (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm" className="mt-2 h-auto p-0 text-destructive hover:text-destructive/80">
-                        <Badge className="bg-destructive/10 text-destructive border-destructive/20 font-corporate cursor-pointer hover:bg-destructive/20">
-                          Ver Detalhes
-                        </Badge>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80" align="start">
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-sm">Problemas Críticos Detectados</h4>
-                        <div className="space-y-2 text-xs">
-                          <div className="flex justify-between items-center p-2 bg-destructive/5 rounded">
-                            <span className="text-muted-foreground">Críticos (&gt;5 dias):</span>
-                            <Badge variant="destructive" className="text-xs">{metric.details.byLevel.critical}</Badge>
-                          </div>
-                          <div className="flex justify-between items-center p-2 bg-orange-500/5 rounded">
-                            <span className="text-muted-foreground">Atenção (3-5 dias):</span>
-                            <Badge className="bg-orange-500 text-white text-xs">{metric.details.byLevel.warning}</Badge>
-                          </div>
-                          <div className="flex justify-between items-center p-2 bg-yellow-500/5 rounded">
-                            <span className="text-muted-foreground">Aviso (1-2 dias):</span>
-                            <Badge className="bg-yellow-500 text-white text-xs">{metric.details.byLevel.attention}</Badge>
-                          </div>
-                        </div>
-                        {Object.keys(metric.details.byStage).length > 0 && (
-                          <>
-                            <div className="border-t pt-2 mt-2">
-                              <p className="text-xs font-semibold mb-2">Por Etapa:</p>
-                              <div className="space-y-1">
-                                {Object.entries(metric.details.byStage).map(([stage, count]) => (
-                                  <div key={stage} className="flex justify-between text-xs">
-                                    <span className="text-muted-foreground capitalize">{stage}:</span>
-                                    <span className="font-semibold">{count} SO(s)</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                ) : (
-                  <Badge className="mt-2 bg-primary/10 text-primary border-primary/20 font-corporate">
-                    {metric.trend}
-                  </Badge>
-                )}
+                <Badge className="mt-2 bg-primary/10 text-primary border-primary/20 font-corporate">
+                  {metric.trend}
+                </Badge>
               </CardContent>
             </Card>
           );
@@ -189,10 +137,10 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
               <div className="text-sm text-muted-foreground font-corporate">Em Importação</div>
             </div>
             <div className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate">
-              <div className="text-2xl font-corporate font-bold text-status-transit">
-                {data.statusCounts?.emTransito || 0}
+              <div className="text-2xl font-corporate font-bold text-destructive">
+                {data.statusCounts?.atrasadas || 0}
               </div>
-              <div className="text-sm text-muted-foreground font-corporate">Em Trânsito</div>
+              <div className="text-sm text-muted-foreground font-corporate">Atrasadas</div>
             </div>
           </div>
         </CardContent>

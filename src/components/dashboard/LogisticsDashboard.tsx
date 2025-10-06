@@ -32,7 +32,7 @@ interface DashboardData {
     statusCounts?: {
       emProducao: number;
       emImportacao: number;
-      emTransito: number;
+      atrasadas: number;
     };
   };
   sos: Array<{
@@ -79,7 +79,7 @@ const LogisticsDashboard: React.FC = () => {
       statusCounts: {
         emProducao: 0,
         emImportacao: 0,
-        emTransito: 0
+        atrasadas: 0
       }
     },
     sos: [],
@@ -197,6 +197,14 @@ const LogisticsDashboard: React.FC = () => {
       const criticalShipments = transformedSOs.filter(so => !so.isDelivered && so.ultimaLocalizacao).length;
       
       // Calculate real status counts
+      const now = new Date();
+      const atrasadas = transformedSOs.filter(so => {
+        if (so.isDelivered) return false;
+        const lastUpdate = new Date(so.dataUltimaAtualizacao);
+        const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+        return daysSinceUpdate > 7; // Atrasada se sem atualização há mais de 7 dias
+      }).length;
+      
       const statusCounts = {
         emProducao: transformedSOs.filter(so => so.statusAtual === 'Em Produção').length,
         emImportacao: transformedSOs.filter(so => 
@@ -206,7 +214,7 @@ const LogisticsDashboard: React.FC = () => {
           so.statusAtual === 'Voo Internacional' ||
           so.statusAtual === 'Desembaraço'
         ).length,
-        emTransito: transformedSOs.filter(so => so.statusAtual === 'Em Trânsito').length
+        atrasadas
       };
 
       // Generate trend data
