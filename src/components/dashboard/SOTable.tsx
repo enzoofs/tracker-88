@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { Search, Filter, ChevronUp, ChevronDown, AlertTriangle, AlertCircle, AlertOctagon } from 'lucide-react';
+import { Search, Filter, ChevronUp, ChevronDown, AlertTriangle, AlertCircle, AlertOctagon, Ship, Calendar } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getAlertLevel } from '@/hooks/useAlertLevel';
+import { useSLACalculator } from '@/hooks/useSLACalculator';
 
 interface SO {
   id: string;
@@ -17,6 +18,8 @@ interface SO {
   produtos: string;
   valorTotal?: number;
   statusAtual: string;
+  statusOriginal?: string;
+  cargoNumber?: string;
   ultimaLocalizacao: string;
   dataUltimaAtualizacao: string;
   erpOrder?: string;
@@ -38,6 +41,8 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   const [productFilter, setProductFilter] = useState('all');
   const [sortBy, setSortBy] = useState<keyof SO | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const getStatusVariant = (status: string | null) => {
     if (!status) return 'default';
@@ -105,7 +110,11 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
       productFilter === 'all' || 
       so.produtos.split(",").some(p => p.trim() === productFilter);
     
-    return matchesSearch && matchesStatus && matchesCliente && matchesProduct;
+    const matchesDateRange = 
+      (!startDate || new Date(so.dataUltimaAtualizacao) >= new Date(startDate)) &&
+      (!endDate || new Date(so.dataUltimaAtualizacao) <= new Date(endDate));
+    
+    return matchesSearch && matchesStatus && matchesCliente && matchesProduct && matchesDateRange;
   }).sort((a, b) => {
     if (!sortBy) return 0;
     
@@ -173,7 +182,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
             />
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
                 <SelectValue placeholder="Status" />
@@ -210,6 +219,23 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
               </SelectContent>
             </Select>
 
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                placeholder="Data início"
+                className="transition-all duration-300 focus:ring-2 focus:ring-primary/20"
+              />
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                placeholder="Data fim"
+                className="transition-all duration-300 focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
             <Button 
               variant="outline" 
               onClick={() => {
@@ -217,6 +243,8 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 setStatusFilter('all');
                 setClienteFilter('all');
                 setProductFilter('all');
+                setStartDate('');
+                setEndDate('');
               }}
               className="transition-all duration-300 hover:bg-muted/50"
             >
@@ -290,6 +318,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                   </div>
                 </TableHead>
                 <TableHead>Alerta</TableHead>
+                <TableHead>SLA</TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
                   onClick={() => handleSort('dataUltimaAtualizacao')}
@@ -309,6 +338,8 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 const arrivingToday = isArrivingToday(so);
                 const isNew = isNewSO(so);
                 const alertLevel = getAlertLevel(so);
+                const slaInfo = useSLACalculator(so);
+                const hasCargoStatus = so.cargoNumber && so.statusOriginal;
                 
                  return (
                    <TableRow 
@@ -348,11 +379,31 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                     {so.valorTotal ? `R$ ${Number(so.valorTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    <Badge 
-                      className={getStatusBadgeClass(getStatusVariant(so.statusAtual))}
-                    >
-                      {so.statusAtual || 'Sem Status'}
-                    </Badge>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {hasCargoStatus && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Ship className="h-4 w-4 text-primary" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="font-semibold">Status da carga {so.cargoNumber}</p>
+                              <p className="text-xs">SO original: {so.statusOriginal}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                      <Badge 
+                        className={getStatusBadgeClass(getStatusVariant(so.statusAtual))}
+                      >
+                        {so.statusAtual || 'Sem Status'}
+                      </Badge>
+                      {hasCargoStatus && (
+                        <Badge variant="outline" className="text-xs bg-muted/50">
+                          SO: {so.statusOriginal}
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {alertLevel ? (
@@ -369,6 +420,46 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                           </TooltipTrigger>
                           <TooltipContent>
                             <p className="font-semibold">{alertLevel.message}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {slaInfo ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Badge 
+                              className={
+                                slaInfo.urgency === 'overdue' 
+                                  ? 'bg-destructive text-destructive-foreground animate-pulse' 
+                                  : slaInfo.urgency === 'critical' 
+                                  ? 'bg-red-500/20 text-red-500 border-red-500/30' 
+                                  : slaInfo.urgency === 'warning' 
+                                  ? 'bg-yellow-500/20 text-yellow-600 border-yellow-500/30'
+                                  : 'bg-green-500/20 text-green-600 border-green-500/30'
+                              }
+                            >
+                              {slaInfo.urgency === 'overdue' 
+                                ? `+${Math.abs(slaInfo.daysRemaining)}d` 
+                                : `${slaInfo.daysRemaining}d`
+                              }
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-semibold">SLA: {slaInfo.stage}</p>
+                            <p className="text-xs">
+                              {slaInfo.urgency === 'overdue' 
+                                ? `${Math.abs(slaInfo.daysRemaining)} dias de atraso` 
+                                : `${slaInfo.daysRemaining} dias restantes`
+                              }
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Prazo: {slaInfo.expectedDays} dias | Decorridos: {slaInfo.daysSinceUpdate} dias
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>

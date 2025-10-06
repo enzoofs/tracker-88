@@ -75,10 +75,22 @@ serve(async (req) => {
 
     const { data: existingSOs } = await supabase
       .from('envios_processados')
-      .select('sales_order')
+      .select('sales_order, is_delivered')
       .in('sales_order', salesOrders);
 
-    const validSOs = existingSOs?.map(so => so.sales_order) || [];
+    const validSOs = existingSOs?.filter(so => !so.is_delivered).map(so => so.sales_order) || [];
+    const deliveredSOs = existingSOs?.filter(so => so.is_delivered).map(so => so.sales_order) || [];
+    
+    if (deliveredSOs.length > 0) {
+      console.log('⚠️ SOs already delivered:', deliveredSOs.join(', '));
+      return new Response(
+        JSON.stringify({ 
+          error: `SOs ja entregues: ${deliveredSOs.join(', ')}`,
+          rejected_sos: deliveredSOs
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     if (validSOs.length === 0) {
       console.log('No valid SOs found');
@@ -120,6 +132,19 @@ serve(async (req) => {
       .in('sales_order', validSOs);
 
     console.log('SOs updated');
+
+    // Log linkage to carga_historico
+    await supabase
+      .from('carga_historico')
+      .insert({
+        numero_carga: numeroCargaStr,
+        evento: 'SOs Vinculadas',
+        descricao: `${validSOs.length} SOs vinculadas: ${validSOs.join(', ')}`,
+        localizacao: carga.origem || 'Armazém',
+        data_evento: new Date().toISOString()
+      });
+
+    console.log('Linkage logged to history');
 
     return new Response(
       JSON.stringify({

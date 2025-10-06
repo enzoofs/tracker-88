@@ -336,6 +336,13 @@ const LogisticsDashboard: React.FC = () => {
         },
         (payload) => {
           console.log('🔔 Nova notificação:', payload);
+          const notif = payload.new as any;
+          toast({
+            title: notif.titulo || 'Nova notificação',
+            description: notif.mensagem || 'Você tem uma nova notificação',
+            variant: notif.prioridade === 'alta' ? 'destructive' : 'default'
+          });
+          setUnreadNotifications(prev => prev + 1);
           loadNotificationCount();
         }
       )
@@ -563,19 +570,26 @@ const LogisticsDashboard: React.FC = () => {
 
               {/* Refresh Button */}
               <Button
-                onClick={() => {
+                onClick={async () => {
                   toast({
                     title: "Atualizando...",
                     description: "Buscando novos dados",
                   });
-                  loadDashboardData();
+                  setLoading(true);
+                  await loadDashboardData();
+                  setLoading(false);
+                  toast({
+                    title: "✅ Atualizado",
+                    description: `${data.sos.length} SOs e ${data.cargas.length} cargas carregados`,
+                  });
                 }}
                 variant="ghost"
                 size="sm"
                 className="gap-2 px-3 py-2 rounded-xl hover:bg-primary/10 transition-all duration-300"
+                disabled={loading}
               >
-                <RefreshCw className="h-4 w-4" />
-                <span className="text-sm">Atualizar</span>
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <span className="text-sm">Atualizar Agora</span>
               </Button>
 
               {/* Theme Toggle */}
