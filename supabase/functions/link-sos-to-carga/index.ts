@@ -16,7 +16,7 @@ serve(async (req) => {
     const expectedToken = Deno.env.get('N8N_SHARED_TOKEN');
     
     if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
-      console.error('Invalid or missing authentication token');
+      console.error('Invalid token');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -26,10 +26,27 @@ serve(async (req) => {
     const payload = await req.json();
     console.log('Received payload:', payload);
 
-    // Validar numero_carga
     if (!payload.numero_carga) {
+      console.error('Missing numero_carga');
       return new Response(
-        JSON.stringify({ error: 'numero_carga é obrigatório' }),
+        JSON.stringify({ error: 'numero_carga obrigatorio' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const numeroCargaStr = String(payload.numero_carga).trim();
+    let salesOrders = [];
+
+    if (payload.sales_orders && Array.isArray(payload.sales_orders)) {
+      salesOrders = payload.sales_orders;
+      console.log('Array format:', salesOrders.length, 'SOs');
+    } else if (payload.so_number) {
+      salesOrders = [String(payload.so_number).trim()];
+      console.log('Single format: SO', payload.so_number);
+    } else {
+      console.error('No SOs provided');
+      return new Response(
+        JSON.stringify({ error: 'sales_orders ou so_number obrigatorio' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -39,32 +56,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Converter numero_carga para string ANTES de usar trim
-    const numeroCargaStr = String(payload.numero_carga).trim();
-    let salesOrders: string[] = [];
-
-    // Detectar formato
-    if (payload.sales_orders && Array.isArray(payload.sales_orders)) {
-      salesOrders = payload.sales_orders;
-      console.log(`Formato array: ${salesOrders.length} SOs`);
-    } else if (payload.so_number) {
-      salesOrders = [String(payload.so_number).trim()];
-      console.log(`Formato objeto único: SO ${payload.so_number}`);
-    } else {
-      return new Response(
-        JSON.stringify({ error: 'sales_orders ou so_number é obrigatório' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (salesOrders.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Nenhuma SO fornecida' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Verificar se a carga existe
+    console.log('Checking carga:', numeroCargaStr);
     const { data: carga, error: cargaError } = await supabase
       .from('cargas')
       .select('numero_carga, origem')
@@ -72,100 +64,73 @@ serve(async (req) => {
       .maybeSingle();
 
     if (cargaError || !carga) {
-      console.error('Carga não encontrada:', numeroCargaStr);
+      console.error('Carga not found:', numeroCargaStr);
       return new Response(
-        JSON.stringify({ error: `Carga ${numeroCargaStr} não encontrada` }),
+        JSON.stringify({ error: `Carga ${numeroCargaStr} nao encontrada` }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`✅ Carga ${numeroCargaStr} encontrada`);
+    console.log('Carga found:', carga.numero_carga);
 
-    // Verificar quais SOs existem
-    const { data: existingSOs, error: soError } = await supabase
+    const { data: existingSOs } = await supabase
       .from('envios_processados')
       .select('sales_order')
       .in('sales_order', salesOrders);
 
-    if (soError) {
-      console.error('Erro ao buscar SOs:', soError);
-      return new Response(
-        JSON.stringify({ error: soError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const validSOs = existingSOs?.map(so => so.sales_order) || [];
-    const invalidSOs = salesOrders.filter(so => !validSOs.includes(so));
-
+    
     if (validSOs.length === 0) {
-      console.log(`⚠️ Nenhuma SO válida. Tentadas: ${salesOrders.join(', ')}`);
+      console.log('No valid SOs found');
       return new Response(
-        JSON.stringify({ 
-          error: 'Nenhuma SO válida encontrada',
-          invalid_sos: invalidSOs 
-        }),
+        JSON.stringify({ error: 'Nenhuma SO valida' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Preparar dados para insert
+    console.log('Valid SOs:', validSOs.length);
+
     const linksToInsert = validSOs.map(so => ({
       numero_carga: numeroCargaStr,
       so_number: so
     }));
 
-    console.log(`📝 Inserindo ${linksToInsert.length} vínculos`);
-
-    // Inserir vínculos
-    const { data: insertedLinks, error: linkError } = await supabase
+    const { error: linkError } = await supabase
       .from('carga_sales_orders')
-      .upsert(linksToInsert, { 
-        onConflict: 'numero_carga,so_number', 
-        ignoreDuplicates: true 
-      })
-      .select();
+      .upsert(linksToInsert, { onConflict: 'numero_carga,so_number', ignoreDuplicates: true });
 
     if (linkError) {
-      console.error('Erro ao vincular SOs:', linkError);
+      console.error('Link error:', linkError.message);
       return new Response(
         JSON.stringify({ error: linkError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`✅ ${validSOs.length} vínculos criados`);
+    console.log('Links created');
 
-    // Atualizar status das SOs
-    const { error: updateError } = await supabase
+    await supabase
       .from('envios_processados')
       .update({
-        status_atual: 'No Armazém',
-        status_cliente: 'Em Importação',
+        status_atual: 'No Armazem',
+        status_cliente: 'Em Importacao',
         is_at_warehouse: true,
-        ultima_localizacao: carga.origem || 'Armazém'
+        ultima_localizacao: carga.origem || 'Armazem'
       })
       .in('sales_order', validSOs);
 
-    if (updateError) {
-      console.error('Erro ao atualizar status das SOs:', updateError);
-    } else {
-      console.log(`✅ ${validSOs.length} SOs atualizadas`);
-    }
+    console.log('SOs updated');
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'SOs vinculadas com sucesso',
-        total_vinculadas: validSOs.length,
-        sales_orders_vinculadas: validSOs,
-        sales_orders_invalidas: invalidSOs.length > 0 ? invalidSOs : undefined
+        total_vinculadas: validSOs.length
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Erro no link-sos-to-carga:', error);
+    console.error('Error:', error.message);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
