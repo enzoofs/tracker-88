@@ -39,17 +39,17 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Converter numero_carga para string ANTES de usar trim
+    const numeroCargaStr = String(payload.numero_carga).trim();
     let salesOrders: string[] = [];
 
-    // Detectar formato: array (antigo) ou objeto único (novo)
+    // Detectar formato
     if (payload.sales_orders && Array.isArray(payload.sales_orders)) {
-      // Formato antigo: { numero_carga: "890", sales_orders: ["SO1", "SO2"] }
       salesOrders = payload.sales_orders;
-      console.log(`Formato array detectado: ${salesOrders.length} SOs`);
+      console.log(`Formato array: ${salesOrders.length} SOs`);
     } else if (payload.so_number) {
-      // Formato novo: { numero_carga: 890, so_number: "SO1" }
-      salesOrders = [payload.so_number];
-      console.log(`Formato objeto único detectado: SO ${payload.so_number}`);
+      salesOrders = [String(payload.so_number).trim()];
+      console.log(`Formato objeto único: SO ${payload.so_number}`);
     } else {
       return new Response(
         JSON.stringify({ error: 'sales_orders ou so_number é obrigatório' }),
@@ -68,16 +68,18 @@ serve(async (req) => {
     const { data: carga, error: cargaError } = await supabase
       .from('cargas')
       .select('numero_carga, origem')
-      .eq('numero_carga', payload.numero_carga.toString().trim())
+      .eq('numero_carga', numeroCargaStr)
       .maybeSingle();
 
     if (cargaError || !carga) {
-      console.error('Carga não encontrada:', payload.numero_carga);
+      console.error('Carga não encontrada:', numeroCargaStr);
       return new Response(
-        JSON.stringify({ error: `Carga ${payload.numero_carga} não encontrada` }),
+        JSON.stringify({ error: `Carga ${numeroCargaStr} não encontrada` }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`✅ Carga ${numeroCargaStr} encontrada`);
 
     // Verificar quais SOs existem
     const { data: existingSOs, error: soError } = await supabase
@@ -97,6 +99,7 @@ serve(async (req) => {
     const invalidSOs = salesOrders.filter(so => !validSOs.includes(so));
 
     if (validSOs.length === 0) {
+      console.log(`⚠️ Nenhuma SO válida. Tentadas: ${salesOrders.join(', ')}`);
       return new Response(
         JSON.stringify({ 
           error: 'Nenhuma SO válida encontrada',
@@ -108,9 +111,11 @@ serve(async (req) => {
 
     // Preparar dados para insert
     const linksToInsert = validSOs.map(so => ({
-      numero_carga: payload.numero_carga.toString().trim(),
+      numero_carga: numeroCargaStr,
       so_number: so
     }));
+
+    console.log(`📝 Inserindo ${linksToInsert.length} vínculos`);
 
     // Inserir vínculos
     const { data: insertedLinks, error: linkError } = await supabase
@@ -129,6 +134,8 @@ serve(async (req) => {
       );
     }
 
+    console.log(`✅ ${validSOs.length} vínculos criados`);
+
     // Atualizar status das SOs
     const { error: updateError } = await supabase
       .from('envios_processados')
@@ -142,9 +149,9 @@ serve(async (req) => {
 
     if (updateError) {
       console.error('Erro ao atualizar status das SOs:', updateError);
+    } else {
+      console.log(`✅ ${validSOs.length} SOs atualizadas`);
     }
-
-    console.log(`${validSOs.length} SOs vinculadas à carga ${payload.numero_carga}`);
 
     return new Response(
       JSON.stringify({
