@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.link-sos-to-carga]
 verify_jwt = false
+
+[functions.update-carga]
+verify_jwt = false
