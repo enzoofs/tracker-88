@@ -44,6 +44,7 @@ interface DashboardData {
     statusAtual: string;
     ultimaLocalizacao: string;
     dataUltimaAtualizacao: string;
+    dataOrdem?: string;
     erpOrder?: string;
     webOrder?: string;
     trackingNumbers?: string;
@@ -180,6 +181,7 @@ const LogisticsDashboard: React.FC = () => {
           cargoNumber: cargoNum || null,
           ultimaLocalizacao: envio.ultima_localizacao || '',
           dataUltimaAtualizacao: envio.data_ultima_atualizacao || envio.updated_at,
+          dataOrdem: envio.data_ordem,
           erpOrder: envio.erp_order,
           webOrder: envio.web_order,
           trackingNumbers: Array.isArray(envio.tracking_numbers) ? envio.tracking_numbers.join(', ') : envio.tracking_numbers || '',

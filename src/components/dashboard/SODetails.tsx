@@ -44,6 +44,7 @@ interface SO {
   statusAtual: string;
   ultimaLocalizacao: string;
   dataUltimaAtualizacao: string;
+  dataOrdem?: string;
   erpOrder?: string;
   webOrder?: string;
   trackingNumbers?: string;
@@ -192,14 +193,15 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
     const events = [];
     const now = new Date(dataAtualizacao);
     
-    // Sempre adiciona "Em Produção" como primeiro evento
+    // Sempre adiciona "Em Produção" como primeiro evento, usando data_ordem se disponível
+    const producaoDate = so.dataOrdem ? new Date(so.dataOrdem) : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     events.push({
       id: 'synthetic-producao',
       sales_order: so.salesOrder,
       status: 'Em Produção',
       description: 'Produto em fabricação',
       location: 'Fornecedor',
-      timestamp: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString() // 30 dias atrás
+      timestamp: producaoDate.toISOString()
     });
 
     const statusLower = statusAtual.toLowerCase();
@@ -511,7 +513,11 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
                   </p>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                     <Clock className="h-3 w-3" />
-                    {new Date(so.dataUltimaAtualizacao).toLocaleDateString('pt-BR')}
+                    {new Date(
+                      so.statusAtual === 'Em Produção' && so.dataOrdem 
+                        ? so.dataOrdem 
+                        : so.dataUltimaAtualizacao
+                    ).toLocaleDateString('pt-BR')}
                   </div>
                 </CardContent>
               </Card>
