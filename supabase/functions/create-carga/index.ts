@@ -1,132 +1,106 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface CreateCargaPayload {
-  numero_carga: string;
-  tipo_temperatura: string;
-  data_chegada_prevista?: string;
-  origem?: string;
-  destino?: string;
-  transportadora?: string;
-  mawb?: string;
-  hawb?: string;
-}
-
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.replace(/^Bearer\s+/i, '');
     const expectedToken = Deno.env.get('N8N_SHARED_TOKEN');
     
-    if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
-      console.error('Invalid or missing authentication token');
+    if (!token || token !== expectedToken) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const payload: CreateCargaPayload = await req.json();
-    console.log('Received payload:', payload);
+    const payload = await req.json();
+    console.log('📥 Payload recebido:', JSON.stringify(payload));
 
-    // Validações
-    if (!payload.numero_carga || typeof payload.numero_carga !== 'string') {
+    // Extrair dados - pode vir como objeto ou array
+    const data = Array.isArray(payload) ? payload[0] : payload;
+    
+    // Validar numero_carga
+    if (!data.numero_carga) {
+      console.error('❌ numero_carga ausente:', data);
       return new Response(
         JSON.stringify({ error: 'numero_carga é obrigatório' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!payload.tipo_temperatura || !['ambiente', 'controlada'].includes(payload.tipo_temperatura.toLowerCase())) {
-      return new Response(
-        JSON.stringify({ error: 'tipo_temperatura deve ser "ambiente" ou "controlada"' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    console.log('📦 Criando carga:', data.numero_carga);
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verificar se a carga já existe
-    const { data: existingCarga } = await supabase
-      .from('cargas')
-      .select('numero_carga')
-      .eq('numero_carga', payload.numero_carga.trim())
-      .maybeSingle();
-
-    if (existingCarga) {
-      console.log(`Carga ${payload.numero_carga} já existe`);
-      return new Response(
-        JSON.stringify({ 
-          message: 'Carga já existe',
-          numero_carga: payload.numero_carga 
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Inserir nova carga
-    const { data: newCarga, error: insertError } = await supabase
+    // Inserir carga
+    const { data: cargaInserida, error: insertError } = await supabase
       .from('cargas')
       .insert({
-        numero_carga: payload.numero_carga.trim(),
-        tipo_temperatura: payload.tipo_temperatura.toLowerCase(),
-        data_chegada_prevista: payload.data_chegada_prevista || null,
-        origem: payload.origem?.trim() || null,
-        destino: payload.destino?.trim() || null,
-        transportadora: payload.transportadora?.trim() || null,
-        mawb: payload.mawb?.trim() || null,
-        hawb: payload.hawb?.trim() || null,
-        status: 'No Armazém'
+        numero_carga: data.numero_carga,
+        status: data.status || 'Em Consolidação',
+        origem: data.origem || 'Miami, FL',
+        destino: data.destino || 'Confins, MG',
+        ultima_localizacao: data.ultima_localizacao || 'Armazém Miami',
+        awb_number: data.awb_number,
+        temperatura_controlada: data.temperatura_controlada || false,
+        observacoes: data.observacoes,
+        created_at: new Date().toISOString()
       })
       .select()
       .single();
 
     if (insertError) {
-      console.error('Erro ao inserir carga:', insertError);
-      return new Response(
-        JSON.stringify({ error: insertError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('❌ Erro ao inserir carga:', insertError);
+      throw insertError;
     }
 
-    // Registrar no histórico
+    console.log('✅ Carga inserida:', cargaInserida.numero_carga);
+
+    // Registrar histórico
     const { error: histError } = await supabase
       .from('carga_historico')
       .insert({
-        numero_carga: payload.numero_carga.trim(),
-        evento: 'Chegada ao Armazém',
-        descricao: 'Carga recebida no armazém',
-        localizacao: payload.origem?.trim() || 'Armazém'
+        tipo: 'carga_historico',
+        numero_carga: data.numero_carga,
+        evento: 'Carga Criada',
+        data_evento: new Date().toISOString(),
+        detalhes: JSON.stringify({ 
+          fonte: 'Email Pré-Alerta',
+          temperatura_controlada: data.temperatura_controlada,
+          observacoes: data.observacoes
+        }),
+        fonte: 'Email Tracking',
+        created_at: new Date().toISOString()
       });
 
     if (histError) {
-      console.error('Erro ao registrar histórico:', histError);
+      console.error('⚠️ Erro ao registrar histórico:', histError);
+    } else {
+      console.log('📝 Histórico registrado');
     }
 
-    console.log(`Carga ${payload.numero_carga} criada com sucesso`);
-
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Carga criada com sucesso',
-        carga: newCarga
+      JSON.stringify({ 
+        success: true, 
+        data: cargaInserida,
+        message: `Carga ${data.numero_carga} criada com sucesso`
       }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Erro no create-carga:', error);
+    console.error('❌ Erro:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
