@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { 
-  Ship, 
+  Dna, 
   Mail, 
   Lock, 
   User, 
@@ -120,10 +120,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center space-y-4">
           <div className="flex items-center justify-center">
-            <Ship className="h-12 w-12 text-primary" />
+            <Dna className="h-12 w-12 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Global Logi-Sight</CardTitle>
+            <CardTitle className="text-2xl font-bold">Síntese Tracker</CardTitle>
             <p className="text-muted-foreground">Dashboard de Logística Internacional</p>
           </div>
         </CardHeader>
