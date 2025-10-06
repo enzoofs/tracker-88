@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { Search, Filter, ChevronUp, ChevronDown, AlertTriangle, AlertCircle, AlertOctagon, Ship, Calendar } from 'lucide-react';
+import { Search, Filter, ChevronUp, ChevronDown, Plane, Calendar } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getAlertLevel } from '@/hooks/useAlertLevel';
 import { useSLACalculator } from '@/hooks/useSLACalculator';
@@ -317,9 +317,8 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                     )}
                   </div>
                 </TableHead>
-                <TableHead>Alerta</TableHead>
-                <TableHead>SLA</TableHead>
-                <TableHead 
+                <TableHead>ETA</TableHead>
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
                   onClick={() => handleSort('dataUltimaAtualizacao')}
                 >
@@ -337,7 +336,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 const delayed = isDelayed(so);
                 const arrivingToday = isArrivingToday(so);
                 const isNew = isNewSO(so);
-                const alertLevel = getAlertLevel(so);
                 const slaInfo = useSLACalculator(so);
                 const hasCargoStatus = so.cargoNumber && so.statusOriginal;
                 
@@ -384,7 +382,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger>
-                              <Ship className="h-4 w-4 text-primary" />
+                              <Plane className="h-4 w-4 text-primary" />
                             </TooltipTrigger>
                             <TooltipContent>
                               <p className="font-semibold">Status da carga {so.cargoNumber}</p>
@@ -398,34 +396,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                       >
                         {so.statusAtual || 'Sem Status'}
                       </Badge>
-                      {hasCargoStatus && (
-                        <Badge variant="outline" className="text-xs bg-muted/50">
-                          SO: {so.statusOriginal}
-                        </Badge>
-                      )}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {alertLevel ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            {alertLevel.level === 3 ? (
-                              <AlertOctagon className="h-5 w-5 text-destructive animate-pulse" />
-                            ) : alertLevel.level === 2 ? (
-                              <AlertTriangle className="h-5 w-5 text-orange-500" />
-                            ) : (
-                              <AlertCircle className="h-5 w-5 text-yellow-500" />
-                            )}
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="font-semibold">{alertLevel.message}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">-</span>
-                    )}
                   </TableCell>
                   <TableCell>
                     {slaInfo ? (
@@ -450,7 +421,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p className="font-semibold">SLA: {slaInfo.stage}</p>
+                            <p className="font-semibold">ETA: {slaInfo.stage}</p>
                             <p className="text-xs">
                               {slaInfo.urgency === 'overdue' 
                                 ? `${Math.abs(slaInfo.daysRemaining)} dias de atraso` 
