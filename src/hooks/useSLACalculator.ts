@@ -2,6 +2,7 @@ interface SO {
   statusAtual: string;
   dataUltimaAtualizacao: string;
   isDelivered: boolean;
+  trackingNumbers?: string;
 }
 
 interface SLAResult {
@@ -16,38 +17,19 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   if (so.isDelivered) return null;
 
   const currentStatus = so.statusAtual.toLowerCase();
+  
+  // Enquanto estiver em produção, não há ETA
+  if (currentStatus.includes('produção') || currentStatus.includes('producao')) {
+    return null;
+  }
+
   const lastUpdate = new Date(so.dataUltimaAtualizacao);
   const now = new Date();
   const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
 
-  let expectedDays = 0;
-  let stage = '';
-
-  // Define SLA baseado no status
-  if (currentStatus.includes('produção') || currentStatus.includes('producao')) {
-    expectedDays = 14;
-    stage = 'Produção';
-  } else if (currentStatus.includes('enviado') || currentStatus.includes('fedex') || currentStatus.includes('saiu')) {
-    expectedDays = 1;
-    stage = 'Envio';
-  } else if (currentStatus.includes('armazém') || currentStatus.includes('armazem')) {
-    expectedDays = 5;
-    stage = 'Armazém';
-  } else if (currentStatus.includes('importação') || currentStatus.includes('importacao')) {
-    expectedDays = 10;
-    stage = 'Importação';
-  } else if (currentStatus.includes('voo') || currentStatus.includes('internacional')) {
-    expectedDays = 2;
-    stage = 'Voo';
-  } else if (currentStatus.includes('desembaraço') || currentStatus.includes('desembaraco')) {
-    expectedDays = 6;
-    stage = 'Desembaraço';
-  } else if (currentStatus.includes('trânsito') || currentStatus.includes('transito')) {
-    expectedDays = 5;
-    stage = 'Trânsito';
-  } else {
-    return null;
-  }
+  // Após receber tracking numbers (envio do fornecedor), temos 15 dias úteis para entrega
+  const expectedDays = 15;
+  const stage = 'Entrega';
 
   const daysRemaining = expectedDays - daysSinceUpdate;
   
