@@ -63,6 +63,41 @@ Deno.serve(async (req) => {
 
     console.log('✅ Carga atualizada');
 
+    // Se a carga foi marcada como "Entregue", atualizar todas as SOs vinculadas
+    if (data.status_atual?.toLowerCase() === 'entregue') {
+      console.log('📦 Atualizando SOs para status "Entregue"...');
+      
+      // Buscar SOs vinculadas
+      const { data: linkedSOs, error: linkedError } = await supabase
+        .from('carga_sales_orders')
+        .select('so_number')
+        .eq('numero_carga', data.numero_carga);
+
+      if (linkedError) {
+        console.error('⚠️ Erro ao buscar SOs vinculadas:', linkedError.message);
+      } else if (linkedSOs && linkedSOs.length > 0) {
+        const soNumbers = linkedSOs.map(link => link.so_number);
+        console.log(`📋 Atualizando ${soNumbers.length} SOs:`, soNumbers);
+
+        // Atualizar status de todas as SOs vinculadas
+        const { error: updateSOsError } = await supabase
+          .from('envios_processados')
+          .update({
+            status_atual: 'Entregue',
+            status_cliente: 'Entregue',
+            is_delivered: true,
+            data_ultima_atualizacao: new Date().toISOString()
+          })
+          .in('sales_order', soNumbers);
+
+        if (updateSOsError) {
+          console.error('⚠️ Erro ao atualizar SOs:', updateSOsError.message);
+        } else {
+          console.log('✅ SOs atualizadas para "Entregue"');
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({ success: true, data: cargaAtualizada }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -158,15 +158,15 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-2 text-sm">
                         <Thermometer className="h-4 w-4 text-primary" />
-                        Temperatura
+                        Status da Carga
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Badge className="capitalize">
-                        {cargo.tipo_temperatura || 'N/A'}
+                      <Badge className="capitalize text-base font-semibold">
+                        {cargo.status}
                       </Badge>
                       <div className="text-xs text-muted-foreground mt-2">
-                        Status: {cargo.status}
+                        Temperatura: {cargo.tipo_temperatura || 'N/A'}
                       </div>
                     </CardContent>
                   </Card>
@@ -230,9 +230,14 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                                 R$ {(so.valor_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                               </TableCell>
                               <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {getStatusIcon(so.status_atual)}
-                                  <span className="text-sm">{so.status_atual}</span>
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-2">
+                                    {getStatusIcon(cargo.status)}
+                                    <span className="text-sm font-semibold">{cargo.status}</span>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground">
+                                    (SO: {so.status_atual})
+                                  </span>
                                 </div>
                               </TableCell>
                               <TableCell className="text-xs font-mono">

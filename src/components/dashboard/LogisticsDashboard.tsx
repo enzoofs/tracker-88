@@ -93,6 +93,8 @@ const LogisticsDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('sos');
   const [showDelivered, setShowDelivered] = useState(false);
   const [filteredSOs, setFilteredSOs] = useState<any[]>([]);
+  const [showDeliveredCargas, setShowDeliveredCargas] = useState(false);
+  const [filteredCargas, setFilteredCargas] = useState<any[]>([]);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const {
     toast
@@ -136,28 +138,54 @@ const LogisticsDashboard: React.FC = () => {
         })
       );
 
-      // Transform envios data to SO format
-      const transformedSOs = enviosData?.map(envio => ({
-        id: envio.id.toString(),
-        salesOrder: envio.sales_order,
-        cliente: envio.cliente,
-        produtos: typeof envio.produtos === 'string' ? envio.produtos : JSON.stringify(envio.produtos || ''),
-        valorTotal: envio.valor_total,
-        statusAtual: envio.status_atual === 'Enviado' ? 'Em Importação' : envio.status_atual,
-        ultimaLocalizacao: envio.ultima_localizacao || '',
-        dataUltimaAtualizacao: envio.data_ultima_atualizacao || envio.updated_at,
-        erpOrder: envio.erp_order,
-        webOrder: envio.web_order,
-        trackingNumbers: Array.isArray(envio.tracking_numbers) ? envio.tracking_numbers.join(', ') : envio.tracking_numbers || '',
-        isDelivered: envio.status_atual === 'Entregue'
-      })) || [];
-
-      // Load cargo-SO relationships
-      const {
-        data: cargoSOsData,
-        error: cargoSOsError
-      } = await supabase.from('carga_sales_orders').select('numero_carga, so_number').order('numero_carga');
+      // Load cargo-SO relationships to check for cargo status
+      const { data: cargoSOsData, error: cargoSOsError } = await supabase
+        .from('carga_sales_orders')
+        .select('numero_carga, so_number');
       if (cargoSOsError) throw cargoSOsError;
+
+      // Create a map of SO to cargo number
+      const soToCargo: Record<string, string> = {};
+      cargoSOsData?.forEach(link => {
+        soToCargo[link.so_number] = link.numero_carga;
+      });
+
+      // Get unique cargo numbers and fetch their statuses
+      const cargoNumbers = Array.from(new Set(cargoSOsData?.map(link => link.numero_carga) || []));
+      const { data: cargosStatusData, error: cargosStatusError } = await supabase
+        .from('cargas')
+        .select('numero_carga, status')
+        .in('numero_carga', cargoNumbers);
+      if (cargosStatusError) throw cargosStatusError;
+
+      // Create a map of cargo number to status
+      const cargoStatusMap: Record<string, string> = {};
+      cargosStatusData?.forEach(c => {
+        cargoStatusMap[c.numero_carga] = c.status;
+      });
+
+      // Transform envios data to SO format with cargo status override
+      const transformedSOs = enviosData?.map(envio => {
+        const cargoNum = soToCargo[envio.sales_order];
+        const cargoStatus = cargoNum ? cargoStatusMap[cargoNum] : null;
+        
+        return {
+          id: envio.id.toString(),
+          salesOrder: envio.sales_order,
+          cliente: envio.cliente,
+          produtos: typeof envio.produtos === 'string' ? envio.produtos : JSON.stringify(envio.produtos || ''),
+          valorTotal: envio.valor_total,
+          statusAtual: cargoStatus || (envio.status_atual === 'Enviado' ? 'Em Importação' : envio.status_atual),
+          statusOriginal: envio.status_atual,
+          cargoNumber: cargoNum || null,
+          ultimaLocalizacao: envio.ultima_localizacao || '',
+          dataUltimaAtualizacao: envio.data_ultima_atualizacao || envio.updated_at,
+          erpOrder: envio.erp_order,
+          webOrder: envio.web_order,
+          trackingNumbers: Array.isArray(envio.tracking_numbers) ? envio.tracking_numbers.join(', ') : envio.tracking_numbers || '',
+          isDelivered: (cargoStatus && cargoStatus.toLowerCase() === 'entregue') || envio.status_atual === 'Entregue'
+        };
+      }) || [];
 
       // Use cargas with SO count
       const transformedCargas = cargasWithCount;
@@ -212,10 +240,17 @@ const LogisticsDashboard: React.FC = () => {
       });
       
       // Apply delivered filter
-      const filtered = showDelivered ? transformedSOs : transformedSOs.filter(so => !so.isDelivered);
-      setFilteredSOs(filtered);
+      const filteredSOsList = showDelivered ? transformedSOs : transformedSOs.filter(so => !so.isDelivered);
+      setFilteredSOs(filteredSOsList);
       
-      console.log('📤 setFilteredSOs chamado com:', filtered.length, 'SOs');
+      // Apply delivered filter for cargas
+      const filteredCargasList = showDeliveredCargas 
+        ? transformedCargas 
+        : transformedCargas.filter(carga => carga.status?.toLowerCase() !== 'entregue');
+      setFilteredCargas(filteredCargasList);
+      
+      console.log('📤 setFilteredSOs chamado com:', filteredSOsList.length, 'SOs');
+      console.log('📦 setFilteredCargas chamado com:', filteredCargasList.length, 'Cargas');
       
       setLastUpdate(new Date());
     } catch (error) {
@@ -235,6 +270,14 @@ const LogisticsDashboard: React.FC = () => {
     const filtered = showDelivered ? data.sos : data.sos.filter(so => !so.isDelivered);
     setFilteredSOs(filtered);
   }, [showDelivered, data.sos]);
+
+  // Update filtered Cargas when showDeliveredCargas changes
+  useEffect(() => {
+    const filtered = showDeliveredCargas 
+      ? data.cargas 
+      : data.cargas.filter(carga => carga.status?.toLowerCase() !== 'entregue');
+    setFilteredCargas(filtered);
+  }, [showDeliveredCargas, data.cargas]);
   
   useEffect(() => {
     loadDashboardData();
@@ -487,7 +530,7 @@ const LogisticsDashboard: React.FC = () => {
                 <span className="text-sm">Exportar</span>
               </Button>
 
-              {/* Show Delivered Toggle */}
+              {/* Show Delivered SOs Toggle */}
               <Button
                 onClick={() => setShowDelivered(!showDelivered)}
                 variant={showDelivered ? "default" : "ghost"}
@@ -496,9 +539,27 @@ const LogisticsDashboard: React.FC = () => {
               >
                 <Package className="h-4 w-4" />
                 <span className="text-sm">
-                  {showDelivered ? "Ocultar Entregues" : `Entregues (${data.sos.filter(so => so.isDelivered).length})`}
+                  {showDelivered ? "Ocultar SOs Entregues" : `SOs Entregues (${data.sos.filter(so => so.isDelivered).length})`}
                 </span>
               </Button>
+
+              {/* Show Delivered Cargas Toggle */}
+              {activeTab === 'cargas' && (
+                <Button
+                  onClick={() => setShowDeliveredCargas(!showDeliveredCargas)}
+                  variant={showDeliveredCargas ? "default" : "ghost"}
+                  size="sm"
+                  className="gap-2 px-3 py-2 rounded-xl transition-all duration-300"
+                >
+                  <Package className="h-4 w-4" />
+                  <span className="text-sm">
+                    {showDeliveredCargas 
+                      ? "Ocultar Cargas Entregues" 
+                      : `Cargas Entregues (${data.cargas.filter(c => c.status?.toLowerCase() === 'entregue').length})`
+                    }
+                  </span>
+                </Button>
+              )}
 
               {/* Refresh Button */}
               <Button
@@ -613,7 +674,7 @@ const LogisticsDashboard: React.FC = () => {
                 </Badge>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {data.cargas.map((carga) => (
+                {filteredCargas.map((carga) => (
                   <CargoCard
                     key={carga.id}
                     carga={carga}
@@ -621,7 +682,7 @@ const LogisticsDashboard: React.FC = () => {
                   />
                 ))}
               </div>
-              {data.cargas.length === 0 && (
+              {filteredCargas.length === 0 && (
                 <Card className="p-12 text-center">
                   <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">Nenhuma carga encontrada</p>

@@ -27,6 +27,8 @@ const CargoCard = ({ carga, onClick }: CargoCardProps) => {
         return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
       case 'despachada':
         return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'entregue':
+        return 'bg-status-delivered text-status-delivered-foreground border-status-delivered/30 font-bold';
       default:
         return 'bg-muted text-muted-foreground';
     }
