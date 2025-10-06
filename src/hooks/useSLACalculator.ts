@@ -1,6 +1,7 @@
 interface SO {
   statusAtual: string;
   dataUltimaAtualizacao: string;
+  dataOrdem?: string;
   isDelivered: boolean;
   trackingNumbers?: string;
 }
@@ -23,9 +24,10 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
     return null;
   }
 
-  const lastUpdate = new Date(so.dataUltimaAtualizacao);
+  // Usa data_ordem quando disponível, caso contrário usa dataUltimaAtualizacao
+  const referenceDate = new Date(so.dataOrdem || so.dataUltimaAtualizacao);
   const now = new Date();
-  const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+  const daysSinceUpdate = Math.floor((now.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
 
   // Após receber tracking numbers (envio do fornecedor), temos 15 dias úteis para entrega
   const expectedDays = 15;

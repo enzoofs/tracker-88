@@ -57,9 +57,7 @@ interface SODetailsProps {
 
 const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
   const [shipmentHistory, setShipmentHistory] = useState<any[]>([]);
-  const [statusHistory, setStatusHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingStatusHistory, setLoadingStatusHistory] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(so.statusAtual);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -264,28 +262,8 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
     return events;
   };
 
-  const loadStatusHistory = async () => {
-    try {
-      setLoadingStatusHistory(true);
-      const { data, error } = await supabase
-        .from('shipment_history')
-        .select('*')
-        .eq('sales_order', so.salesOrder)
-        .order('timestamp', { ascending: false });
-
-      if (error) throw error;
-      setStatusHistory(data || []);
-    } catch (error) {
-      console.error('Error loading status history:', error);
-      setStatusHistory([]);
-    } finally {
-      setLoadingStatusHistory(false);
-    }
-  };
-
   useEffect(() => {
     loadShipmentHistory();
-    loadStatusHistory();
   }, [so.salesOrder]);
 
   // Transform shipment history to timeline events
@@ -596,65 +574,6 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
                 </CardContent>
               </Card>
             </div>
-
-            {/* Status History */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  Histórico de Mudanças de Status
-                  {loadingStatusHistory && (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary ml-2" />
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {statusHistory.length > 0 ? (
-                  <div className="space-y-4">
-                    {statusHistory.map((event, index) => (
-                      <div key={event.id} className="flex gap-4 pb-4 border-b last:border-b-0">
-                        <div className="flex flex-col items-center">
-                          <div className={`w-3 h-3 rounded-full ${
-                            index === 0 ? 'bg-primary animate-pulse' : 'bg-muted'
-                          }`} />
-                          {index !== statusHistory.length - 1 && (
-                            <div className="w-0.5 h-full bg-border mt-1" />
-                          )}
-                        </div>
-                        <div className="flex-1 pt-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <Badge className="bg-primary/10 text-primary">
-                              {event.status}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(event.timestamp).toLocaleString('pt-BR')}
-                            </span>
-                          </div>
-                          {event.location && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              📍 {event.location}
-                            </p>
-                          )}
-                          {event.description && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {typeof event.description === 'string' 
-                                ? event.description 
-                                : JSON.stringify(event.description)
-                              }
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Nenhum histórico de status encontrado</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
 
             {/* Timeline */}
             <Card className="shadow-card">

@@ -199,6 +199,7 @@ export type Database = {
           cliente: string
           created_at: string | null
           data_envio: string | null
+          data_ordem: string | null
           data_ultima_atualizacao: string | null
           erp_order: string | null
           id: string
@@ -221,6 +222,7 @@ export type Database = {
           cliente: string
           created_at?: string | null
           data_envio?: string | null
+          data_ordem?: string | null
           data_ultima_atualizacao?: string | null
           erp_order?: string | null
           id?: string
@@ -243,6 +245,7 @@ export type Database = {
           cliente?: string
           created_at?: string | null
           data_envio?: string | null
+          data_ordem?: string | null
           data_ultima_atualizacao?: string | null
           erp_order?: string | null
           id?: string
