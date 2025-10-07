@@ -161,32 +161,72 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
     }
   };
 
-  const loadShipmentHistory = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('shipment_history')
-        .select('*')
-        .eq('sales_order', so.salesOrder)
-        .order('timestamp', { ascending: true });
-
-      if (error) throw error;
-      
-      // Se não houver histórico, criar eventos sintéticos baseados no status atual
-      if (!data || data.length === 0) {
-        const syntheticEvents = createSyntheticEvents(so.statusAtual, so.dataUltimaAtualizacao);
-        setShipmentHistory(syntheticEvents);
-      } else {
-        setShipmentHistory(data);
-      }
-    } catch (error) {
-      console.error('Error loading shipment history:', error);
-      // Criar eventos sintéticos em caso de erro
-      const syntheticEvents = createSyntheticEvents(so.statusAtual, so.dataUltimaAtualizacao);
-      setShipmentHistory(syntheticEvents);
-    } finally {
-      setLoading(false);
+  // Função para construir a timeline baseada no status atual
+  const buildTimelineFromStatus = (): TimelineEvent[] => {
+    console.log('🔨 Construindo timeline para status:', so.statusAtual);
+    
+    // Mapear status atual para o índice do estágio
+    const statusLower = so.statusAtual.toLowerCase();
+    let currentStageIndex = 0;
+    
+    if (statusLower.includes('produção') || statusLower.includes('producao')) {
+      currentStageIndex = 0;
+    } else if (statusLower.includes('fedex')) {
+      currentStageIndex = 1;
+    } else if (statusLower.includes('armazém') || statusLower.includes('armazem')) {
+      currentStageIndex = 2;
+    } else if (statusLower.includes('embarque agendado')) {
+      currentStageIndex = 3;
+    } else if (statusLower.includes('embarque confirmado') || statusLower.includes('embarcado')) {
+      currentStageIndex = 4;
+    } else if (statusLower.includes('chegada') || statusLower.includes('brasil')) {
+      currentStageIndex = 5;
+    } else if (statusLower.includes('desembaraço') || statusLower.includes('desembaraco')) {
+      currentStageIndex = 6;
+    } else if (statusLower.includes('entregue') || statusLower.includes('destino')) {
+      currentStageIndex = 7;
     }
+    
+    console.log('📍 Estágio atual detectado:', currentStageIndex, STAGES[currentStageIndex]?.title);
+    
+    // Criar eventos para TODOS os estágios
+    const events: TimelineEvent[] = STAGES.map((stage, index) => {
+      let status: 'completed' | 'current' | 'upcoming';
+      let data: string;
+      
+      if (index < currentStageIndex) {
+        status = 'completed';
+        // Para eventos passados, usar uma data estimada anterior
+        const daysAgo = (currentStageIndex - index) * 2;
+        data = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
+      } else if (index === currentStageIndex) {
+        status = 'current';
+        // Usar a data de última atualização ou data da ordem
+        data = so.dataUltimaAtualizacao || so.dataOrdem || new Date().toISOString();
+      } else {
+        status = 'upcoming';
+        // Para eventos futuros, usar uma data estimada futura
+        const daysAhead = (index - currentStageIndex) * 3;
+        data = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString();
+      }
+      
+      return {
+        id: `${stage.id}_${index}`,
+        tipo: stage.id,
+        titulo: stage.title,
+        data: data,
+        status: status,
+        detalhes: stage.title
+      };
+    });
+    
+    console.log('✅ Eventos criados:', events.length, {
+      completed: events.filter(e => e.status === 'completed').length,
+      current: events.filter(e => e.status === 'current').length,
+      upcoming: events.filter(e => e.status === 'upcoming').length
+    });
+    
+    return events;
   };
 
   const createSyntheticEvents = (statusAtual: string, dataAtualizacao: string) => {

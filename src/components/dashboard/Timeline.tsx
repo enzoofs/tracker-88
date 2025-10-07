@@ -218,35 +218,8 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
     }
   };
 
-  // Remove duplicates and keep only the most recent event of each type
-  const removeDuplicateEvents = (events: TimelineEvent[]) => {
-    const eventMap = new Map<string, TimelineEvent>();
-    
-    // Sort events by date (most recent first)
-    const sortedEvents = [...events].sort((a, b) => 
-      new Date(b.data).getTime() - new Date(a.data).getTime()
-    );
-    
-    // Keep only the most recent event of each type
-    sortedEvents.forEach(event => {
-      const eventType = mapEventToStatus(event.tipo);
-      if (!eventMap.has(eventType)) {
-        eventMap.set(eventType, event);
-      }
-    });
-    
-    // Define ordem correta dos eventos
-    const eventOrder = ['em_producao', 'fedex', 'no_armazem', 'embarque_agendado', 'embarque_confirmado', 'chegada_brasil', 'voo_internacional', 'desembaraco', 'entregue'];
-    
-    // Return events sorted by correct order
-    return Array.from(eventMap.values()).sort((a, b) => {
-      const aOrder = eventOrder.indexOf(mapEventToStatus(a.tipo));
-      const bOrder = eventOrder.indexOf(mapEventToStatus(b.tipo));
-      return aOrder - bOrder;
-    });
-  };
-
-  const uniqueEvents = removeDuplicateEvents(events);
+  // Just use the events as received - no filtering or deduplication
+  console.log('📊 Timeline recebeu eventos:', events.length, events);
 
   const isDelayed = (dataReal: string, dataPrevista?: string) => {
     if (!dataPrevista) return false;
@@ -257,10 +230,10 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
     <div className={`relative ${className}`}>
       {/* Timeline horizontal */}
       <div className="flex items-center justify-between">
-        {uniqueEvents.map((event, index) => (
+        {events.map((event, index) => (
           <div key={event.id} className="flex flex-col items-center relative">
             {/* Linha conectora */}
-            {index < uniqueEvents.length - 1 && (
+            {index < events.length - 1 && (
               <div className={`absolute top-6 left-1/2 w-20 h-0.5 transform translate-x-1/2 ${
                 event.status === 'completed' ? 'bg-status-delivered' : 'bg-border'
               }`} />
