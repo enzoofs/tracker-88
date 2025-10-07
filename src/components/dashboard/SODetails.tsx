@@ -192,111 +192,161 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
   const createSyntheticEvents = (statusAtual: string, dataAtualizacao: string) => {
     const events = [];
     const now = new Date(dataAtualizacao);
+    const statusLower = statusAtual.toLowerCase().trim();
     
-    // Sempre adiciona "Em Produção" como primeiro evento, usando data_ordem se disponível
+    console.log('🔍 createSyntheticEvents - statusAtual:', statusAtual);
+    
+    // Definir a ordem dos estágios e qual é o atual
+    const stageOrder = [
+      'em produção',
+      'fedex',
+      'no armazém',
+      'embarque agendado',
+      'embarque confirmado',
+      'chegada no brasil',
+      'desembaraço',
+      'entregue'
+    ];
+    
+    // Encontrar o índice do estágio atual
+    let currentStageIndex = -1;
+    for (let i = 0; i < stageOrder.length; i++) {
+      const stage = stageOrder[i];
+      if (stage === 'no armazém' && (statusLower.includes('armazém') || statusLower.includes('armazem'))) {
+        currentStageIndex = i;
+        break;
+      } else if (stage === 'em produção' && statusLower.includes('produção')) {
+        currentStageIndex = i;
+        break;
+      } else if (stage === 'chegada no brasil' && (statusLower.includes('chegada') || statusLower.includes('brasil'))) {
+        currentStageIndex = i;
+        break;
+      } else if (stage === 'desembaraço' && (statusLower.includes('desembaraço') || statusLower.includes('desembaraco'))) {
+        currentStageIndex = i;
+        break;
+      } else if (statusLower.includes(stage)) {
+        currentStageIndex = i;
+        break;
+      }
+    }
+    
+    console.log('📊 Estágio atual detectado:', stageOrder[currentStageIndex], '(índice:', currentStageIndex + ')');
+    
+    // Se não encontrou o estágio, considerar que está em produção
+    if (currentStageIndex === -1) {
+      currentStageIndex = 0;
+    }
+    
+    // Sempre adiciona "Em Produção" como primeiro evento
     const producaoDate = so.dataOrdem ? new Date(so.dataOrdem) : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     events.push({
       id: 'synthetic-producao',
       sales_order: so.salesOrder,
       status: 'Em Produção',
+      event_status: currentStageIndex === 0 ? 'current' : 'completed',
       description: 'Produto em fabricação',
       location: 'Fornecedor',
       timestamp: producaoDate.toISOString()
     });
-
-    const statusLower = statusAtual.toLowerCase();
     
-    // Helper para determinar se já passou por um estágio
-    const hasPassedStage = (stage: string) => {
-      const stages = ['fedex', 'armazém', 'armazem', 'embarque agendado', 'embarque confirmado', 'chegada', 'brasil', 'desembaraço', 'desembaraco', 'entregue'];
-      const currentStageIndex = stages.findIndex(s => statusLower.includes(s));
-      const checkStageIndex = stages.findIndex(s => s.includes(stage.toLowerCase()));
-      return currentStageIndex >= checkStageIndex;
-    };
-    
-    // FedEx (após Em Produção)
-    if (hasPassedStage('fedex') || hasPassedStage('armazém')) {
+    // FedEx (se já passou desse estágio)
+    if (currentStageIndex >= 1) {
       events.push({
         id: 'synthetic-fedex',
         sales_order: so.salesOrder,
         status: 'FedEx',
+        event_status: currentStageIndex === 1 ? 'current' : 'completed',
         description: 'Em trânsito para o armazém',
         location: 'Em trânsito',
-        timestamp: new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000).toISOString()
+        timestamp: new Date(producaoDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString()
       });
     }
     
-    // No Armazém
-    if (hasPassedStage('armazém') || hasPassedStage('embarque')) {
+    // No Armazém (se já passou desse estágio)
+    if (currentStageIndex >= 2) {
+      const fedexDate = events[events.length - 1]?.timestamp || producaoDate.toISOString();
       events.push({
         id: 'synthetic-armazem',
         sales_order: so.salesOrder,
         status: 'No Armazém',
+        event_status: currentStageIndex === 2 ? 'current' : 'completed',
         description: 'Chegada no armazém de Miami',
         location: 'Miami, FL, US',
-        timestamp: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString()
+        timestamp: new Date(new Date(fedexDate).getTime() + 1 * 24 * 60 * 60 * 1000).toISOString()
       });
     }
     
     // Embarque Agendado
-    if (statusLower.includes('embarque agendado') || hasPassedStage('embarque confirmado') || hasPassedStage('chegada')) {
+    if (currentStageIndex >= 3) {
+      const armazemDate = events[events.length - 1]?.timestamp || now.toISOString();
       events.push({
         id: 'synthetic-embarque-agendado',
         sales_order: so.salesOrder,
         status: 'Embarque Agendado',
+        event_status: currentStageIndex === 3 ? 'current' : 'completed',
         description: 'Embarque programado',
         location: 'Miami, FL, US',
-        timestamp: new Date(now.getTime() - 12 * 24 * 60 * 60 * 1000).toISOString()
+        timestamp: new Date(new Date(armazemDate).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
       });
     }
     
     // Embarque Confirmado
-    if (statusLower.includes('embarque confirmado') || hasPassedStage('chegada')) {
+    if (currentStageIndex >= 4) {
+      const embarqueAgendadoDate = events[events.length - 1]?.timestamp || now.toISOString();
       events.push({
         id: 'synthetic-embarque-confirmado',
         sales_order: so.salesOrder,
         status: 'Embarque Confirmado',
+        event_status: currentStageIndex === 4 ? 'current' : 'completed',
         description: 'Embarque confirmado',
         location: 'Miami, FL, US',
-        timestamp: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString()
+        timestamp: new Date(new Date(embarqueAgendadoDate).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString()
       });
     }
     
     // Chegada no Brasil
-    if (statusLower.includes('chegada') || statusLower.includes('brasil') || hasPassedStage('desembaraço') || hasPassedStage('entregue')) {
+    if (currentStageIndex >= 5) {
+      const embarqueConfirmadoDate = events[events.length - 1]?.timestamp || now.toISOString();
       events.push({
         id: 'synthetic-chegada-brasil',
         sales_order: so.salesOrder,
         status: 'Chegada no Brasil',
+        event_status: currentStageIndex === 5 ? 'current' : 'completed',
         description: 'Chegada no Brasil',
         location: 'Aeroporto de Guarulhos',
-        timestamp: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString()
+        timestamp: new Date(new Date(embarqueConfirmadoDate).getTime() + 4 * 24 * 60 * 60 * 1000).toISOString()
       });
     }
     
     // Desembaraço
-    if (statusLower.includes('desembaraço') || statusLower.includes('desembaraco') || hasPassedStage('entregue')) {
+    if (currentStageIndex >= 6) {
+      const chegadaBrasilDate = events[events.length - 1]?.timestamp || now.toISOString();
       events.push({
         id: 'synthetic-desembaraco',
         sales_order: so.salesOrder,
         status: 'Desembaraço',
+        event_status: currentStageIndex === 6 ? 'current' : 'completed',
         description: 'Em processo de desembaraço aduaneiro',
         location: 'Aeroporto de Guarulhos',
-        timestamp: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString()
+        timestamp: new Date(new Date(chegadaBrasilDate).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
       });
     }
     
     // Entregue
-    if (statusLower.includes('entregue')) {
+    if (currentStageIndex >= 7) {
+      const desembaracoDate = events[events.length - 1]?.timestamp || now.toISOString();
       events.push({
         id: 'synthetic-entregue',
         sales_order: so.salesOrder,
         status: 'Entregue',
+        event_status: 'completed',
         description: 'Entregue ao cliente',
         location: 'Destino final',
-        timestamp: dataAtualizacao
+        timestamp: new Date(new Date(desembaracoDate).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString()
       });
     }
+    
+    console.log('✅ Eventos sintéticos criados:', events.length, events.map(e => `${e.status} (${e.event_status})`));
     
     return events;
   };
@@ -307,9 +357,17 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
 
   // Transform shipment history to timeline events
   const timelineEvents = shipmentHistory.map((event, index) => {
-    const isLastEvent = index === shipmentHistory.length - 1;
     const eventStatus = event.status || event.evento || '';
-    const isCurrent = eventStatus.toLowerCase().includes(so.statusAtual.toLowerCase());
+    
+    // Usar o event_status se disponível (para eventos sintéticos), senão calcular
+    let displayStatus: 'completed' | 'current' | 'upcoming';
+    if (event.event_status) {
+      displayStatus = event.event_status as 'completed' | 'current' | 'upcoming';
+    } else {
+      // Para eventos reais do banco, determinar se é atual
+      const isCurrent = eventStatus.toLowerCase().trim() === so.statusAtual.toLowerCase().trim();
+      displayStatus = isCurrent ? 'current' : 'completed';
+    }
     
     return {
       id: event.id.toString(),
@@ -317,10 +375,12 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
       titulo: eventStatus,
       data: event.timestamp || event.data_evento,
       dataPrevista: event.detalhes?.data_prevista,
-      status: isCurrent ? 'current' as const : isLastEvent ? 'completed' as const : 'completed' as const,
+      status: displayStatus,
       detalhes: event.description || (event.detalhes ? JSON.stringify(event.detalhes) : undefined)
     };
   });
+  
+  console.log('📋 Timeline events:', timelineEvents.length, timelineEvents.map(e => `${e.titulo} (${e.status})`));
 
   // Add future events based on current status
   const addFutureEvents = () => {
