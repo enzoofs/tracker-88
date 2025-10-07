@@ -41,6 +41,12 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
         return <div className={`text-2xl ${iconClass}`}>📦</div>;
       case 'no_armazem':
         return <div className={`text-2xl ${iconClass}`}>🏢</div>;
+      case 'embarque_agendado':
+        return <div className={`text-2xl ${iconClass}`}>📅</div>;
+      case 'embarque_confirmado':
+        return <div className={`text-2xl ${iconClass}`}>🛫</div>;
+      case 'chegada_brasil':
+        return <div className={`text-2xl ${iconClass}`}>🇧🇷</div>;
       case 'voo_internacional':
         return <div className={`text-2xl ${iconClass}`}>✈️</div>;
       case 'desembaraco':
@@ -64,6 +70,15 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
     if (eventoLower.includes('armazém') || eventoLower.includes('armazem')) {
       return 'no_armazem';
     }
+    if (eventoLower.includes('embarque agendado')) {
+      return 'embarque_agendado';
+    }
+    if (eventoLower.includes('embarque confirmado')) {
+      return 'embarque_confirmado';
+    }
+    if (eventoLower.includes('chegada') || eventoLower.includes('brasil')) {
+      return 'chegada_brasil';
+    }
     if (eventoLower.includes('voo') || eventoLower.includes('internacional')) {
       return 'voo_internacional';
     }
@@ -79,10 +94,13 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
 
   const getStatusTitle = (evento: string) => {
     const status = mapEventToStatus(evento);
-    const titleMap = {
+    const titleMap: Record<string, string> = {
       'em_producao': 'Em Produção',
       'fedex': 'FedEx',
       'no_armazem': 'No Armazém',
+      'embarque_agendado': 'Embarque Agendado',
+      'embarque_confirmado': 'Embarque Confirmado',
+      'chegada_brasil': 'Chegada no Brasil',
       'voo_internacional': 'Voo Internacional',
       'desembaraco': 'Desembaraço',
       'entregue': 'Entregue'
@@ -218,7 +236,7 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
     });
     
     // Define ordem correta dos eventos
-    const eventOrder = ['em_producao', 'fedex', 'no_armazem', 'voo_internacional', 'desembaraco', 'entregue'];
+    const eventOrder = ['em_producao', 'fedex', 'no_armazem', 'embarque_agendado', 'embarque_confirmado', 'chegada_brasil', 'voo_internacional', 'desembaraco', 'entregue'];
     
     // Return events sorted by correct order
     return Array.from(eventMap.values()).sort((a, b) => {

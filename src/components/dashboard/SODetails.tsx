@@ -206,50 +206,87 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
 
     const statusLower = statusAtual.toLowerCase();
     
-    // Adiciona eventos baseados no status atual
-    if (statusLower.includes('armazém') || statusLower.includes('armazem') || 
-        statusLower.includes('importação') || statusLower.includes('importacao') ||
-        statusLower.includes('entregue')) {
+    // Helper para determinar se já passou por um estágio
+    const hasPassedStage = (stage: string) => {
+      const stages = ['fedex', 'armazém', 'armazem', 'embarque agendado', 'embarque confirmado', 'chegada', 'brasil', 'desembaraço', 'desembaraco', 'entregue'];
+      const currentStageIndex = stages.findIndex(s => statusLower.includes(s));
+      const checkStageIndex = stages.findIndex(s => s.includes(stage.toLowerCase()));
+      return currentStageIndex >= checkStageIndex;
+    };
+    
+    // FedEx (após Em Produção)
+    if (hasPassedStage('fedex') || hasPassedStage('armazém')) {
       events.push({
         id: 'synthetic-fedex',
         sales_order: so.salesOrder,
         status: 'FedEx',
         description: 'Em trânsito para o armazém',
         location: 'Em trânsito',
-        timestamp: new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000).toISOString() // 20 dias atrás
+        timestamp: new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000).toISOString()
       });
-      
+    }
+    
+    // No Armazém
+    if (hasPassedStage('armazém') || hasPassedStage('embarque')) {
       events.push({
         id: 'synthetic-armazem',
         sales_order: so.salesOrder,
         status: 'No Armazém',
         description: 'Chegada no armazém de Miami',
         location: 'Miami, FL, US',
-        timestamp: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString() // 15 dias atrás
+        timestamp: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString()
       });
     }
     
-    if (statusLower.includes('importação') || statusLower.includes('importacao') || 
-        statusLower.includes('entregue')) {
+    // Embarque Agendado
+    if (statusLower.includes('embarque agendado') || hasPassedStage('embarque confirmado') || hasPassedStage('chegada')) {
       events.push({
-        id: 'synthetic-voo',
+        id: 'synthetic-embarque-agendado',
         sales_order: so.salesOrder,
-        status: 'Voo Internacional',
-        description: 'Em voo para o Brasil',
-        location: 'Em trânsito',
-        timestamp: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString() // 7 dias atrás
+        status: 'Embarque Agendado',
+        description: 'Embarque programado',
+        location: 'Miami, FL, US',
+        timestamp: new Date(now.getTime() - 12 * 24 * 60 * 60 * 1000).toISOString()
       });
-      
+    }
+    
+    // Embarque Confirmado
+    if (statusLower.includes('embarque confirmado') || hasPassedStage('chegada')) {
+      events.push({
+        id: 'synthetic-embarque-confirmado',
+        sales_order: so.salesOrder,
+        status: 'Embarque Confirmado',
+        description: 'Embarque confirmado',
+        location: 'Miami, FL, US',
+        timestamp: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString()
+      });
+    }
+    
+    // Chegada no Brasil
+    if (statusLower.includes('chegada') || statusLower.includes('brasil') || hasPassedStage('desembaraço') || hasPassedStage('entregue')) {
+      events.push({
+        id: 'synthetic-chegada-brasil',
+        sales_order: so.salesOrder,
+        status: 'Chegada no Brasil',
+        description: 'Chegada no Brasil',
+        location: 'Aeroporto de Guarulhos',
+        timestamp: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString()
+      });
+    }
+    
+    // Desembaraço
+    if (statusLower.includes('desembaraço') || statusLower.includes('desembaraco') || hasPassedStage('entregue')) {
       events.push({
         id: 'synthetic-desembaraco',
         sales_order: so.salesOrder,
         status: 'Desembaraço',
         description: 'Em processo de desembaraço aduaneiro',
         location: 'Aeroporto de Guarulhos',
-        timestamp: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 dias atrás
+        timestamp: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString()
       });
     }
     
+    // Entregue
     if (statusLower.includes('entregue')) {
       events.push({
         id: 'synthetic-entregue',
@@ -299,16 +336,9 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
     const lastEvent = timelineEvents[timelineEvents.length - 1];
     const lastDate = lastEvent ? new Date(lastEvent.data) : new Date();
     
-    // Prazos após saída da fábrica:
-    // 1 dia para armazém
-    // 5 dias para voo internacional (após chegar no armazém)
-    // 2 dias para desembaraço (após voo)
-    // 1 dia para entrega no armazém final (após desembaraço)
-    // 5 dias para entrega no cliente (após armazém final)
-    
     if (!currentStatus.includes('entregue')) {
-      // Se não chegou no armazém ainda
-      if (!currentStatus.includes('armazém') && !currentStatus.includes('armazem')) {
+      // Se está em FedEx (ainda não chegou no armazém)
+      if (currentStatus.includes('fedex') && !currentStatus.includes('armazém') && !currentStatus.includes('armazem')) {
         futureEvents.push({
           id: 'future_armazem',
           tipo: 'no_armazem',
@@ -318,10 +348,26 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
         });
         
         futureEvents.push({
-          id: 'future_voo',
-          tipo: 'voo_internacional',
-          titulo: 'Voo Internacional',
-          data: new Date(lastDate.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString(), // 1 + 5
+          id: 'future_embarque_agendado',
+          tipo: 'embarque_agendado',
+          titulo: 'Embarque Agendado',
+          data: new Date(lastDate.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString(), // +3 dias
+          status: 'upcoming' as const
+        });
+        
+        futureEvents.push({
+          id: 'future_embarque_confirmado',
+          tipo: 'embarque_confirmado',
+          titulo: 'Embarque Confirmado',
+          data: new Date(lastDate.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
+          status: 'upcoming' as const
+        });
+        
+        futureEvents.push({
+          id: 'future_chegada_brasil',
+          tipo: 'chegada_brasil',
+          titulo: 'Chegada no Brasil',
+          data: new Date(lastDate.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(), // +4 dias
           status: 'upcoming' as const
         });
         
@@ -329,7 +375,7 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
           id: 'future_desembaraco',
           tipo: 'desembaraco',
           titulo: 'Desembaraço',
-          data: new Date(lastDate.getTime() + 8 * 24 * 60 * 60 * 1000).toISOString(), // 1 + 5 + 2
+          data: new Date(lastDate.getTime() + 13 * 24 * 60 * 60 * 1000).toISOString(), // +3 dias
           status: 'upcoming' as const
         });
         
@@ -337,61 +383,139 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
           id: 'future_delivered',
           tipo: 'entregue',
           titulo: 'Entregue',
-          data: new Date(lastDate.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 1 + 5 + 2 + 1 + 5
+          data: new Date(lastDate.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
           status: 'upcoming' as const
         });
       } 
-      // Se já está no armazém
-      else if (!currentStatus.includes('voo') && !currentStatus.includes('internacional')) {
-        futureEvents.push({
-          id: 'future_voo',
-          tipo: 'voo_internacional',
-          titulo: 'Voo Internacional',
-          data: new Date(lastDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_desembaraco',
-          tipo: 'desembaraco',
-          titulo: 'Desembaraço',
-          data: new Date(lastDate.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 5 + 2
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_delivered',
-          tipo: 'entregue',
-          titulo: 'Entregue',
-          data: new Date(lastDate.getTime() + 13 * 24 * 60 * 60 * 1000).toISOString(), // 5 + 2 + 1 + 5
-          status: 'upcoming' as const
-        });
+      // Se está no armazém
+      else if (currentStatus.includes('armazém') || currentStatus.includes('armazem')) {
+        if (!currentStatus.includes('embarque')) {
+          futureEvents.push({
+            id: 'future_embarque_agendado',
+            tipo: 'embarque_agendado',
+            titulo: 'Embarque Agendado',
+            data: new Date(lastDate.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+            status: 'upcoming' as const
+          });
+          
+          futureEvents.push({
+            id: 'future_embarque_confirmado',
+            tipo: 'embarque_confirmado',
+            titulo: 'Embarque Confirmado',
+            data: new Date(lastDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
+            status: 'upcoming' as const
+          });
+          
+          futureEvents.push({
+            id: 'future_chegada_brasil',
+            tipo: 'chegada_brasil',
+            titulo: 'Chegada no Brasil',
+            data: new Date(lastDate.getTime() + 9 * 24 * 60 * 60 * 1000).toISOString(), // +4 dias
+            status: 'upcoming' as const
+          });
+          
+          futureEvents.push({
+            id: 'future_desembaraco',
+            tipo: 'desembaraco',
+            titulo: 'Desembaraço',
+            data: new Date(lastDate.getTime() + 12 * 24 * 60 * 60 * 1000).toISOString(), // +3 dias
+            status: 'upcoming' as const
+          });
+          
+          futureEvents.push({
+            id: 'future_delivered',
+            tipo: 'entregue',
+            titulo: 'Entregue',
+            data: new Date(lastDate.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
+            status: 'upcoming' as const
+          });
+        }
       }
-      // Se já está em voo
-      else if (!currentStatus.includes('desembaraço') && !currentStatus.includes('desembaraco')) {
+      // Se embarque está agendado
+      else if (currentStatus.includes('embarque agendado')) {
         futureEvents.push({
-          id: 'future_desembaraco',
-          tipo: 'desembaraco',
-          titulo: 'Desembaraço',
+          id: 'future_embarque_confirmado',
+          tipo: 'embarque_confirmado',
+          titulo: 'Embarque Confirmado',
           data: new Date(lastDate.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
           status: 'upcoming' as const
         });
         
         futureEvents.push({
-          id: 'future_delivered',
-          tipo: 'entregue',
-          titulo: 'Entregue',
-          data: new Date(lastDate.getTime() + 8 * 24 * 60 * 60 * 1000).toISOString(), // 2 + 1 + 5
+          id: 'future_chegada_brasil',
+          tipo: 'chegada_brasil',
+          titulo: 'Chegada no Brasil',
+          data: new Date(lastDate.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString(), // +4 dias
           status: 'upcoming' as const
         });
-      }
-      // Se já está em desembaraço
-      else if (!currentStatus.includes('entregue') && !currentStatus.includes('destino')) {
+        
+        futureEvents.push({
+          id: 'future_desembaraco',
+          tipo: 'desembaraco',
+          titulo: 'Desembaraço',
+          data: new Date(lastDate.getTime() + 9 * 24 * 60 * 60 * 1000).toISOString(), // +3 dias
+          status: 'upcoming' as const
+        });
+        
         futureEvents.push({
           id: 'future_delivered',
           tipo: 'entregue',
           titulo: 'Entregue',
-          data: new Date(lastDate.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString(), // 1 + 5
+          data: new Date(lastDate.getTime() + 11 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
+          status: 'upcoming' as const
+        });
+      }
+      // Se embarque está confirmado
+      else if (currentStatus.includes('embarque confirmado')) {
+        futureEvents.push({
+          id: 'future_chegada_brasil',
+          tipo: 'chegada_brasil',
+          titulo: 'Chegada no Brasil',
+          data: new Date(lastDate.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'upcoming' as const
+        });
+        
+        futureEvents.push({
+          id: 'future_desembaraco',
+          tipo: 'desembaraco',
+          titulo: 'Desembaraço',
+          data: new Date(lastDate.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // +3 dias
+          status: 'upcoming' as const
+        });
+        
+        futureEvents.push({
+          id: 'future_delivered',
+          tipo: 'entregue',
+          titulo: 'Entregue',
+          data: new Date(lastDate.getTime() + 9 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
+          status: 'upcoming' as const
+        });
+      }
+      // Se já chegou no Brasil
+      else if (currentStatus.includes('chegada') || currentStatus.includes('brasil')) {
+        futureEvents.push({
+          id: 'future_desembaraco',
+          tipo: 'desembaraco',
+          titulo: 'Desembaraço',
+          data: new Date(lastDate.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'upcoming' as const
+        });
+        
+        futureEvents.push({
+          id: 'future_delivered',
+          tipo: 'entregue',
+          titulo: 'Entregue',
+          data: new Date(lastDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
+          status: 'upcoming' as const
+        });
+      }
+      // Se está em desembaraço
+      else if (currentStatus.includes('desembaraço') || currentStatus.includes('desembaraco')) {
+        futureEvents.push({
+          id: 'future_delivered',
+          tipo: 'entregue',
+          titulo: 'Entregue',
+          data: new Date(lastDate.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
           status: 'upcoming' as const
         });
       }

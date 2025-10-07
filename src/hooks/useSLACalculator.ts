@@ -24,14 +24,35 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
     return null;
   }
 
+  // Mapeamento de status → dias úteis restantes
+  const statusDaysMap: Record<string, { days: number; stage: string }> = {
+    'fedex': { days: 15, stage: 'FedEx' },
+    'armazém': { days: 14, stage: 'No Armazém' },
+    'armazem': { days: 14, stage: 'No Armazém' },
+    'embarque agendado': { days: 11, stage: 'Embarque Agendado' },
+    'embarque confirmado': { days: 9, stage: 'Embarque Confirmado' },
+    'chegada': { days: 5, stage: 'Chegada no Brasil' },
+    'brasil': { days: 5, stage: 'Chegada no Brasil' },
+    'desembaraçado': { days: 2, stage: 'Desembaraçado' },
+    'desembaracado': { days: 2, stage: 'Desembaraçado' }
+  };
+
+  // Encontrar o status correspondente
+  let expectedDays = 15; // Default para FedEx
+  let stage = 'FedEx';
+  
+  for (const [key, value] of Object.entries(statusDaysMap)) {
+    if (currentStatus.includes(key)) {
+      expectedDays = value.days;
+      stage = value.stage;
+      break;
+    }
+  }
+
   // Usa data_ordem quando disponível, caso contrário usa dataUltimaAtualizacao
   const referenceDate = new Date(so.dataOrdem || so.dataUltimaAtualizacao);
   const now = new Date();
   const daysSinceUpdate = Math.floor((now.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
-
-  // Após receber tracking numbers (envio do fornecedor), temos 15 dias úteis para entrega
-  const expectedDays = 15;
-  const stage = 'Entrega';
 
   const daysRemaining = expectedDays - daysSinceUpdate;
   
