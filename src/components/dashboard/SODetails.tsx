@@ -56,13 +56,33 @@ interface SODetailsProps {
   onClose: () => void;
 }
 
+interface TimelineEvent {
+  id: string;
+  tipo: string;
+  titulo: string;
+  data: string;
+  dataPrevista?: string;
+  status: 'completed' | 'current' | 'upcoming';
+  detalhes?: string;
+}
+
 const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
-  const [shipmentHistory, setShipmentHistory] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(so.statusAtual);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
+
+  // Definição dos estágios da jornada
+  const STAGES = [
+    { id: 'em_producao', title: 'Em Produção', icon: '🏭', order: 0 },
+    { id: 'fedex', title: 'FedEx', icon: '📦', order: 1 },
+    { id: 'no_armazem', title: 'No Armazém', icon: '🏢', order: 2 },
+    { id: 'embarque_agendado', title: 'Embarque Agendado', icon: '📅', order: 3 },
+    { id: 'embarque_confirmado', title: 'Embarque Confirmado', icon: '🛫', order: 4 },
+    { id: 'chegada_brasil', title: 'Chegada no Brasil', icon: '🇧🇷', order: 5 },
+    { id: 'desembaraco', title: 'Desembaraço', icon: '📋', order: 6 },
+    { id: 'entregue', title: 'Entregue', icon: '✅', order: 7 }
+  ];
 
   const availableStatuses = [
     "Em Produção",
@@ -145,9 +165,8 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
 
       setShowConfirmDialog(false);
       
-      // Reload history and close after a delay
+      // Close after a delay
       setTimeout(() => {
-        loadShipmentHistory();
         onClose();
       }, 1000);
 
@@ -229,408 +248,14 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
     return events;
   };
 
-  const createSyntheticEvents = (statusAtual: string, dataAtualizacao: string) => {
-    const events = [];
-    const now = new Date(dataAtualizacao);
-    const statusLower = statusAtual.toLowerCase().trim();
-    
-    console.log('🔍 createSyntheticEvents - statusAtual:', statusAtual);
-    
-    // Definir a ordem dos estágios e qual é o atual
-    const stageOrder = [
-      'em produção',
-      'fedex',
-      'no armazém',
-      'embarque agendado',
-      'embarque confirmado',
-      'chegada no brasil',
-      'desembaraço',
-      'entregue'
-    ];
-    
-    // Encontrar o índice do estágio atual
-    let currentStageIndex = -1;
-    for (let i = 0; i < stageOrder.length; i++) {
-      const stage = stageOrder[i];
-      if (stage === 'no armazém' && (statusLower.includes('armazém') || statusLower.includes('armazem'))) {
-        currentStageIndex = i;
-        break;
-      } else if (stage === 'em produção' && statusLower.includes('produção')) {
-        currentStageIndex = i;
-        break;
-      } else if (stage === 'chegada no brasil' && (statusLower.includes('chegada') || statusLower.includes('brasil'))) {
-        currentStageIndex = i;
-        break;
-      } else if (stage === 'desembaraço' && (statusLower.includes('desembaraço') || statusLower.includes('desembaraco'))) {
-        currentStageIndex = i;
-        break;
-      } else if (statusLower.includes(stage)) {
-        currentStageIndex = i;
-        break;
-      }
-    }
-    
-    console.log('📊 Estágio atual detectado:', stageOrder[currentStageIndex], '(índice:', currentStageIndex + ')');
-    
-    // Se não encontrou o estágio, considerar que está em produção
-    if (currentStageIndex === -1) {
-      currentStageIndex = 0;
-    }
-    
-    // Sempre adiciona "Em Produção" como primeiro evento
-    const producaoDate = so.dataOrdem ? new Date(so.dataOrdem) : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    events.push({
-      id: 'synthetic-producao',
-      sales_order: so.salesOrder,
-      status: 'Em Produção',
-      event_status: currentStageIndex === 0 ? 'current' : 'completed',
-      description: 'Produto em fabricação',
-      location: 'Fornecedor',
-      timestamp: producaoDate.toISOString()
-    });
-    
-    // FedEx (se já passou desse estágio)
-    if (currentStageIndex >= 1) {
-      events.push({
-        id: 'synthetic-fedex',
-        sales_order: so.salesOrder,
-        status: 'FedEx',
-        event_status: currentStageIndex === 1 ? 'current' : 'completed',
-        description: 'Em trânsito para o armazém',
-        location: 'Em trânsito',
-        timestamp: new Date(producaoDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString()
-      });
-    }
-    
-    // No Armazém (se já passou desse estágio)
-    if (currentStageIndex >= 2) {
-      const fedexDate = events[events.length - 1]?.timestamp || producaoDate.toISOString();
-      events.push({
-        id: 'synthetic-armazem',
-        sales_order: so.salesOrder,
-        status: 'No Armazém',
-        event_status: currentStageIndex === 2 ? 'current' : 'completed',
-        description: 'Chegada no armazém de Miami',
-        location: 'Miami, FL, US',
-        timestamp: new Date(new Date(fedexDate).getTime() + 1 * 24 * 60 * 60 * 1000).toISOString()
-      });
-    }
-    
-    // Embarque Agendado
-    if (currentStageIndex >= 3) {
-      const armazemDate = events[events.length - 1]?.timestamp || now.toISOString();
-      events.push({
-        id: 'synthetic-embarque-agendado',
-        sales_order: so.salesOrder,
-        status: 'Embarque Agendado',
-        event_status: currentStageIndex === 3 ? 'current' : 'completed',
-        description: 'Embarque programado',
-        location: 'Miami, FL, US',
-        timestamp: new Date(new Date(armazemDate).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
-      });
-    }
-    
-    // Embarque Confirmado
-    if (currentStageIndex >= 4) {
-      const embarqueAgendadoDate = events[events.length - 1]?.timestamp || now.toISOString();
-      events.push({
-        id: 'synthetic-embarque-confirmado',
-        sales_order: so.salesOrder,
-        status: 'Embarque Confirmado',
-        event_status: currentStageIndex === 4 ? 'current' : 'completed',
-        description: 'Embarque confirmado',
-        location: 'Miami, FL, US',
-        timestamp: new Date(new Date(embarqueAgendadoDate).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString()
-      });
-    }
-    
-    // Chegada no Brasil
-    if (currentStageIndex >= 5) {
-      const embarqueConfirmadoDate = events[events.length - 1]?.timestamp || now.toISOString();
-      events.push({
-        id: 'synthetic-chegada-brasil',
-        sales_order: so.salesOrder,
-        status: 'Chegada no Brasil',
-        event_status: currentStageIndex === 5 ? 'current' : 'completed',
-        description: 'Chegada no Brasil',
-        location: 'Aeroporto de Guarulhos',
-        timestamp: new Date(new Date(embarqueConfirmadoDate).getTime() + 4 * 24 * 60 * 60 * 1000).toISOString()
-      });
-    }
-    
-    // Desembaraço
-    if (currentStageIndex >= 6) {
-      const chegadaBrasilDate = events[events.length - 1]?.timestamp || now.toISOString();
-      events.push({
-        id: 'synthetic-desembaraco',
-        sales_order: so.salesOrder,
-        status: 'Desembaraço',
-        event_status: currentStageIndex === 6 ? 'current' : 'completed',
-        description: 'Em processo de desembaraço aduaneiro',
-        location: 'Aeroporto de Guarulhos',
-        timestamp: new Date(new Date(chegadaBrasilDate).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
-      });
-    }
-    
-    // Entregue
-    if (currentStageIndex >= 7) {
-      const desembaracoDate = events[events.length - 1]?.timestamp || now.toISOString();
-      events.push({
-        id: 'synthetic-entregue',
-        sales_order: so.salesOrder,
-        status: 'Entregue',
-        event_status: 'completed',
-        description: 'Entregue ao cliente',
-        location: 'Destino final',
-        timestamp: new Date(new Date(desembaracoDate).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString()
-      });
-    }
-    
-    console.log('✅ Eventos sintéticos criados:', events.length, events.map(e => `${e.status} (${e.event_status})`));
-    
-    return events;
-  };
-
-  useEffect(() => {
-    loadShipmentHistory();
-  }, [so.salesOrder]);
-
-  // Transform shipment history to timeline events
-  const timelineEvents = shipmentHistory.map((event, index) => {
-    const eventStatus = event.status || event.evento || '';
-    
-    // Usar o event_status se disponível (para eventos sintéticos), senão calcular
-    let displayStatus: 'completed' | 'current' | 'upcoming';
-    if (event.event_status) {
-      displayStatus = event.event_status as 'completed' | 'current' | 'upcoming';
-    } else {
-      // Para eventos reais do banco, determinar se é atual
-      const isCurrent = eventStatus.toLowerCase().trim() === so.statusAtual.toLowerCase().trim();
-      displayStatus = isCurrent ? 'current' : 'completed';
-    }
-    
-    return {
-      id: event.id.toString(),
-      tipo: eventStatus.replace(/\s+/g, '_').toLowerCase(),
-      titulo: eventStatus,
-      data: event.timestamp || event.data_evento,
-      dataPrevista: event.detalhes?.data_prevista,
-      status: displayStatus,
-      detalhes: event.description || (event.detalhes ? JSON.stringify(event.detalhes) : undefined)
-    };
-  });
-  
-  console.log('📋 Timeline events:', timelineEvents.length, timelineEvents.map(e => `${e.titulo} (${e.status})`));
-
-  // Add future events based on current status
-  const addFutureEvents = () => {
-    const futureEvents = [];
-    const currentStatus = so.statusAtual.toLowerCase();
-    
-    // Se ainda está em produção, não adicionar previsões
-    if (currentStatus.includes('produção') || currentStatus.includes('producao')) {
-      return futureEvents;
-    }
-    
-    // Encontrar a última data real para calcular previsões
-    const lastEvent = timelineEvents[timelineEvents.length - 1];
-    const lastDate = lastEvent ? new Date(lastEvent.data) : new Date();
-    
-    if (!currentStatus.includes('entregue')) {
-      // Se está em FedEx (ainda não chegou no armazém)
-      if (currentStatus.includes('fedex') && !currentStatus.includes('armazém') && !currentStatus.includes('armazem')) {
-        futureEvents.push({
-          id: 'future_armazem',
-          tipo: 'no_armazem',
-          titulo: 'No Armazém',
-          data: new Date(lastDate.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_embarque_agendado',
-          tipo: 'embarque_agendado',
-          titulo: 'Embarque Agendado',
-          data: new Date(lastDate.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString(), // +3 dias
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_embarque_confirmado',
-          tipo: 'embarque_confirmado',
-          titulo: 'Embarque Confirmado',
-          data: new Date(lastDate.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_chegada_brasil',
-          tipo: 'chegada_brasil',
-          titulo: 'Chegada no Brasil',
-          data: new Date(lastDate.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(), // +4 dias
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_desembaraco',
-          tipo: 'desembaraco',
-          titulo: 'Desembaraço',
-          data: new Date(lastDate.getTime() + 13 * 24 * 60 * 60 * 1000).toISOString(), // +3 dias
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_delivered',
-          tipo: 'entregue',
-          titulo: 'Entregue',
-          data: new Date(lastDate.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
-          status: 'upcoming' as const
-        });
-      } 
-      // Se está no armazém
-      else if (currentStatus.includes('armazém') || currentStatus.includes('armazem')) {
-        if (!currentStatus.includes('embarque')) {
-          futureEvents.push({
-            id: 'future_embarque_agendado',
-            tipo: 'embarque_agendado',
-            titulo: 'Embarque Agendado',
-            data: new Date(lastDate.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'upcoming' as const
-          });
-          
-          futureEvents.push({
-            id: 'future_embarque_confirmado',
-            tipo: 'embarque_confirmado',
-            titulo: 'Embarque Confirmado',
-            data: new Date(lastDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
-            status: 'upcoming' as const
-          });
-          
-          futureEvents.push({
-            id: 'future_chegada_brasil',
-            tipo: 'chegada_brasil',
-            titulo: 'Chegada no Brasil',
-            data: new Date(lastDate.getTime() + 9 * 24 * 60 * 60 * 1000).toISOString(), // +4 dias
-            status: 'upcoming' as const
-          });
-          
-          futureEvents.push({
-            id: 'future_desembaraco',
-            tipo: 'desembaraco',
-            titulo: 'Desembaraço',
-            data: new Date(lastDate.getTime() + 12 * 24 * 60 * 60 * 1000).toISOString(), // +3 dias
-            status: 'upcoming' as const
-          });
-          
-          futureEvents.push({
-            id: 'future_delivered',
-            tipo: 'entregue',
-            titulo: 'Entregue',
-            data: new Date(lastDate.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
-            status: 'upcoming' as const
-          });
-        }
-      }
-      // Se embarque está agendado
-      else if (currentStatus.includes('embarque agendado')) {
-        futureEvents.push({
-          id: 'future_embarque_confirmado',
-          tipo: 'embarque_confirmado',
-          titulo: 'Embarque Confirmado',
-          data: new Date(lastDate.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_chegada_brasil',
-          tipo: 'chegada_brasil',
-          titulo: 'Chegada no Brasil',
-          data: new Date(lastDate.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString(), // +4 dias
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_desembaraco',
-          tipo: 'desembaraco',
-          titulo: 'Desembaraço',
-          data: new Date(lastDate.getTime() + 9 * 24 * 60 * 60 * 1000).toISOString(), // +3 dias
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_delivered',
-          tipo: 'entregue',
-          titulo: 'Entregue',
-          data: new Date(lastDate.getTime() + 11 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
-          status: 'upcoming' as const
-        });
-      }
-      // Se embarque está confirmado
-      else if (currentStatus.includes('embarque confirmado')) {
-        futureEvents.push({
-          id: 'future_chegada_brasil',
-          tipo: 'chegada_brasil',
-          titulo: 'Chegada no Brasil',
-          data: new Date(lastDate.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_desembaraco',
-          tipo: 'desembaraco',
-          titulo: 'Desembaraço',
-          data: new Date(lastDate.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // +3 dias
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_delivered',
-          tipo: 'entregue',
-          titulo: 'Entregue',
-          data: new Date(lastDate.getTime() + 9 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
-          status: 'upcoming' as const
-        });
-      }
-      // Se já chegou no Brasil
-      else if (currentStatus.includes('chegada') || currentStatus.includes('brasil')) {
-        futureEvents.push({
-          id: 'future_desembaraco',
-          tipo: 'desembaraco',
-          titulo: 'Desembaraço',
-          data: new Date(lastDate.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'upcoming' as const
-        });
-        
-        futureEvents.push({
-          id: 'future_delivered',
-          tipo: 'entregue',
-          titulo: 'Entregue',
-          data: new Date(lastDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(), // +2 dias
-          status: 'upcoming' as const
-        });
-      }
-      // Se está em desembaraço
-      else if (currentStatus.includes('desembaraço') || currentStatus.includes('desembaraco')) {
-        futureEvents.push({
-          id: 'future_delivered',
-          tipo: 'entregue',
-          titulo: 'Entregue',
-          data: new Date(lastDate.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'upcoming' as const
-        });
-      }
-    }
-    
-    return futureEvents;
-  };
-
-  const allEvents = [...timelineEvents, ...addFutureEvents()];
+  // Gerar eventos da timeline baseado no status atual
+  const timelineEvents = buildTimelineFromStatus();
 
   const alertLevel = getAlertLevel(so);
 
   const isArrivingToday = () => {
     // Check if any future events are scheduled for today
-    return allEvents.some(event => {
+    return timelineEvents.some(event => {
       const eventDate = new Date(event.data);
       const today = new Date();
       return eventDate.toDateString() === today.toDateString() && 
@@ -811,14 +436,11 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-primary" />
                   Timeline de Acompanhamento
-                  {loading && (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary ml-2" />
-                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {allEvents.length > 0 ? (
-                  <Timeline events={allEvents} />
+                {timelineEvents.length > 0 ? (
+                  <Timeline events={timelineEvents} />
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
