@@ -292,11 +292,11 @@ const LogisticsDashboard: React.FC = () => {
   useEffect(() => {
     loadDashboardData();
 
-    // Auto-refresh a cada 30 segundos
+    // Auto-refresh a cada 30 minutos
     const refreshInterval = setInterval(() => {
       console.log('🔄 Auto-refresh: Atualizando dados...');
       loadDashboardData();
-    }, 30000);
+    }, 30 * 60 * 1000);
 
     // Setup Realtime listeners
     const enviosChannel = supabase

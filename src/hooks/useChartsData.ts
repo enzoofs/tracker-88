@@ -65,8 +65,8 @@ export const useChartsData = () => {
   useEffect(() => {
     loadChartsData();
     
-    // Cache for 5 minutes
-    const interval = setInterval(loadChartsData, 5 * 60 * 1000);
+    // Cache for 30 minutes
+    const interval = setInterval(loadChartsData, 30 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
