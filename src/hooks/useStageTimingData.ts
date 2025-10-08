@@ -61,13 +61,16 @@ export const useStageTimingData = () => {
       const soMap = new Map<string, Array<{ status: string; timestamp: Date }>>();
       
       historyData?.forEach(record => {
-        if (!soMap.has(record.sales_order)) {
-          soMap.set(record.sales_order, []);
+        // Only consider relevant status changes (filter out generic updates)
+        if (STAGE_ORDER.includes(record.status)) {
+          if (!soMap.has(record.sales_order)) {
+            soMap.set(record.sales_order, []);
+          }
+          soMap.get(record.sales_order)!.push({
+            status: record.status,
+            timestamp: new Date(record.timestamp)
+          });
         }
-        soMap.get(record.sales_order)!.push({
-          status: record.status,
-          timestamp: new Date(record.timestamp)
-        });
       });
 
       // Calculate time spent in each stage
@@ -77,17 +80,25 @@ export const useStageTimingData = () => {
         // Sort by timestamp
         history.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
         
-        // Calculate time between consecutive stages
+        // Calculate time spent in each distinct stage
         for (let i = 0; i < history.length - 1; i++) {
           const currentStage = history[i].status;
+          const nextStage = history[i + 1].status;
+          
+          // Skip if next stage is the same (duplicate status entries)
+          if (currentStage === nextStage) continue;
+          
           const nextTime = history[i + 1].timestamp.getTime();
           const currentTime = history[i].timestamp.getTime();
           const daysInStage = (nextTime - currentTime) / (1000 * 60 * 60 * 24);
           
-          if (!stageTimes.has(currentStage)) {
-            stageTimes.set(currentStage, []);
+          // Only record positive time values
+          if (daysInStage > 0) {
+            if (!stageTimes.has(currentStage)) {
+              stageTimes.set(currentStage, []);
+            }
+            stageTimes.get(currentStage)!.push(daysInStage);
           }
-          stageTimes.get(currentStage)!.push(daysInStage);
         }
       });
 

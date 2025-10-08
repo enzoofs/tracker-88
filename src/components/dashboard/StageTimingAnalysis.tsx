@@ -1,10 +1,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, AlertTriangle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import { useStageTimingData } from '@/hooks/useStageTimingData';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const StageTimingAnalysis: React.FC = () => {
   const { data, loading } = useStageTimingData();
@@ -112,7 +113,23 @@ const StageTimingAnalysis: React.FC = () => {
                 <TableHead className="w-[40px]">#</TableHead>
                 <TableHead>Etapa</TableHead>
                 <TableHead className="text-center">Tempo Médio</TableHead>
-                <TableHead className="text-center">SLA</TableHead>
+                <TableHead className="text-center">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex items-center gap-1 cursor-help">
+                          SLA
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs max-w-xs">
+                          SLA (Service Level Agreement) é o tempo máximo esperado para cada etapa do processo logístico.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead className="w-[200px]">Progresso vs SLA</TableHead>
                 <TableHead className="text-center">Min - Máx</TableHead>
