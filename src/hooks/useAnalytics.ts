@@ -146,11 +146,47 @@ export const useAnalytics = (timeRange: string = '12m') => {
         { nome: 'Pedro Oliveira', valor: receitaTotal * 0.22, badge: 'bronze' as const }
       ];
 
-      // Calculate metrics
+      // Calculate metrics based on real SLA data
+      const STAGE_SLAS: Record<string, number> = {
+        'Em Produção': 15,
+        'Enviado': 2,
+        'No Armazém': 3,
+        'Voo Internacional': 2,
+        'Desembaraço': 3,
+        'Entregue': 1
+      };
+
       const totalPedidos = enviosData?.length || 0;
       const entregasNoPrazo = Math.round(taxaEntrega);
-      const pedidosAtrasados = Math.floor(totalPedidos * 0.15); // 15% estimated
-      const eficienciaOperacional = Math.round(75 + Math.random() * 20);
+      
+      // Calculate delayed orders based on actual SLA compliance
+      let pedidosAtrasados = 0;
+      enviosData?.forEach(envio => {
+        const status = envio.status_atual;
+        const sla = STAGE_SLAS[status];
+        
+        if (sla) {
+          let startDate: Date;
+          if (status === 'Em Produção' && envio.data_ordem) {
+            startDate = parseDate(envio.data_ordem);
+          } else if (status === 'No Armazém' && envio.data_envio) {
+            startDate = parseDate(envio.data_envio);
+          } else {
+            startDate = parseDate(envio.created_at);
+          }
+          
+          const daysInStage = (Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+          
+          // Consider delayed if exceeds SLA by 30%
+          if (daysInStage > sla * 1.3) {
+            pedidosAtrasados++;
+          }
+        }
+      });
+
+      const eficienciaOperacional = totalPedidos > 0 
+        ? Math.round(((totalPedidos - pedidosAtrasados) / totalPedidos) * 100)
+        : 95;
 
       // Generate insights with moving averages for prediction
       const recentMonths = tendenciaReceita.slice(-3);
