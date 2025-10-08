@@ -7,12 +7,15 @@ interface StageTime {
   minDays: number;
   maxDays: number;
   count: number;
-  isBottleneck: boolean;
+  sla: number;
+  status: 'ok' | 'warning' | 'critical';
+  slaVariance: number; // % acima/abaixo do SLA
 }
 
 interface StageTimingData {
   stages: StageTime[];
   totalAverageDays: number;
+  totalSLA: number;
 }
 
 const STAGE_ORDER = [
@@ -24,10 +27,21 @@ const STAGE_ORDER = [
   'Entregue'
 ];
 
+// SLAs esperados por etapa (em dias)
+const STAGE_SLAS: Record<string, number> = {
+  'Em Produção': 30,
+  'Enviado': 1.5,
+  'No Armazém': 3,
+  'Voo Internacional': 2,
+  'Desembaraço': 5,
+  'Entregue': 1
+};
+
 export const useStageTimingData = () => {
   const [data, setData] = useState<StageTimingData>({
     stages: [],
-    totalAverageDays: 0
+    totalAverageDays: 0,
+    totalSLA: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -77,7 +91,7 @@ export const useStageTimingData = () => {
         }
       });
 
-      // Calculate statistics for each stage
+      // Calculate statistics for each stage with SLA comparison
       const stages: StageTime[] = STAGE_ORDER
         .filter(stage => stageTimes.has(stage))
         .map(stage => {
@@ -85,6 +99,16 @@ export const useStageTimingData = () => {
           const avgDays = times.reduce((sum, t) => sum + t, 0) / times.length;
           const minDays = Math.min(...times);
           const maxDays = Math.max(...times);
+          const sla = STAGE_SLAS[stage] || 0;
+          const slaVariance = sla > 0 ? ((avgDays - sla) / sla) * 100 : 0;
+          
+          // Classify status based on SLA
+          let status: 'ok' | 'warning' | 'critical' = 'ok';
+          if (avgDays > sla * 1.3) {
+            status = 'critical';
+          } else if (avgDays > sla) {
+            status = 'warning';
+          }
           
           return {
             stage,
@@ -92,23 +116,19 @@ export const useStageTimingData = () => {
             minDays: Math.round(minDays * 10) / 10,
             maxDays: Math.round(maxDays * 10) / 10,
             count: times.length,
-            isBottleneck: false
+            sla,
+            status,
+            slaVariance: Math.round(slaVariance)
           };
         });
 
-      // Identify bottlenecks (stages that take longer than average)
-      if (stages.length > 0) {
-        const overallAvg = stages.reduce((sum, s) => sum + s.avgDays, 0) / stages.length;
-        stages.forEach(stage => {
-          stage.isBottleneck = stage.avgDays > overallAvg * 1.2; // 20% above average
-        });
-      }
-
       const totalAverageDays = stages.reduce((sum, s) => sum + s.avgDays, 0);
+      const totalSLA = STAGE_ORDER.reduce((sum, stage) => sum + (STAGE_SLAS[stage] || 0), 0);
 
       setData({
         stages,
-        totalAverageDays: Math.round(totalAverageDays * 10) / 10
+        totalAverageDays: Math.round(totalAverageDays * 10) / 10,
+        totalSLA
       });
 
     } catch (error) {

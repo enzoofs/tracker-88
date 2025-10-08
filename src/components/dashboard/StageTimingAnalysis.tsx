@@ -1,9 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useStageTimingData } from '@/hooks/useStageTimingData';
 import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const StageTimingAnalysis: React.FC = () => {
   const { data, loading } = useStageTimingData();
@@ -31,7 +32,7 @@ const StageTimingAnalysis: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Tempo Médio por Etapa do Processo
+            Análise de Tempo por Etapa
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -45,124 +46,149 @@ const StageTimingAnalysis: React.FC = () => {
     );
   }
 
-  const maxDays = Math.max(...data.stages.map(s => s.avgDays));
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'ok':
+        return <CheckCircle2 className="h-4 w-4 text-status-delivered" />;
+      case 'warning':
+        return <AlertCircle className="h-4 w-4 text-status-warning" />;
+      case 'critical':
+        return <AlertTriangle className="h-4 w-4 text-status-critical" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusBadge = (status: string, variance: number) => {
+    if (status === 'ok') {
+      return <Badge variant="outline" className="bg-status-delivered/10 text-status-delivered border-status-delivered/20">No prazo</Badge>;
+    } else if (status === 'warning') {
+      return <Badge variant="outline" className="bg-status-warning/10 text-status-warning border-status-warning/20">+{variance}%</Badge>;
+    } else {
+      return <Badge variant="destructive" className="gap-1">
+        <AlertTriangle className="h-3 w-3" />
+        +{variance}%
+      </Badge>;
+    }
+  };
+
+  const isWithinSLA = data.totalAverageDays <= data.totalSLA;
 
   return (
-    <div className="space-y-6">
-      {/* Summary Card */}
-      <Card className="shadow-card bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Tempo Total Médio do Processo</p>
-              <p className="text-3xl font-bold mt-1">{data.totalAverageDays} dias</p>
-            </div>
-            <TrendingUp className="h-12 w-12 text-primary opacity-50" />
+    <Card className="shadow-card">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Análise de Tempo por Etapa
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-2">
+              Comparação do tempo real vs. SLA esperado para cada etapa do processo
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Do início da produção até a entrega final
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Stage Timeline */}
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Tempo Médio por Etapa do Processo
-          </CardTitle>
-          <p className="text-sm text-muted-foreground mt-2">
-            Análise detalhada do tempo gasto em cada etapa da importação
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {data.stages.map((stage, index) => {
-              const percentage = (stage.avgDays / maxDays) * 100;
-              
-              return (
-                <div key={stage.stage} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{stage.stage}</span>
-                          {stage.isBottleneck && (
-                            <Badge variant="destructive" className="text-xs gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              Gargalo
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {stage.count} transições registradas
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right min-w-[100px]">
-                      <div className="text-lg font-bold">{stage.avgDays} dias</div>
-                      <div className="text-xs text-muted-foreground">
-                        {stage.minDays} - {stage.maxDays} dias
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Progress 
-                    value={percentage} 
-                    className={`h-3 ${stage.isBottleneck ? 'bg-destructive/20' : ''}`}
-                  />
-                  
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Mínimo: {stage.minDays}d</span>
-                    <span>Média: {stage.avgDays}d</span>
-                    <span>Máximo: {stage.maxDays}d</span>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Tempo Total</p>
+            <p className="text-2xl font-bold">{data.totalAverageDays}d / {data.totalSLA}d</p>
+            {isWithinSLA ? (
+              <Badge variant="outline" className="mt-1 bg-status-delivered/10 text-status-delivered border-status-delivered/20">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Dentro do SLA
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="mt-1">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                Fora do SLA
+              </Badge>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40px]">#</TableHead>
+                <TableHead>Etapa</TableHead>
+                <TableHead className="text-center">Tempo Médio</TableHead>
+                <TableHead className="text-center">SLA</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="w-[200px]">Progresso vs SLA</TableHead>
+                <TableHead className="text-center">Min - Máx</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.stages.map((stage, index) => {
+                const slaPercentage = Math.min((stage.avgDays / stage.sla) * 100, 100);
+                
+                return (
+                  <TableRow key={stage.stage}>
+                    <TableCell className="font-medium text-muted-foreground">
+                      {index + 1}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(stage.status)}
+                        {stage.stage}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {stage.count} registros
+                      </p>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="font-bold text-lg">{stage.avgDays}d</span>
+                    </TableCell>
+                    <TableCell className="text-center text-muted-foreground">
+                      {stage.sla}d
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {getStatusBadge(stage.status, stage.slaVariance)}
+                    </TableCell>
+                    <TableCell>
+                      <Progress 
+                        value={slaPercentage} 
+                        className={`h-2 ${
+                          stage.status === 'critical' ? 'bg-destructive/20' : 
+                          stage.status === 'warning' ? 'bg-status-warning/20' : 
+                          'bg-status-delivered/20'
+                        }`}
+                      />
+                    </TableCell>
+                    <TableCell className="text-center text-xs text-muted-foreground">
+                      {stage.minDays}d - {stage.maxDays}d
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
 
-      {/* Insights Card */}
-      <Card className="shadow-card border-destructive/20 bg-destructive/5">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
-            Gargalos Identificados
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data.stages.filter(s => s.isBottleneck).length > 0 ? (
-            <div className="space-y-3">
-              {data.stages.filter(s => s.isBottleneck).map(stage => (
-                <div key={stage.stage} className="flex items-center justify-between p-3 rounded-lg bg-background">
-                  <div>
-                    <p className="font-medium">{stage.stage}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Tempo médio 20% acima da média geral
-                    </p>
-                  </div>
-                  <Badge variant="destructive">{stage.avgDays} dias</Badge>
-                </div>
-              ))}
-              <p className="text-xs text-muted-foreground mt-4">
-                💡 <strong>Recomendação:</strong> Foque em otimizar estas etapas para reduzir o tempo total de entrega.
-              </p>
+        {/* Insights */}
+        {data.stages.some(s => s.status !== 'ok') && (
+          <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-status-warning mt-0.5 flex-shrink-0" />
+              <div className="space-y-2 flex-1">
+                <p className="font-medium text-sm">Etapas que requerem atenção:</p>
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  {data.stages
+                    .filter(s => s.status !== 'ok')
+                    .map(stage => (
+                      <li key={stage.stage}>
+                        <strong>{stage.stage}:</strong> está {stage.slaVariance}% acima do SLA esperado 
+                        ({stage.avgDays}d vs {stage.sla}d)
+                        {stage.status === 'critical' && ' - requer ação imediata'}
+                      </li>
+                    ))}
+                </ul>
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              <p className="text-sm">✅ Nenhum gargalo crítico identificado</p>
-              <p className="text-xs mt-2">O processo está equilibrado entre as etapas.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
