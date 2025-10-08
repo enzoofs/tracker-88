@@ -140,7 +140,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   const isNewSO = (so: SO) => {
     const createdAt = new Date(so.dataUltimaAtualizacao);
     const hoursSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
-    return hoursSinceCreation <= 24; // Consider new if created in last 24 hours
+    return hoursSinceCreation <= 10; // Consider new if created in last 10 hours
   };
 
   const uniqueClientes = [...new Set(data.map(so => so.cliente))];
