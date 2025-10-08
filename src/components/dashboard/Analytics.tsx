@@ -16,6 +16,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import StageTimingAnalysis from './StageTimingAnalysis';
 
 interface AnalyticsData {
   deliveryTrend: Array<{ date: string; deliveries: number; onTime: number; delayed: number; }>;
@@ -386,6 +387,9 @@ const Analytics: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Stage Timing Analysis */}
+      <StageTimingAnalysis />
     </div>
   );
 };

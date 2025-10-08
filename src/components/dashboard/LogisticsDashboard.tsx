@@ -654,29 +654,25 @@ const LogisticsDashboard: React.FC = () => {
           <TabsList className="grid w-full max-w-6xl grid-cols-4 mx-auto glass p-1 rounded-2xl">
             <TabsTrigger 
               value="sos"
-              style={activeTab === "sos" ? { background: 'var(--gradient-tech)' } : {}}
-              className="rounded-xl font-tech data-[state=active]:text-white data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-muted/50 transition-all duration-300"
+              className="rounded-xl font-tech"
             >
               Sales Orders
             </TabsTrigger>
             <TabsTrigger 
               value="cargas"
-              style={activeTab === "cargas" ? { background: 'var(--gradient-tech)' } : {}}
-              className="rounded-xl font-tech data-[state=active]:text-white data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-muted/50 transition-all duration-300"
+              className="rounded-xl font-tech"
             >
               Cargas
             </TabsTrigger>
             <TabsTrigger 
               value="charts"
-              style={activeTab === "charts" ? { background: 'var(--gradient-tech)' } : {}}
-              className="rounded-xl font-tech data-[state=active]:text-white data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-muted/50 transition-all duration-300"
+              className="rounded-xl font-tech"
             >
               Analytics
             </TabsTrigger>
             <TabsTrigger 
               value="reports"
-              style={activeTab === "reports" ? { background: 'var(--gradient-tech)' } : {}}
-              className="rounded-xl font-tech data-[state=active]:text-white data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-muted/50 transition-all duration-300"
+              className="rounded-xl font-tech"
             >
               Relatórios
             </TabsTrigger>
