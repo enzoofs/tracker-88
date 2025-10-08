@@ -14,6 +14,7 @@ import {
 import { useReportsData } from '@/hooks/useReportsData';
 import ReportFilters from './ReportFilters';
 import * as XLSX from 'xlsx';
+import StageTimingAnalysis from './StageTimingAnalysis';
 
 const Reports: React.FC = () => {
   const [timeRange, setTimeRange] = useState('30d');
@@ -115,48 +116,8 @@ const Reports: React.FC = () => {
         </Card>
       </div>
 
-      {/* Gráficos Analíticos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              Pedidos por Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data.pedidosPorStatus} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis type="number" className="text-xs" />
-                <YAxis dataKey="status" type="category" className="text-xs" width={100} />
-                <Tooltip />
-                <Bar dataKey="quantidade" fill="hsl(var(--primary))" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-status-delivered" />
-              Top 10 Clientes por Valor
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data.topClientesPorValor.slice(0, 10)} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis type="number" className="text-xs" />
-                <YAxis dataKey="cliente" type="category" className="text-xs" width={80} />
-                <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Valor Total']} />
-                <Bar dataKey="valorTotal" fill="hsl(var(--status-delivered))" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Stage Timing Analysis */}
+      <StageTimingAnalysis />
 
       {/* Relatórios Tabulares */}
       <Tabs defaultValue="clientes" className="space-y-6">
