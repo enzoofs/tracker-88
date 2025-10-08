@@ -61,16 +61,13 @@ export const useStageTimingData = () => {
       const soMap = new Map<string, Array<{ status: string; timestamp: Date }>>();
       
       historyData?.forEach(record => {
-        // Only consider relevant status changes (filter out generic updates)
-        if (STAGE_ORDER.includes(record.status)) {
-          if (!soMap.has(record.sales_order)) {
-            soMap.set(record.sales_order, []);
-          }
-          soMap.get(record.sales_order)!.push({
-            status: record.status,
-            timestamp: new Date(record.timestamp)
-          });
+        if (!soMap.has(record.sales_order)) {
+          soMap.set(record.sales_order, []);
         }
+        soMap.get(record.sales_order)!.push({
+          status: record.status,
+          timestamp: new Date(record.timestamp)
+        });
       });
 
       // Calculate time spent in each stage
@@ -80,13 +77,12 @@ export const useStageTimingData = () => {
         // Sort by timestamp
         history.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
         
-        // Calculate time spent in each distinct stage
+        // Calculate time spent in each distinct stage, only for stages in STAGE_ORDER
         for (let i = 0; i < history.length - 1; i++) {
           const currentStage = history[i].status;
-          const nextStage = history[i + 1].status;
           
-          // Skip if next stage is the same (duplicate status entries)
-          if (currentStage === nextStage) continue;
+          // Only track time for stages we care about
+          if (!STAGE_ORDER.includes(currentStage)) continue;
           
           const nextTime = history[i + 1].timestamp.getTime();
           const currentTime = history[i].timestamp.getTime();
