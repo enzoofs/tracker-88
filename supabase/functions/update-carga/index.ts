@@ -34,12 +34,41 @@ Deno.serve(async (req) => {
 
     console.log('🔄 Atualizando carga:', data.numero_carga);
 
+    // Validar e corrigir status
+    const validStatuses = [
+      'Em Consolidação',
+      'No Armazém', 
+      'Embarque Agendado',
+      'Embarque Confirmado',
+      'Em Trânsito',
+      'Chegada no Brasil',
+      'Desembaraçado',
+      'Entregue'
+    ];
+
+    let statusToUse = data.status_atual;
+
+    if (statusToUse && !validStatuses.includes(statusToUse)) {
+      console.warn(`⚠️ Status inválido recebido: "${statusToUse}"`);
+      
+      // Buscar status atual da carga
+      const { data: cargaAtual } = await supabase
+        .from('cargas')
+        .select('status')
+        .eq('numero_carga', data.numero_carga)
+        .single();
+      
+      // Se a carga existe, manter status atual; caso contrário, usar "No Armazém"
+      statusToUse = cargaAtual?.status || 'No Armazém';
+      console.log(`✅ Status corrigido para: "${statusToUse}"`);
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabase = createClient(supabaseUrl!, supabaseKey!);
 
     const updateData: Record<string, any> = {
-      status: data.status_atual,
+      status: statusToUse,
       mawb: data.awb_number || data.mawb,
       hawb: data.hawb,
       updated_at: new Date().toISOString()

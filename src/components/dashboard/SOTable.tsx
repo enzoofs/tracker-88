@@ -292,6 +292,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                     )}
                   </div>
                 </TableHead>
+                <TableHead>Nº Carga</TableHead>
                 <TableHead>ETA</TableHead>
                 <TableHead
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
@@ -372,6 +373,15 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                         {so.statusAtual || 'Sem Status'}
                       </Badge>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {so.cargoNumber ? (
+                      <Badge variant="outline" className="font-mono text-xs">
+                        {so.cargoNumber}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">-</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {slaInfo ? (
