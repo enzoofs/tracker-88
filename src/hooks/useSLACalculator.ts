@@ -19,18 +19,15 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
 
   const currentStatus = so.statusAtual.toLowerCase();
   
-  // Enquanto estiver em produção ou no armazém (aguardando embarque), não há ETA
+  // Enquanto estiver em produção, não há ETA
   if (currentStatus.includes('produção') || currentStatus.includes('producao')) {
-    return null;
-  }
-
-  // Sem ETA até o embarque ser agendado
-  if (currentStatus.includes('armazém') || currentStatus.includes('armazem')) {
     return null;
   }
 
   // Mapeamento de status → dias úteis restantes
   const statusDaysMap: Record<string, { days: number; stage: string }> = {
+    'armazém': { days: 14, stage: 'No Armazém' },
+    'armazem': { days: 14, stage: 'No Armazém' },
     'fedex': { days: 15, stage: 'FedEx' },
     'embarque agendado': { days: 11, stage: 'Embarque Agendado' },
     'embarque confirmado': { days: 9, stage: 'Embarque Confirmado' },
