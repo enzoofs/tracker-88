@@ -195,7 +195,21 @@ const LogisticsDashboard: React.FC = () => {
       // Calculate overview metrics
       const activeSOs = transformedSOs.length;
       const inTransit = transformedSOs.filter(so => so.statusAtual === 'Em Trânsito').length;
-      const expectedArrivals = transformedCargas.length;
+      // Calculate expected arrivals in the next 7 days
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      
+      const expectedArrivals = transformedCargas.filter(carga => {
+        // Excluir cargas já entregues
+        if (carga.status?.toLowerCase() === 'entregue') return false;
+        
+        // Verificar se tem data de chegada prevista
+        if (!carga.data_chegada_prevista) return false;
+        
+        // Filtrar cargas com chegada prevista nos próximos 7 dias
+        const chegadaPrevista = new Date(carga.data_chegada_prevista);
+        return chegadaPrevista >= now && chegadaPrevista <= sevenDaysFromNow;
+      }).length;
       const criticalShipments = transformedSOs.filter(so => !so.isDelivered && so.ultimaLocalizacao).length;
       
       // Calculate real status counts
