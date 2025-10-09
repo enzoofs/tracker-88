@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { BarChart3, Ship, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut, User, Bell, Plane, Box, Zap, Atom, Microscope, FileSpreadsheet, Moon, Sun } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
@@ -97,7 +96,6 @@ const LogisticsDashboard: React.FC = () => {
   const [filteredSOs, setFilteredSOs] = useState<any[]>([]);
   const [showDeliveredCargas, setShowDeliveredCargas] = useState(false);
   const [filteredCargas, setFilteredCargas] = useState<any[]>([]);
-  const [cargaSearchQuery, setCargaSearchQuery] = useState('');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const {
     toast
@@ -297,25 +295,13 @@ const LogisticsDashboard: React.FC = () => {
     setFilteredSOs(filtered);
   }, [showDelivered, data.sos]);
 
-  // Update filtered Cargas when showDeliveredCargas or search query changes
+  // Update filtered Cargas when showDeliveredCargas changes
   useEffect(() => {
-    let filtered = showDeliveredCargas 
+    const filtered = showDeliveredCargas 
       ? data.cargas 
       : data.cargas.filter(carga => carga.status?.toLowerCase() !== 'entregue');
-    
-    // Apply search filter
-    if (cargaSearchQuery.trim()) {
-      const query = cargaSearchQuery.toLowerCase().trim();
-      filtered = filtered.filter(carga => 
-        carga.numero_carga?.toLowerCase().includes(query) ||
-        carga.mawb?.toLowerCase().includes(query) ||
-        carga.hawb?.toLowerCase().includes(query) ||
-        carga.transportadora?.toLowerCase().includes(query)
-      );
-    }
-    
     setFilteredCargas(filtered);
-  }, [showDeliveredCargas, cargaSearchQuery, data.cargas]);
+  }, [showDeliveredCargas, data.cargas]);
   
   useEffect(() => {
     loadDashboardData();
@@ -718,17 +704,9 @@ const LogisticsDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold">Cargas Consolidadas</h2>
                 <Badge className="bg-primary/10 text-primary">
-                  {filteredCargas.length} de {data.cargas.length} cargas
+                  {data.cargas.length} cargas ativas
                 </Badge>
               </div>
-              
-              {/* Search Filter */}
-              <Input
-                placeholder="Pesquisar por número de carga, MAWB, HAWB ou transportadora..."
-                value={cargaSearchQuery}
-                onChange={(e) => setCargaSearchQuery(e.target.value)}
-                className="max-w-md"
-              />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCargas.map((carga) => (
                   <CargoCard

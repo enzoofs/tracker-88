@@ -39,6 +39,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   const [statusFilter, setStatusFilter] = useState('all');
   const [clienteFilter, setClienteFilter] = useState('all');
   const [productFilter, setProductFilter] = useState('all');
+  const [cargoFilter, setCargoFilter] = useState('all');
   const [sortBy, setSortBy] = useState<keyof SO | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -108,7 +109,9 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
       productFilter === 'all' || 
       so.produtos.split(",").some(p => p.trim() === productFilter);
     
-    return matchesSearch && matchesStatus && matchesCliente && matchesProduct;
+    const matchesCargo = cargoFilter === 'all' || so.cargoNumber === cargoFilter;
+    
+    return matchesSearch && matchesStatus && matchesCliente && matchesProduct && matchesCargo;
   }).sort((a, b) => {
     if (!sortBy) return 0;
     
@@ -152,6 +155,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
       )
     )
   ).sort();
+  const uniqueCargas = [...new Set(data.map(so => so.cargoNumber).filter(c => c))].sort();
   
   console.log('🔍 Status únicos encontrados:', uniqueStatuses);
   console.log('✅ Dados após filtragem:', filteredData.length);
@@ -176,7 +180,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
             />
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
                 <SelectValue placeholder="Status" />
@@ -213,6 +217,18 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
               </SelectContent>
             </Select>
 
+            <Select value={cargoFilter} onValueChange={setCargoFilter}>
+              <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
+                <SelectValue placeholder="Carga" />
+              </SelectTrigger>
+              <SelectContent className="z-50 bg-background">
+                <SelectItem value="all">Todas as Cargas</SelectItem>
+                {uniqueCargas.map(cargo => (
+                  <SelectItem key={cargo} value={cargo}>{cargo}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Button 
               variant="outline" 
               onClick={() => {
@@ -220,6 +236,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 setStatusFilter('all');
                 setClienteFilter('all');
                 setProductFilter('all');
+                setCargoFilter('all');
               }}
               className="transition-all duration-300 hover:bg-muted/50"
             >
