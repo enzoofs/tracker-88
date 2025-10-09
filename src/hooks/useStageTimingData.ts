@@ -126,13 +126,17 @@ export const useStageTimingData = () => {
         });
       });
 
-      // Add time for orders currently in stages that might not have history yet
+      // Add time for orders currently in stages
       currentOrders?.forEach(order => {
         const stage = order.status_atual;
         if (!STAGE_ORDER.includes(stage)) return;
         
-        // Skip if already processed in history
-        if (soMap.has(order.sales_order)) return;
+        // Check if this SO has any valid stage transitions in history
+        const hasValidHistory = soMap.has(order.sales_order) && 
+          soMap.get(order.sales_order)!.some(h => STAGE_ORDER.includes(h.status));
+        
+        // Skip if already processed with valid stage history
+        if (hasValidHistory) return;
         
         // Calculate time from order creation/entry to now
         let startTime: Date;
