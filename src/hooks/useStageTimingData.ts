@@ -20,7 +20,6 @@ interface StageTimingData {
 
 const STAGE_ORDER = [
   'Em Produção',
-  'Enviado',
   'No Armazém',
   'Voo Internacional',
   'Desembaraço',
@@ -30,7 +29,6 @@ const STAGE_ORDER = [
 // SLAs esperados por etapa (em dias)
 const STAGE_SLAS: Record<string, number> = {
   'Em Produção': 15,
-  'Enviado': 2,
   'No Armazém': 3,
   'Voo Internacional': 2,
   'Desembaraço': 3,
