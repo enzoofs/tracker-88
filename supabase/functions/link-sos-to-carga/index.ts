@@ -139,7 +139,7 @@ serve(async (req) => {
       .insert({
         numero_carga: numeroCargaStr,
         evento: 'SOs Vinculadas',
-        descricao: `${validSOs.length} SOs vinculadas: ${validSOs.join(', ')}`,
+        descricao: `${validSOs.length} SOs vinculadas à carga`,
         localizacao: carga.origem || 'Armazém',
         data_evento: new Date().toISOString()
       });
