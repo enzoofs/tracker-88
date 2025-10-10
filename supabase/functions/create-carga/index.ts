@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       transportadora: data.transportadora || "Não especificado",
       mawb: data.awb_number || null,
       hawb: data.hawb_number || null,
-      observacoes: data.observacoes || null,
+      // observacoes: comentado até confirmar que existe
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
