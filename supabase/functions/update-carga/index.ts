@@ -112,10 +112,11 @@ Deno.serve(async (req) => {
       updateData.ultima_localizacao = data.localizacao;
     }
 
-    // Atualizar observações se fornecidas
-    if (data.observacoes) {
-      updateData.observacoes = data.observacoes;
-    }
+    // Atualizar observações se fornecidas E se a coluna existir
+    // (comentado até confirmar que a coluna existe na tabela)
+    // if (data.observacoes) {
+    //   updateData.observacoes = data.observacoes;
+    // }
 
     // Atualizar datas específicas de eventos
     if (data.data_embarque_real) {
