@@ -64,10 +64,10 @@ Deno.serve(async (req) => {
 
     if (!cargaAtual) {
       console.error("❌ Carga não encontrada:", data.numero_carga);
-      return new Response(JSON.stringify({ error: "Carga não encontrada" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Carga não encontrada" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     console.log("✅ Carga encontrada:", cargaAtual.numero_carga);
@@ -79,10 +79,10 @@ Deno.serve(async (req) => {
       "Em Consolidação": "Em Consolidação",
       "Em Trânsito Internacional": "Em Trânsito",
       "Em Liberação": "Chegada no Brasil",
-      Liberada: "Desembaraçado",
+      "Liberada": "Desembaraçado",
       "Em Expedição": "Desembaraçado",
       "Em Rota de Entrega": "Em Trânsito",
-      Entregue: "Entregue",
+      "Entregue": "Entregue",
     };
 
     // Preparar dados de atualização
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
       updateData.mawb = data.awb_number;
       console.log("✈️ MAWB:", data.awb_number);
     }
-
+    
     if (data.hawb_number) {
       updateData.hawb = data.hawb_number;
       console.log("📦 HAWB:", data.hawb_number);
@@ -122,20 +122,20 @@ Deno.serve(async (req) => {
       updateData.data_embarque = data.data_embarque_real;
       console.log("📅 Data embarque real:", data.data_embarque_real);
     }
-
+    
     if (data.data_chegada_real) {
       updateData.data_chegada = data.data_chegada_real;
       console.log("📅 Data chegada real:", data.data_chegada_real);
     }
-
+    
     if (data.data_liberacao) {
       updateData.data_liberacao = data.data_liberacao;
     }
-
+    
     if (data.data_chegada_expedicao) {
       updateData.data_chegada_expedicao = data.data_chegada_expedicao;
     }
-
+    
     if (data.data_entrega) {
       updateData.data_entrega = data.data_entrega;
     }
@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
       updateData.data_embarque_prevista = data.data_previsao_embarque;
       console.log("📅 Previsão embarque:", data.data_previsao_embarque);
     }
-
+    
     if (data.data_previsao_chegada) {
       updateData.data_chegada_prevista = data.data_previsao_chegada;
       console.log("📅 Previsão chegada:", data.data_previsao_chegada);
@@ -155,14 +155,14 @@ Deno.serve(async (req) => {
     // Como não existe coluna invoices, adiciona nas observações
     if (data.invoices && Array.isArray(data.invoices) && data.invoices.length > 0) {
       const invoicesStr = "\nInvoices: " + data.invoices.join(", ");
-
+      
       // Se já tem observações e não contém invoices, adiciona
       if (updateData.observacoes && !updateData.observacoes.toLowerCase().includes("invoice")) {
         updateData.observacoes = updateData.observacoes + invoicesStr;
       } else if (!updateData.observacoes) {
         updateData.observacoes = invoicesStr.trim();
       }
-
+      
       console.log("📄 Invoices adicionadas:", data.invoices);
     }
 
@@ -218,22 +218,23 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({
-        success: true,
+      JSON.stringify({ 
+        success: true, 
         data: cargaAtualizada,
-        message: `Carga ${data.numero_carga} atualizada com sucesso`,
+        message: `Carga ${data.numero_carga} atualizada com sucesso`
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (error) {
     console.error("❌ Erro geral:", error.message);
     console.error("❌ Stack:", error.stack);
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
         error: error.message,
-        details: error.toString(),
+        details: error.toString()
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
