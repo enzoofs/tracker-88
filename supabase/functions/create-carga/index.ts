@@ -1,5 +1,5 @@
 // ============================================
-// 1. EDGE FUNCTION: create-carga
+// EDGE FUNCTION: create-carga
 // Caminho: supabase/functions/create-carga/index.ts
 // ============================================
 
@@ -16,49 +16,68 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Autenticação
     const authHeader = req.headers.get("authorization");
     const token = authHeader?.replace(/^Bearer\s+/i, "");
     const expectedToken = Deno.env.get("N8N_SHARED_TOKEN");
 
     if (!token || token !== expectedToken) {
+      console.error("❌ Token inválido");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Receber payload
     const payload = await req.json();
     const data = payload;
 
+    console.log("📥 Payload recebido:", JSON.stringify(data, null, 2));
+
     if (!data.numero_carga) {
+      console.error("❌ numero_carga ausente");
       return new Response(JSON.stringify({ error: "numero_carga é obrigatório" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("📦 Criando nova carga:", data.numero_carga);
+    console.log("📦 Criando carga:", data.numero_carga);
 
+    // Criar cliente Supabase
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const supabase = createClient(supabaseUrl!, supabaseKey!);
 
     // Verificar se a carga já existe
-    const { data: cargaExistente } = await supabase
+    const { data: cargaExistente, error: checkError } = await supabase
       .from("cargas")
       .select("numero_carga")
       .eq("numero_carga", data.numero_carga)
-      .single();
+      .maybeSingle();
+
+    if (checkError) {
+      console.error("❌ Erro ao verificar carga:", checkError.message);
+    }
 
     if (cargaExistente) {
       console.log("⚠️ Carga já existe, retornando sucesso");
-      return new Response(JSON.stringify({ success: true, message: "Carga já existe", existing: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Carga já existe",
+          existing: true,
+          data: cargaExistente,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    // Status válidos mapeados
+    // Mapeamento de status do n8n para o banco
     const statusMap: Record<string, string> = {
       "Aguardando Pré-Alerta": "No Armazém",
       "Aguardando Embarque": "Embarque Agendado",
@@ -73,6 +92,8 @@ Deno.serve(async (req) => {
 
     const statusToUse = statusMap[data.status] || "No Armazém";
 
+    console.log(`📊 Status: "${data.status}" → "${statusToUse}"`);
+
     // Preparar dados para inserção
     const insertData: Record<string, any> = {
       numero_carga: data.numero_carga,
@@ -81,35 +102,40 @@ Deno.serve(async (req) => {
       destino: data.destino || "Confins, MG",
       tipo_temperatura: data.temperatura_controlada ? "Controlada" : "Ambiente",
       transportadora: data.transportadora || "Não especificado",
-      mawb: data.awb_number,
-      hawb: data.hawb_number,
-      observacoes: data.observacoes,
+      mawb: data.awb_number || null,
+      hawb: data.hawb_number || null,
+      observacoes: data.observacoes || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    // Adicionar datas de previsão SE fornecidas (nomes corretos do banco)
+    // Adicionar previsão de embarque
     if (data.data_previsao_embarque) {
       insertData.data_embarque = data.data_previsao_embarque;
-    }
-    if (data.data_previsao_chegada) {
-      insertData.data_chegada_prevista = data.data_previsao_chegada;
+      console.log("📅 Previsão embarque:", data.data_previsao_embarque);
     }
 
-    // Adicionar data de autorização se for autorização
+    // Adicionar previsão de chegada
+    if (data.data_previsao_chegada) {
+      insertData.data_chegada_prevista = data.data_previsao_chegada;
+      console.log("📅 Previsão chegada:", data.data_previsao_chegada);
+    }
+
+    // Adicionar data de autorização
     if (data.data_autorizacao) {
       insertData.data_autorizacao = data.data_autorizacao;
     }
 
-    // Adicionar invoices se fornecidas (não existe coluna invoices na tabela atual)
-    // Se você quiser salvar invoices, adicione nas observações
+    // Adicionar invoices nas observações (tabela não tem coluna invoices)
     if (data.invoices && Array.isArray(data.invoices) && data.invoices.length > 0) {
       const invoicesStr = "\nInvoices: " + data.invoices.join(", ");
       insertData.observacoes = (insertData.observacoes || "") + invoicesStr;
+      console.log("📄 Invoices adicionadas:", data.invoices);
     }
 
-    console.log("📝 Dados a inserir:", insertData);
+    console.log("💾 Inserindo no banco:", JSON.stringify(insertData, null, 2));
 
+    // Inserir no banco
     const { data: cargaCriada, error: insertError } = await supabase
       .from("cargas")
       .insert(insertData)
@@ -117,21 +143,36 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError) {
-      console.error("❌ Erro ao criar carga:", insertError.message);
+      console.error("❌ Erro ao inserir:", insertError.message);
+      console.error("❌ Detalhes:", insertError);
       throw insertError;
     }
 
-    console.log("✅ Carga criada com sucesso:", cargaCriada.numero_carga);
+    console.log("✅ Carga criada:", cargaCriada.numero_carga);
 
-    return new Response(JSON.stringify({ success: true, data: cargaCriada }), {
-      status: 201,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: cargaCriada,
+        message: `Carga ${data.numero_carga} criada com sucesso`,
+      }),
+      {
+        status: 201,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   } catch (error) {
-    console.error("❌ Erro:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("❌ Erro geral:", error.message);
+    console.error("❌ Stack:", error.stack);
+    return new Response(
+      JSON.stringify({
+        error: error.message,
+        details: error.toString(),
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
