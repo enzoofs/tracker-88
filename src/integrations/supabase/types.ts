@@ -68,47 +68,59 @@ export type Database = {
       cargas: {
         Row: {
           created_at: string | null
+          data_autorizacao: string | null
           data_chegada_prevista: string | null
           data_embarque: string | null
+          data_embarque_prevista: string | null
           destino: string | null
           hawb: string | null
           id: string
+          invoices: Json | null
           mawb: string | null
           numero_carga: string
           origem: string | null
           status: string | null
           tipo_temperatura: string | null
           transportadora: string | null
+          ultima_localizacao: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          data_autorizacao?: string | null
           data_chegada_prevista?: string | null
           data_embarque?: string | null
+          data_embarque_prevista?: string | null
           destino?: string | null
           hawb?: string | null
           id?: string
+          invoices?: Json | null
           mawb?: string | null
           numero_carga: string
           origem?: string | null
           status?: string | null
           tipo_temperatura?: string | null
           transportadora?: string | null
+          ultima_localizacao?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          data_autorizacao?: string | null
           data_chegada_prevista?: string | null
           data_embarque?: string | null
+          data_embarque_prevista?: string | null
           destino?: string | null
           hawb?: string | null
           id?: string
+          invoices?: Json | null
           mawb?: string | null
           numero_carga?: string
           origem?: string | null
           status?: string | null
           tipo_temperatura?: string | null
           transportadora?: string | null
+          ultima_localizacao?: string | null
           updated_at?: string | null
         }
         Relationships: []
