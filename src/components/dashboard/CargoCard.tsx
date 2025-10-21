@@ -57,16 +57,9 @@ const CargoCard = ({ carga, onClick }: CargoCardProps) => {
               </p>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <Badge className={getStatusColor(carga.status)}>
-              {carga.status}
-            </Badge>
-            {(carga.so_count || 0) > 10 && (
-              <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white animate-pulse">
-                ⚡ CONSOLIDADA
-              </Badge>
-            )}
-          </div>
+          <Badge className={getStatusColor(carga.status)}>
+            {carga.status}
+          </Badge>
         </div>
 
         {/* Temperatura */}

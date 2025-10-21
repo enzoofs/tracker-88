@@ -102,7 +102,7 @@ const Analytics: React.FC = () => {
       // Calculate performance metrics
       const totalDeliveries = enviosData?.length || 0;
       const onTimeRate = 75 + Math.random() * 15; // 75-90%
-      const averageDeliveryDays = 22 + Math.random() * 8; // 22-30 days
+      const averageDeliveryDays = 7; // Tempo médio fixo
       const criticalDelays = Math.floor(totalDeliveries * 0.05); // 5% critical
 
       // Top clients by volume

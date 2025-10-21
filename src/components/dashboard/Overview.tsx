@@ -42,13 +42,9 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
       }
       if (category === 'importacao') {
         const status = so.statusAtual?.toLowerCase() || '';
-        return status.includes('importação') ||
-               status.includes('importacao') ||
-               status.includes('fedex') ||
-               status.includes('embarque') ||
-               status.includes('voo internacional') ||
-               status.includes('trânsito') ||
-               status.includes('transito');
+        const isProduction = status.includes('produção') || status.includes('producao');
+        const isDelivered = so.isDelivered || status.includes('entregue');
+        return !isProduction && !isDelivered;
       }
       if (category === 'atrasadas') {
         if (so.isDelivered) return false;

@@ -56,38 +56,8 @@ const Charts: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="charts" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  Pedidos por Cliente
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {data.pedidosPorCliente.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={data.pedidosPorCliente} layout="horizontal">
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis type="number" className="text-xs" />
-                      <YAxis dataKey="cliente" type="category" className="text-xs" width={100} />
-                      <Tooltip />
-                      <Bar dataKey="pedidos" fill="hsl(var(--primary))" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-80 flex items-center justify-center text-muted-foreground">
-                    <div className="text-center">
-                      <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Nenhum dado disponível para exibir</p>
-                      <p className="text-sm">Aguarde o carregamento dos dados</p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-card">
+          <div className="flex justify-center">
+            <Card className="shadow-card w-full max-w-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-secondary" />

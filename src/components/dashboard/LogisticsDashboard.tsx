@@ -226,13 +226,9 @@ const LogisticsDashboard: React.FC = () => {
         emProducao: transformedSOs.filter(so => so.statusAtual === 'Em Produção').length,
         emImportacao: transformedSOs.filter(so => {
           const status = so.statusAtual?.toLowerCase() || '';
-          return status.includes('importação') ||
-                 status.includes('importacao') ||
-                 status.includes('fedex') ||
-                 status.includes('embarque') ||
-                 status.includes('voo internacional') ||
-                 status.includes('trânsito') ||
-                 status.includes('transito');
+          const isProduction = status.includes('produção') || status.includes('producao');
+          const isDelivered = so.isDelivered || status.includes('entregue');
+          return !isProduction && !isDelivered;
         }).length,
         atrasadas
       };
