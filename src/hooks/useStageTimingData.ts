@@ -29,7 +29,7 @@ const STAGE_ORDER = [
 // SLAs esperados por etapa (em dias)
 const STAGE_SLAS: Record<string, number> = {
   'Em Produção': 15,
-  'No Armazém': 3,
+  'No Armazém': 5,
   'Voo Internacional': 2,
   'Desembaraço': 3,
   'Entregue': 3
@@ -189,8 +189,12 @@ export const useStageTimingData = () => {
           };
         });
 
-      const totalAverageDays = stages.reduce((sum, s) => sum + s.avgDays, 0);
-      const totalSLA = STAGE_ORDER.reduce((sum, stage) => sum + (STAGE_SLAS[stage] || 0), 0);
+      // Calculate total average days and SLA only for stages after arrival in Brazil
+      const brazilStages = ['Chegada no Brasil', 'Desembaraço', 'Entregue'];
+      const totalAverageDays = stages
+        .filter(stage => brazilStages.includes(stage.stage))
+        .reduce((sum, stage) => sum + stage.avgDays, 0);
+      const totalSLA = brazilStages.reduce((sum, stage) => sum + (STAGE_SLAS[stage] || 0), 0);
 
       setData({
         stages,

@@ -96,19 +96,16 @@ const TrendsAnalysis: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-card">
+        <Card className="shadow-card cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setAtencaoDialogOpen(true)}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Atenção Necessária</CardTitle>
             <AlertTriangle className="h-4 w-4 text-status-production" />
           </CardHeader>
-          <CardContent 
-            className="cursor-pointer hover:bg-muted/50 transition-colors rounded-lg -m-6 p-6"
-            onClick={() => setAtencaoDialogOpen(true)}
-          >
-            <div className="text-2xl font-bold text-status-production">
+          <CardContent>
+            <div className="text-2xl font-bold text-status-production mb-1">
               {data.insights.atencaoNecessaria.length}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground break-words">
               {data.insights.atencaoNecessaria.length > 0 ? 'Itens requerem atenção' : 'Tudo funcionando bem'}
             </p>
           </CardContent>

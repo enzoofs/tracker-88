@@ -38,18 +38,20 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
   const handleCardClick = (category: 'producao' | 'importacao' | 'atrasadas') => {
     const filtered = allSOs.filter(so => {
       if (category === 'producao') {
-        return so.statusAtual?.toLowerCase().includes('produção') || 
-               so.statusAtual?.toLowerCase().includes('producao');
+        return so.statusAtual === 'Em Produção';
       }
       if (category === 'importacao') {
-        return so.statusAtual?.toLowerCase().includes('importação') || 
-               so.statusAtual?.toLowerCase().includes('importacao') ||
-               so.statusAtual?.toLowerCase().includes('fedex') ||
-               so.statusAtual?.toLowerCase().includes('embarque') ||
-               so.statusAtual?.toLowerCase().includes('trânsito') ||
-               so.statusAtual?.toLowerCase().includes('transito');
+        const status = so.statusAtual?.toLowerCase() || '';
+        return status.includes('importação') ||
+               status.includes('importacao') ||
+               status.includes('fedex') ||
+               status.includes('embarque') ||
+               status.includes('voo internacional') ||
+               status.includes('trânsito') ||
+               status.includes('transito');
       }
       if (category === 'atrasadas') {
+        if (so.isDelivered) return false;
         const sla = useSLACalculator(so);
         return sla?.urgency === 'overdue';
       }

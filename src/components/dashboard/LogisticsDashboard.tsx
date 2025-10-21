@@ -8,6 +8,7 @@ import { BarChart3, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSLACalculator } from '@/hooks/useSLACalculator';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useTheme } from '@/components/auth/ThemeProvider';
 import Overview from './Overview';
@@ -217,20 +218,22 @@ const LogisticsDashboard: React.FC = () => {
       // Calculate real status counts
       const atrasadas = transformedSOs.filter(so => {
         if (so.isDelivered) return false;
-        const lastUpdate = new Date(so.dataUltimaAtualizacao);
-        const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
-        return daysSinceUpdate > 7; // Atrasada se sem atualização há mais de 7 dias
+        const sla = useSLACalculator(so);
+        return sla?.urgency === 'overdue';
       }).length;
       
       const statusCounts = {
         emProducao: transformedSOs.filter(so => so.statusAtual === 'Em Produção').length,
-        emImportacao: transformedSOs.filter(so => 
-          so.statusAtual === 'Em Importação' ||
-          so.statusAtual === 'Enviado' ||
-          so.statusAtual === 'No Armazém' || 
-          so.statusAtual === 'Voo Internacional' ||
-          so.statusAtual === 'Desembaraço'
-        ).length,
+        emImportacao: transformedSOs.filter(so => {
+          const status = so.statusAtual?.toLowerCase() || '';
+          return status.includes('importação') ||
+                 status.includes('importacao') ||
+                 status.includes('fedex') ||
+                 status.includes('embarque') ||
+                 status.includes('voo internacional') ||
+                 status.includes('trânsito') ||
+                 status.includes('transito');
+        }).length,
         atrasadas
       };
 
