@@ -147,7 +147,7 @@ const StageTimingAnalysis: React.FC = () => {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         {getStatusIcon(stage.status)}
-                        {stage.stage}
+                        {stage.stage === 'Entregue' ? 'Entrega' : stage.stage}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {stage.count} registros
