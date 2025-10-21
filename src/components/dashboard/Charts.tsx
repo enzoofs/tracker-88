@@ -12,6 +12,22 @@ import TrendsAnalysis from './TrendsAnalysis';
 const Charts: React.FC = () => {
   const { data, loading } = useChartsData();
 
+  // Definir cores específicas por status
+  const getStatusColor = (status: string): string => {
+    const colorMap: Record<string, string> = {
+      'No Armazém': 'hsl(var(--primary))',
+      'Chegada no Brasil': 'hsl(var(--status-delivered))',
+      'On FedEx vehicle for delivery': 'hsl(var(--status-shipping))',
+      'Em Veículo FedEx': 'hsl(var(--status-shipping))',
+      'Desembaraço': 'hsl(var(--status-production))',
+      'Em Produção': 'hsl(142, 76%, 36%)',
+      'Voo Internacional': 'hsl(217, 91%, 60%)',
+      'Em Importação': 'hsl(262, 83%, 58%)',
+    };
+    
+    return colorMap[status] || `hsl(${Math.random() * 360}, 70%, 50%)`;
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -80,7 +96,7 @@ const Charts: React.FC = () => {
                         {data.statusDistribution.map((entry, index) => (
                           <Cell 
                             key={`cell-${index}`} 
-                            fill={['hsl(var(--primary))', 'hsl(var(--status-delivered))', 'hsl(var(--status-shipping))', 'hsl(var(--status-production))', 'hsl(var(--status-transit))'][index % 5]} 
+                            fill={getStatusColor(entry.status)} 
                           />
                         ))}
                       </Pie>
