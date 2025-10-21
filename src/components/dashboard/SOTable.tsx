@@ -423,15 +423,15 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p className="font-semibold">ETA: {slaInfo.stage}</p>
+                            <p className="font-semibold">Previsão: {slaInfo.stage}</p>
                             <p className="text-xs">
                               {slaInfo.urgency === 'overdue' 
-                                ? `${Math.abs(slaInfo.daysRemaining)} dias de atraso` 
-                                : `${slaInfo.daysRemaining} dias restantes`
+                                ? `${Math.abs(slaInfo.daysRemaining)} dias de atraso na entrega` 
+                                : `${slaInfo.daysRemaining} dias restantes para entrega`
                               }
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Prazo: {slaInfo.expectedDays} dias | Decorridos: {slaInfo.daysSinceUpdate} dias
+                              Previsão entrega: {slaInfo.deliveryForecastDays} dias | SLA interno: {slaInfo.expectedDays} dias | Decorridos: {slaInfo.daysSinceUpdate} dias
                             </p>
                           </TooltipContent>
                         </Tooltip>

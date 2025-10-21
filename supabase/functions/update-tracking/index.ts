@@ -91,6 +91,12 @@ Deno.serve(async (req) => {
         updateData.status_atual = 'Em Distribuição FedEx';
       }
 
+      // Convert "On FedEx vehicle for delivery" to "Em Veículo FedEx"
+      if (payload.ultima_localizacao && payload.ultima_localizacao.toLowerCase().includes('on fedex vehicle for delivery')) {
+        updateData.ultima_localizacao = 'Em Veículo FedEx';
+        updateData.status_atual = 'Em Veículo FedEx';
+      }
+
       // Update delivery flags based on status
       if (payload.status_atual) {
         updateData.is_at_warehouse = payload.status_atual.toLowerCase().includes('armazém');

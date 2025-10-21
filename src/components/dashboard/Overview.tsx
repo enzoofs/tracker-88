@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,8 @@ import { Truck, Package, Clock, TrendingUp, Plane, AlertCircle } from 'lucide-re
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getCriticalSummary } from '@/hooks/useAlertLevel';
+import { StatusDetailDialog } from './StatusDetailDialog';
+import { useSLACalculator } from '@/hooks/useSLACalculator';
 
 interface OverviewProps {
   data: {
@@ -24,10 +26,44 @@ interface OverviewProps {
 }
 
 const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogTitle, setDialogTitle] = useState('');
+  const [dialogSOs, setDialogSOs] = useState<any[]>([]);
+
   // Calcular valor total em movimento
   const totalValue = allSOs
     .filter(so => !so.isDelivered)
     .reduce((sum, so) => sum + (so.valorTotal || 0), 0);
+  
+  const handleCardClick = (category: 'producao' | 'importacao' | 'atrasadas') => {
+    const filtered = allSOs.filter(so => {
+      if (category === 'producao') {
+        return so.statusAtual?.toLowerCase().includes('produção') || 
+               so.statusAtual?.toLowerCase().includes('producao');
+      }
+      if (category === 'importacao') {
+        return so.statusAtual?.toLowerCase().includes('importação') || 
+               so.statusAtual?.toLowerCase().includes('importacao') ||
+               so.statusAtual?.toLowerCase().includes('fedex') ||
+               so.statusAtual?.toLowerCase().includes('embarque') ||
+               so.statusAtual?.toLowerCase().includes('trânsito') ||
+               so.statusAtual?.toLowerCase().includes('transito');
+      }
+      if (category === 'atrasadas') {
+        const sla = useSLACalculator(so);
+        return sla?.urgency === 'overdue';
+      }
+      return false;
+    });
+    
+    setDialogTitle(
+      category === 'producao' ? 'SOs em Produção' :
+      category === 'importacao' ? 'SOs em Importação' :
+      'SOs Atrasadas'
+    );
+    setDialogSOs(filtered);
+    setDialogOpen(true);
+  };
   
   const metricCards = [
     {
@@ -124,19 +160,28 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate">
+            <div 
+              className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate cursor-pointer transition-all hover:shadow-md hover:scale-105"
+              onClick={() => handleCardClick('producao')}
+            >
               <div className="text-2xl font-corporate font-bold text-status-production">
                 {data.statusCounts?.emProducao || 0}
               </div>
               <div className="text-sm text-muted-foreground font-corporate">Em Produção</div>
             </div>
-            <div className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate">
+            <div 
+              className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate cursor-pointer transition-all hover:shadow-md hover:scale-105"
+              onClick={() => handleCardClick('importacao')}
+            >
               <div className="text-2xl font-corporate font-bold text-status-shipping">
                 {data.statusCounts?.emImportacao || 0}
               </div>
               <div className="text-sm text-muted-foreground font-corporate">Em Importação</div>
             </div>
-            <div className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate">
+            <div 
+              className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate cursor-pointer transition-all hover:shadow-md hover:scale-105"
+              onClick={() => handleCardClick('atrasadas')}
+            >
               <div className="text-2xl font-corporate font-bold text-destructive">
                 {data.statusCounts?.atrasadas || 0}
               </div>
@@ -145,6 +190,13 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
           </div>
         </CardContent>
       </Card>
+
+      <StatusDetailDialog
+        isOpen={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title={dialogTitle}
+        sos={dialogSOs}
+      />
     </div>
   );
 };

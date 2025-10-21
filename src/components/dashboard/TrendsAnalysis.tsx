@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -12,6 +14,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 
 const TrendsAnalysis: React.FC = () => {
   const { data, loading } = useAnalytics();
+  const [atencaoDialogOpen, setAtencaoDialogOpen] = useState(false);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -98,7 +101,10 @@ const TrendsAnalysis: React.FC = () => {
             <CardTitle className="text-sm font-medium">Atenção Necessária</CardTitle>
             <AlertTriangle className="h-4 w-4 text-status-production" />
           </CardHeader>
-          <CardContent>
+          <CardContent 
+            className="cursor-pointer hover:bg-muted/50 transition-colors rounded-lg -m-6 p-6"
+            onClick={() => setAtencaoDialogOpen(true)}
+          >
             <div className="text-2xl font-bold text-status-production">
               {data.insights.atencaoNecessaria.length}
             </div>
@@ -108,6 +114,37 @@ const TrendsAnalysis: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialog de Atenção Necessária */}
+      <Dialog open={atencaoDialogOpen} onOpenChange={setAtencaoDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-status-production" />
+              Itens que Requerem Atenção ({data.insights.atencaoNecessaria.length})
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] pr-4">
+            {data.insights.atencaoNecessaria.length > 0 ? (
+              <div className="space-y-3">
+                {data.insights.atencaoNecessaria.map((item, index) => (
+                  <div key={index} className="p-4 border rounded-lg bg-status-production/5 border-status-production/20">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-status-production mt-0.5 flex-shrink-0" />
+                      <p className="text-sm">{item}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p className="text-lg font-medium">Tudo funcionando perfeitamente!</p>
+                <p className="text-sm mt-2">Não há itens que requerem atenção no momento.</p>
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
       {/* Sub-abas Detalhadas */}
       <Tabs defaultValue="receita" className="space-y-6">

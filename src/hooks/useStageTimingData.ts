@@ -32,7 +32,7 @@ const STAGE_SLAS: Record<string, number> = {
   'No Armazém': 3,
   'Voo Internacional': 2,
   'Desembaraço': 3,
-  'Entregue': 1
+  'Entregue': 3
 };
 
 export const useStageTimingData = () => {

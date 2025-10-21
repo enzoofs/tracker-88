@@ -7,9 +7,10 @@ interface SO {
 }
 
 interface SLAResult {
-  daysRemaining: number;
-  urgency: 'ok' | 'warning' | 'critical' | 'overdue';
-  expectedDays: number;
+  daysRemaining: number;           // Dias restantes para ENTREGA (baseado em deliveryForecastDays)
+  urgency: 'ok' | 'warning' | 'critical' | 'overdue';  // Baseado em slaDays
+  expectedDays: number;            // SLA interno (5 dias para armazém)
+  deliveryForecastDays: number;    // Previsão de entrega ao cliente (14 dias para armazém)
   daysSinceUpdate: number;
   stage: string;
 }
@@ -24,27 +25,55 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
     return null;
   }
 
-  // Mapeamento de status → dias úteis restantes
-  const statusDaysMap: Record<string, { days: number; stage: string }> = {
-    'armazém': { days: 5, stage: 'No Armazém' },
-    'armazem': { days: 5, stage: 'No Armazém' },
-    'fedex': { days: 15, stage: 'FedEx' },
-    'embarque agendado': { days: 11, stage: 'Embarque Agendado' },
-    'embarque confirmado': { days: 9, stage: 'Embarque Confirmado' },
-    'chegada': { days: 5, stage: 'Chegada no Brasil' },
-    'brasil': { days: 5, stage: 'Chegada no Brasil' },
-    'desembaraçado': { days: 3, stage: 'Desembaraçado' },
-    'desembaracado': { days: 3, stage: 'Desembaraçado' }
+  // SLA interno - para determinar urgência (alerta visual)
+  const slaDaysMap: Record<string, number> = {
+    'armazém': 5,
+    'armazem': 5,
+    'fedex': 15,
+    'embarque agendado': 11,
+    'embarque confirmado': 9,
+    'chegada': 5,
+    'brasil': 5,
+    'desembaraçado': 3,
+    'desembaracado': 3
+  };
+
+  // Previsão de entrega ao cliente - para informar ETA
+  const deliveryForecastMap: Record<string, number> = {
+    'armazém': 14,
+    'armazem': 14,
+    'fedex': 15,
+    'embarque agendado': 11,
+    'embarque confirmado': 9,
+    'chegada': 5,
+    'brasil': 5,
+    'desembaraçado': 3,
+    'desembaracado': 3
+  };
+
+  // Mapeamento de nomes de estágios
+  const stageNameMap: Record<string, string> = {
+    'armazém': 'No Armazém',
+    'armazem': 'No Armazém',
+    'fedex': 'FedEx',
+    'embarque agendado': 'Embarque Agendado',
+    'embarque confirmado': 'Embarque Confirmado',
+    'chegada': 'Chegada no Brasil',
+    'brasil': 'Chegada no Brasil',
+    'desembaraçado': 'Desembaraçado',
+    'desembaracado': 'Desembaraçado'
   };
 
   // Encontrar o status correspondente
-  let expectedDays = 15; // Default para FedEx
+  let slaDays = 15;           // Default para FedEx
+  let forecastDays = 15;      // Default para FedEx
   let stage = 'FedEx';
   
-  for (const [key, value] of Object.entries(statusDaysMap)) {
+  for (const key of Object.keys(slaDaysMap)) {
     if (currentStatus.includes(key)) {
-      expectedDays = value.days;
-      stage = value.stage;
+      slaDays = slaDaysMap[key];
+      forecastDays = deliveryForecastMap[key];
+      stage = stageNameMap[key];
       break;
     }
   }
@@ -54,23 +83,27 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   const now = new Date();
   const daysSinceUpdate = Math.floor((now.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  const daysRemaining = expectedDays - daysSinceUpdate;
-  
+  // Urgência baseada no SLA interno (5 dias para armazém)
+  const slaRemaining = slaDays - daysSinceUpdate;
   let urgency: 'ok' | 'warning' | 'critical' | 'overdue';
-  if (daysRemaining < 0) {
+  if (slaRemaining < 0) {
     urgency = 'overdue';
-  } else if (daysRemaining <= 1) {
+  } else if (slaRemaining <= 1) {
     urgency = 'critical';
-  } else if (daysRemaining <= 3) {
+  } else if (slaRemaining <= 3) {
     urgency = 'warning';
   } else {
     urgency = 'ok';
   }
 
+  // ETA baseada na previsão de entrega ao cliente (14 dias para armazém)
+  const daysRemaining = forecastDays - daysSinceUpdate;
+
   return {
-    daysRemaining,
-    urgency,
-    expectedDays,
+    daysRemaining,                    // Dias para ENTREGA (14 - decorridos para armazém)
+    urgency,                          // Urgência baseada no SLA interno (5 dias)
+    expectedDays: slaDays,            // SLA interno
+    deliveryForecastDays: forecastDays, // Previsão ao cliente
     daysSinceUpdate,
     stage
   };
