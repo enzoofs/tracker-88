@@ -195,7 +195,9 @@ const LogisticsDashboard: React.FC = () => {
       // Calculate overview metrics
       const activeSOs = transformedSOs.length;
       const inTransit = transformedSOs.filter(so => so.statusAtual === 'Em Trânsito').length;
+      
       // Calculate expected arrivals in the next 7 days
+      const now = new Date();
       const sevenDaysFromNow = new Date();
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
       
@@ -213,7 +215,6 @@ const LogisticsDashboard: React.FC = () => {
       const criticalShipments = transformedSOs.filter(so => !so.isDelivered && so.ultimaLocalizacao).length;
       
       // Calculate real status counts
-      const now = new Date();
       const atrasadas = transformedSOs.filter(so => {
         if (so.isDelivered) return false;
         const lastUpdate = new Date(so.dataUltimaAtualizacao);
