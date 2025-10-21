@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Truck, Package, Clock, TrendingUp, Ship, AlertCircle } from 'lucide-react';
+import { Truck, Package, Clock, TrendingUp, Plane, AlertCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getCriticalSummary } from '@/hooks/useAlertLevel';
@@ -118,7 +118,7 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
       <Card className="shadow-corporate bg-gradient-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-corporate">
-            <Ship className="h-5 w-5 text-primary" />
+            <Plane className="h-5 w-5 text-primary" />
             Status em Tempo Real
           </CardTitle>
         </CardHeader>

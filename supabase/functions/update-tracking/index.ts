@@ -85,6 +85,12 @@ Deno.serve(async (req) => {
       if (payload.ship_to) updateData.ship_to = payload.ship_to;
       if (payload.data_envio) updateData.data_envio = payload.data_envio;
 
+      // Convert "At destination sort facility" to "Em Distribuição FedEx"
+      if (payload.ultima_localizacao && payload.ultima_localizacao.toLowerCase().includes('at destination sort facility')) {
+        updateData.ultima_localizacao = 'Em Distribuição FedEx';
+        updateData.status_atual = 'Em Distribuição FedEx';
+      }
+
       // Update delivery flags based on status
       if (payload.status_atual) {
         updateData.is_at_warehouse = payload.status_atual.toLowerCase().includes('armazém');

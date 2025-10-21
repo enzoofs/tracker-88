@@ -3,7 +3,6 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Package, 
   Plane, 
-  Ship, 
   Truck, 
   MapPin, 
   Clock,

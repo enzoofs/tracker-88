@@ -26,15 +26,15 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
 
   // Mapeamento de status → dias úteis restantes
   const statusDaysMap: Record<string, { days: number; stage: string }> = {
-    'armazém': { days: 14, stage: 'No Armazém' },
-    'armazem': { days: 14, stage: 'No Armazém' },
+    'armazém': { days: 5, stage: 'No Armazém' },
+    'armazem': { days: 5, stage: 'No Armazém' },
     'fedex': { days: 15, stage: 'FedEx' },
     'embarque agendado': { days: 11, stage: 'Embarque Agendado' },
     'embarque confirmado': { days: 9, stage: 'Embarque Confirmado' },
     'chegada': { days: 5, stage: 'Chegada no Brasil' },
     'brasil': { days: 5, stage: 'Chegada no Brasil' },
-    'desembaraçado': { days: 2, stage: 'Desembaraçado' },
-    'desembaracado': { days: 2, stage: 'Desembaraçado' }
+    'desembaraçado': { days: 3, stage: 'Desembaraçado' },
+    'desembaracado': { days: 3, stage: 'Desembaraçado' }
   };
 
   // Encontrar o status correspondente

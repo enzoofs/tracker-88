@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  Ship, 
+  Plane, 
   Package, 
   Calendar, 
   MapPin, 
@@ -91,7 +91,7 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
       case 'entregue':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       default:
-        return <Ship className="h-4 w-4 text-blue-500" />;
+        return <Plane className="h-4 w-4 text-blue-500" />;
     }
   };
 
@@ -111,7 +111,7 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
         <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-primary/10 to-primary/5">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
-              <Ship className="h-6 w-6 text-primary" />
+              <Plane className="h-6 w-6 text-primary" />
             </div>
             <div>
               <h2 className="text-xl font-bold">Carga {cargo.numero_carga}</h2>
