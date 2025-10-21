@@ -22,6 +22,7 @@ const STAGE_ORDER = [
   'Em Produção',
   'No Armazém',
   'Voo Internacional',
+  'Chegada no Brasil',
   'Desembaraço',
   'Entregue'
 ];
@@ -31,8 +32,9 @@ const STAGE_SLAS: Record<string, number> = {
   'Em Produção': 15,
   'No Armazém': 5,
   'Voo Internacional': 2,
+  'Chegada no Brasil': 4,
   'Desembaraço': 3,
-  'Entregue': 3
+  'Entregue': 0
 };
 
 export const useStageTimingData = () => {
@@ -92,6 +94,18 @@ export const useStageTimingData = () => {
           
           // Find when order exited this stage (next different status in STAGE_ORDER)
           let exitTime: number | null = null;
+          
+          // Special handling for final stage "Entregue"
+          if (stage === 'Entregue') {
+            // "Entregue" is a milestone marking completion
+            // Record it with minimal time to show it happened
+            if (!stageTimes.has(stage)) {
+              stageTimes.set(stage, []);
+            }
+            stageTimes.get(stage)!.push(0.1); // 0.1 days to show it exists
+            return;
+          }
+          
           for (let i = entryIndex + 1; i < history.length; i++) {
             const nextStatus = history[i].status;
             // Exit when we find a different stage from STAGE_ORDER
@@ -109,8 +123,8 @@ export const useStageTimingData = () => {
               exitTime = Date.now();
             } else {
               // Order has moved on but we don't have the transition recorded
-              // Use the last timestamp in history as approximation
-              exitTime = history[history.length - 1].timestamp.getTime();
+              // Skip this stage as we can't calculate accurate time
+              return;
             }
           }
           

@@ -15,14 +15,15 @@ const Charts: React.FC = () => {
   // Definir cores específicas por status
   const getStatusColor = (status: string): string => {
     const colorMap: Record<string, string> = {
-      'No Armazém': 'hsl(var(--primary))',
-      'Chegada no Brasil': 'hsl(var(--status-delivered))',
-      'On FedEx vehicle for delivery': 'hsl(var(--status-shipping))',
-      'Em Veículo FedEx': 'hsl(var(--status-shipping))',
-      'Desembaraço': 'hsl(var(--status-production))',
-      'Em Produção': 'hsl(142, 76%, 36%)',
-      'Voo Internacional': 'hsl(217, 91%, 60%)',
-      'Em Importação': 'hsl(262, 83%, 58%)',
+      'No Armazém': 'hsl(210, 100%, 56%)',           // Azul vibrante
+      'Chegada no Brasil': 'hsl(142, 76%, 36%)',     // Verde escuro
+      'On FedEx vehicle for delivery': 'hsl(45, 100%, 51%)',  // Amarelo/laranja
+      'Em Veículo FedEx': 'hsl(45, 100%, 51%)',      // Amarelo/laranja
+      'Desembaraço': 'hsl(25, 95%, 53%)',            // Laranja
+      'Em Produção': 'hsl(262, 83%, 58%)',           // Roxo
+      'Voo Internacional': 'hsl(195, 100%, 50%)',    // Ciano
+      'Em Importação': 'hsl(330, 100%, 45%)',        // Rosa/magenta
+      'Entregue': 'hsl(120, 100%, 25%)',             // Verde muito escuro
     };
     
     return colorMap[status] || `hsl(${Math.random() * 360}, 70%, 50%)`;
