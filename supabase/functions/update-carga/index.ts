@@ -30,12 +30,11 @@ Deno.serve(async (req) => {
     }
 
     // Receber payload
-    const payload = await req.json();
-    const data = payload ?? {};
+    const data = await req.json();
 
     console.log("📥 Payload recebido:", JSON.stringify(data, null, 2));
 
-    if (!data.numero_carga) {
+    if (!data?.numero_carga) {
       console.error("❌ numero_carga ausente");
       return new Response(JSON.stringify({ error: "numero_carga é obrigatório" }), {
         status: 400,
@@ -53,7 +52,7 @@ Deno.serve(async (req) => {
     }
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Buscar carga atual para merge de dados
+    // Buscar carga atual
     const { data: cargaAtual, error: fetchError } = await supabase
       .from("cargas")
       .select("*")
@@ -88,81 +87,88 @@ Deno.serve(async (req) => {
       Entregue: "Entregue",
     };
 
-    // Preparar dados de atualização
+    // Montar updateData (SEM observacoes)
     const updateData: Record<string, any> = {
       updated_at: new Date().toISOString(),
     };
 
-    // Atualizar status se fornecido
     if (data.status_atual) {
       updateData.status = statusMap[data.status_atual] || cargaAtual.status;
       console.log(`📊 Status: ${cargaAtual.status} → ${updateData.status}`);
     }
-
-    // Atualizar MAWB/HAWB se fornecidos
     if (data.awb_number) {
       updateData.mawb = String(data.awb_number);
       console.log("✈️ MAWB:", updateData.mawb);
     }
-
     if (data.hawb_number) {
       updateData.hawb = String(data.hawb_number);
       console.log("📦 HAWB:", updateData.hawb);
     }
-
-    // Atualizar localização se fornecida
     if (data.localizacao) {
       updateData.ultima_localizacao = String(data.localizacao);
       console.log("📍 Localização:", updateData.ultima_localizacao);
     }
 
-    // ⚠️ Removido: qualquer referência a 'observacoes' ou 'temperatura_controlada'
-    // Não existe coluna 'observacoes' na tabela 'cargas'. NÃO tocar nesse campo.
-
-    // Atualizar datas específicas de eventos (se fornecidas)
+    // Datas reais (eventos)
     if (data.data_embarque_real) {
       updateData.data_embarque = data.data_embarque_real;
       console.log("📅 Data embarque real:", updateData.data_embarque);
     }
-
     if (data.data_chegada_real) {
       updateData.data_chegada = data.data_chegada_real;
       console.log("📅 Data chegada real:", updateData.data_chegada);
     }
-
     if (data.data_liberacao) {
       updateData.data_liberacao = data.data_liberacao;
       console.log("📅 Data liberação:", updateData.data_liberacao);
     }
-
     if (data.data_chegada_expedicao) {
       updateData.data_chegada_expedicao = data.data_chegada_expedicao;
       console.log("📅 Data chegada expedição:", updateData.data_chegada_expedicao);
     }
-
     if (data.data_entrega) {
       updateData.data_entrega = data.data_entrega;
       console.log("📅 Data entrega:", updateData.data_entrega);
     }
 
-    // Atualizar previsões SE fornecidas
+    // Previsões
     if (data.data_previsao_embarque) {
       updateData.data_embarque_prevista = data.data_previsao_embarque;
       console.log("📅 Previsão embarque:", updateData.data_embarque_prevista);
     }
-
     if (data.data_previsao_chegada) {
       updateData.data_chegada_prevista = data.data_previsao_chegada;
       console.log("📅 Previsão chegada:", updateData.data_chegada_prevista);
     }
 
-    // Invoices: atualmente não há coluna 'invoices' em 'cargas'.
-    // Apenas logamos para auditoria e ignoramos no UPDATE.
+    // ✅ Não há coluna 'invoices' em cargas → ignorar com log simples
     if (Array.isArray(data.invoices) && data.invoices.length > 0) {
-      console.log("📄 Invoices recebidas (ignoradas no UPDATE de 'cargas'):", data.invoices);
+      console.log("📄 Invoices recebidas (ignoradas em 'cargas'):", data.invoices);
     }
 
-    console.log("💾 Atualizando no banco:", JSON.stringify(updateData, null, 2));
+    // HARD-SANITIZE: remover qualquer campo indevido (inclusive 'observacoes' se aparecer)
+    const allowList = new Set([
+      "updated_at",
+      "status",
+      "mawb",
+      "hawb",
+      "ultima_localizacao",
+      "data_embarque",
+      "data_chegada",
+      "data_liberacao",
+      "data_chegada_expedicao",
+      "data_entrega",
+      "data_embarque_prevista",
+      "data_chegada_prevista",
+    ]);
+    for (const k of Object.keys(updateData)) {
+      if (!allowList.has(k)) delete updateData[k];
+    }
+    // Se por qualquer motivo caiu 'observacoes' aqui, garanta remoção:
+    // @ts-ignore
+    delete updateData.observacoes;
+
+    console.log("💾 Atualizando no banco (sanitizado):", JSON.stringify(updateData, null, 2));
 
     // Atualizar carga
     const { data: cargaAtualizada, error: updateError } = await supabase
@@ -180,7 +186,7 @@ Deno.serve(async (req) => {
 
     console.log("✅ Carga atualizada:", cargaAtualizada.numero_carga);
 
-    // Se a carga foi marcada como "Entregue", atualizar todas as SOs vinculadas
+    // Se marcou "Entregue", propagar para SOs vinculadas
     if (updateData.status === "Entregue") {
       console.log("📦 Atualizando SOs para status Entregue...");
 
