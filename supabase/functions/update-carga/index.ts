@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
 
     // Receber payload
     const payload = await req.json();
-    const data = payload;
+    const data = payload ?? {};
 
     console.log("📥 Payload recebido:", JSON.stringify(data, null, 2));
 
@@ -45,10 +45,13 @@ Deno.serve(async (req) => {
 
     console.log("🔄 Atualizando carga:", data.numero_carga);
 
-    // Criar cliente Supabase PRIMEIRO
+    // Criar cliente Supabase
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const supabase = createClient(supabaseUrl!, supabaseKey!);
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Variáveis SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não configuradas");
+    }
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Buscar carga atual para merge de dados
     const { data: cargaAtual, error: fetchError } = await supabase
@@ -72,7 +75,7 @@ Deno.serve(async (req) => {
 
     console.log("✅ Carga encontrada:", cargaAtual.numero_carga);
 
-    // Mapeamento de status
+    // Mapeamento de status (recebido do n8n → status do banco)
     const statusMap: Record<string, string> = {
       "Aguardando Pré-Alerta": "No Armazém",
       "Aguardando Embarque": "Embarque Agendado",
@@ -98,73 +101,65 @@ Deno.serve(async (req) => {
 
     // Atualizar MAWB/HAWB se fornecidos
     if (data.awb_number) {
-      updateData.mawb = data.awb_number;
-      console.log("✈️ MAWB:", data.awb_number);
+      updateData.mawb = String(data.awb_number);
+      console.log("✈️ MAWB:", updateData.mawb);
     }
 
     if (data.hawb_number) {
-      updateData.hawb = data.hawb_number;
-      console.log("📦 HAWB:", data.hawb_number);
+      updateData.hawb = String(data.hawb_number);
+      console.log("📦 HAWB:", updateData.hawb);
     }
 
     // Atualizar localização se fornecida
     if (data.localizacao) {
-      updateData.ultima_localizacao = data.localizacao;
+      updateData.ultima_localizacao = String(data.localizacao);
+      console.log("📍 Localização:", updateData.ultima_localizacao);
     }
 
-    // Atualizar observações se fornecidas E se a coluna existir
-    // (comentado até confirmar que a coluna existe na tabela)
-    // if (data.observacoes) {
-    //   updateData.observacoes = data.observacoes;
-    // }
+    // ⚠️ Removido: qualquer referência a 'observacoes' ou 'temperatura_controlada'
+    // Não existe coluna 'observacoes' na tabela 'cargas'. NÃO tocar nesse campo.
 
-    // Atualizar datas específicas de eventos
+    // Atualizar datas específicas de eventos (se fornecidas)
     if (data.data_embarque_real) {
       updateData.data_embarque = data.data_embarque_real;
-      console.log("📅 Data embarque real:", data.data_embarque_real);
+      console.log("📅 Data embarque real:", updateData.data_embarque);
     }
 
     if (data.data_chegada_real) {
       updateData.data_chegada = data.data_chegada_real;
-      console.log("📅 Data chegada real:", data.data_chegada_real);
+      console.log("📅 Data chegada real:", updateData.data_chegada);
     }
 
     if (data.data_liberacao) {
       updateData.data_liberacao = data.data_liberacao;
+      console.log("📅 Data liberação:", updateData.data_liberacao);
     }
 
     if (data.data_chegada_expedicao) {
       updateData.data_chegada_expedicao = data.data_chegada_expedicao;
+      console.log("📅 Data chegada expedição:", updateData.data_chegada_expedicao);
     }
 
     if (data.data_entrega) {
       updateData.data_entrega = data.data_entrega;
+      console.log("📅 Data entrega:", updateData.data_entrega);
     }
 
     // Atualizar previsões SE fornecidas
     if (data.data_previsao_embarque) {
       updateData.data_embarque_prevista = data.data_previsao_embarque;
-      console.log("📅 Previsão embarque:", data.data_previsao_embarque);
+      console.log("📅 Previsão embarque:", updateData.data_embarque_prevista);
     }
 
     if (data.data_previsao_chegada) {
       updateData.data_chegada_prevista = data.data_previsao_chegada;
-      console.log("📅 Previsão chegada:", data.data_previsao_chegada);
+      console.log("📅 Previsão chegada:", updateData.data_chegada_prevista);
     }
 
-    // Merge de invoices (adicionar novas sem duplicar)
-    // Como não existe coluna invoices, adiciona nas observações
-    if (data.invoices && Array.isArray(data.invoices) && data.invoices.length > 0) {
-      const invoicesStr = "\nInvoices: " + data.invoices.join(", ");
-
-      // Se já tem observações e não contém invoices, adiciona
-      if (updateData.observacoes && !updateData.observacoes.toLowerCase().includes("invoice")) {
-        updateData.observacoes = updateData.observacoes + invoicesStr;
-      } else if (!updateData.observacoes) {
-        updateData.observacoes = invoicesStr.trim();
-      }
-
-      console.log("📄 Invoices adicionadas:", data.invoices);
+    // Invoices: atualmente não há coluna 'invoices' em 'cargas'.
+    // Apenas logamos para auditoria e ignoramos no UPDATE.
+    if (Array.isArray(data.invoices) && data.invoices.length > 0) {
+      console.log("📄 Invoices recebidas (ignoradas no UPDATE de 'cargas'):", data.invoices);
     }
 
     console.log("💾 Atualizando no banco:", JSON.stringify(updateData, null, 2));
@@ -226,13 +221,13 @@ Deno.serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (error) {
-    console.error("❌ Erro geral:", error.message);
-    console.error("❌ Stack:", error.stack);
+  } catch (error: any) {
+    console.error("❌ Erro geral:", error?.message || String(error));
+    console.error("❌ Stack:", error?.stack || "");
     return new Response(
       JSON.stringify({
-        error: error.message,
-        details: error.toString(),
+        error: error?.message || "Internal error",
+        details: String(error),
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
