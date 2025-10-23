@@ -310,7 +310,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                   </div>
                 </TableHead>
                 <TableHead>Nº Carga</TableHead>
-                <TableHead>ETA</TableHead>
                 <TableHead
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
                   onClick={() => handleSort('dataUltimaAtualizacao')}
@@ -396,46 +395,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                       <Badge variant="outline" className="font-mono text-xs">
                         {so.cargoNumber}
                       </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {slaInfo ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Badge 
-                              className={
-                                slaInfo.urgency === 'overdue' 
-                                  ? 'bg-destructive text-destructive-foreground animate-pulse' 
-                                  : slaInfo.urgency === 'critical' 
-                                  ? 'bg-red-500/20 text-red-500 border-red-500/30' 
-                                  : slaInfo.urgency === 'warning' 
-                                  ? 'bg-yellow-500/20 text-yellow-600 border-yellow-500/30'
-                                  : 'bg-green-500/20 text-green-600 border-green-500/30'
-                              }
-                            >
-                              {slaInfo.urgency === 'overdue' 
-                                ? `+${Math.abs(slaInfo.daysRemaining)}d` 
-                                : `${slaInfo.daysRemaining}d`
-                              }
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="font-semibold">Previsão: {slaInfo.stage}</p>
-                            <p className="text-xs">
-                              {slaInfo.urgency === 'overdue' 
-                                ? `${Math.abs(slaInfo.daysRemaining)} dias de atraso na entrega` 
-                                : `${slaInfo.daysRemaining} dias restantes para entrega`
-                              }
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Previsão entrega: {slaInfo.deliveryForecastDays} dias | SLA interno: {slaInfo.expectedDays} dias | Decorridos: {slaInfo.daysSinceUpdate} dias
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
                     ) : (
                       <span className="text-muted-foreground text-xs">-</span>
                     )}
