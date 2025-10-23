@@ -156,10 +156,10 @@ Deno.serve(async (req) => {
       console.log("📅 Previsão chegada:", updateData.data_chegada_prevista);
     }
 
-    // Invoices: atualmente não há coluna 'invoices' em 'cargas'.
-    // Apenas logamos para auditoria e ignoramos no UPDATE.
+    // Atualizar invoices se fornecidas (campo JSONB existe na tabela)
     if (Array.isArray(data.invoices) && data.invoices.length > 0) {
-      console.log("📄 Invoices recebidas (ignoradas no UPDATE de 'cargas'):", data.invoices);
+      updateData.invoices = data.invoices;
+      console.log("📄 Invoices atualizadas:", data.invoices);
     }
 
     console.log("💾 Atualizando no banco:", JSON.stringify(updateData, null, 2));
