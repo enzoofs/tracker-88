@@ -10,6 +10,7 @@ interface CargoCardProps {
     tipo_temperatura: string;
     status: string;
     data_chegada_prevista?: string;
+    data_entrega?: string;
     origem?: string;
     destino?: string;
     transportadora?: string;
@@ -57,9 +58,16 @@ const CargoCard = ({ carga, onClick }: CargoCardProps) => {
               </p>
             </div>
           </div>
-          <Badge className={getStatusColor(carga.status)}>
-            {carga.status}
-          </Badge>
+          <div className="flex flex-col items-end gap-1">
+            <Badge className={getStatusColor(carga.status)}>
+              {carga.status}
+            </Badge>
+            {carga.data_entrega && (
+              <span className="text-xs text-muted-foreground">
+                {new Date(carga.data_entrega).toLocaleDateString('pt-BR')}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Temperatura */}

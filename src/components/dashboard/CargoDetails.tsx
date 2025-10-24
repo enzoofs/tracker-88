@@ -11,12 +11,10 @@ import {
   MapPin, 
   Thermometer,
   Truck,
-  Clock,
   CheckCircle,
   X,
   Loader2
 } from 'lucide-react';
-import Timeline from './Timeline';
 
 interface CargoDetailsProps {
   cargo: {
@@ -36,7 +34,6 @@ interface CargoDetailsProps {
 
 const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
   const [sosVinculadas, setSosVinculadas] = useState<any[]>([]);
-  const [historico, setHistorico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -66,16 +63,6 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
         if (sosError) throw sosError;
         setSosVinculadas(sosData || []);
       }
-
-      // Buscar histórico da carga
-      const { data: histData, error: histError } = await supabase
-        .from('carga_historico')
-        .select('*')
-        .eq('numero_carga', cargo.numero_carga)
-        .order('data_evento', { ascending: false });
-
-      if (histError) throw histError;
-      setHistorico(histData || []);
 
     } catch (error) {
       console.error('Erro ao carregar detalhes da carga:', error);
@@ -254,48 +241,6 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                     )}
                   </CardContent>
                 </Card>
-
-                {/* Histórico da Carga */}
-                {historico.length > 0 && (
-                  <Card className="border-border/50">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-primary" />
-                        Histórico da Carga
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {historico.map((evento) => (
-                          <div key={evento.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                            <div className="mt-1">
-                              <div className="h-2 w-2 rounded-full bg-primary" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <h5 className="font-medium text-sm">{evento.evento}</h5>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatDate(evento.data_evento)}
-                                </span>
-                              </div>
-                              {evento.descricao && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {evento.descricao}
-                                </p>
-                              )}
-                              {evento.localizacao && (
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {evento.localizacao}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </>
             )}
           </div>
