@@ -72,6 +72,7 @@ export type Database = {
           data_chegada_prevista: string | null
           data_embarque: string | null
           data_embarque_prevista: string | null
+          data_entrega: string | null
           destino: string | null
           hawb: string | null
           id: string
@@ -91,6 +92,7 @@ export type Database = {
           data_chegada_prevista?: string | null
           data_embarque?: string | null
           data_embarque_prevista?: string | null
+          data_entrega?: string | null
           destino?: string | null
           hawb?: string | null
           id?: string
@@ -110,6 +112,7 @@ export type Database = {
           data_chegada_prevista?: string | null
           data_embarque?: string | null
           data_embarque_prevista?: string | null
+          data_entrega?: string | null
           destino?: string | null
           hawb?: string | null
           id?: string
