@@ -1,6 +1,10 @@
 // ============================================
-// EDGE FUNCTION: update-carga
+// EDGE FUNCTION: update-carga (CORRIGIDA)
 // Caminho: supabase/functions/update-carga/index.ts
+//
+// MUDANÇAS:
+// 1. Removido mapeamento de status (usa status direto do workflow)
+// 2. Adicionada validação de dados mínimos
 // ============================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
@@ -75,27 +79,19 @@ Deno.serve(async (req) => {
 
     console.log("✅ Carga encontrada:", cargaAtual.numero_carga);
 
-    // Mapeamento de status (recebido do n8n → status do banco)
-    const statusMap: Record<string, string> = {
-      "Aguardando Pré-Alerta": "No Armazém",
-      "Aguardando Embarque": "Embarque Agendado",
-      "Em Consolidação": "Em Consolidação",
-      "Em Trânsito Internacional": "Em Trânsito",
-      "Em Liberação": "Chegada no Brasil",
-      Liberada: "Desembaraçado",
-      "Em Expedição": "Desembaraçado",
-      "Em Rota de Entrega": "Em Trânsito",
-      Entregue: "Entregue",
-    };
+    // ========================================
+    // ⭐ MUDANÇA: REMOVIDO MAPEAMENTO DE STATUS
+    // Agora usa o status diretamente do workflow
+    // ========================================
 
     // Preparar dados de atualização
     const updateData: Record<string, any> = {
       updated_at: new Date().toISOString(),
     };
 
-    // Atualizar status se fornecido
+    // Atualizar status se fornecido (SEM mapeamento)
     if (data.status_atual) {
-      updateData.status = statusMap[data.status_atual] || cargaAtual.status;
+      updateData.status = data.status_atual;
       console.log(`📊 Status: ${cargaAtual.status} → ${updateData.status}`);
     }
 
@@ -115,9 +111,6 @@ Deno.serve(async (req) => {
       updateData.ultima_localizacao = String(data.localizacao);
       console.log("📍 Localização:", updateData.ultima_localizacao);
     }
-
-    // ⚠️ Removido: qualquer referência a 'observacoes' ou 'temperatura_controlada'
-    // Não existe coluna 'observacoes' na tabela 'cargas'. NÃO tocar nesse campo.
 
     // Atualizar datas específicas de eventos (se fornecidas)
     if (data.data_embarque_real) {
@@ -160,6 +153,22 @@ Deno.serve(async (req) => {
     if (Array.isArray(data.invoices) && data.invoices.length > 0) {
       updateData.invoices = data.invoices;
       console.log("📄 Invoices atualizadas:", data.invoices);
+    }
+
+    // ========================================
+    // ⭐ NOVA VALIDAÇÃO: Verificar se há pelo menos uma mudança
+    // ========================================
+    const hasChanges = Object.keys(updateData).length > 1; // > 1 porque sempre tem updated_at
+    if (!hasChanges) {
+      console.log("⚠️ Nenhuma mudança detectada, ignorando atualização");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: cargaAtual,
+          message: `Nenhuma mudança para carga ${data.numero_carga}`,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     console.log("💾 Atualizando no banco:", JSON.stringify(updateData, null, 2));
