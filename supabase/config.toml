@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.update-carga]
 verify_jwt = false
+
+[functions.upsert-carga]
+verify_jwt = false
