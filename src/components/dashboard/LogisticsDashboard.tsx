@@ -194,7 +194,7 @@ const LogisticsDashboard: React.FC = () => {
       const transformedCargas = cargasWithCount;
 
       // Calculate overview metrics
-      const activeSOs = transformedSOs.length;
+      const activeSOs = transformedSOs.filter(so => !so.isDelivered).length;
       const inTransit = transformedSOs.filter(so => so.statusAtual === 'Em Trânsito').length;
       
       // Calculate expected arrivals in the next 7 days
@@ -223,12 +223,12 @@ const LogisticsDashboard: React.FC = () => {
       }).length;
       
       const statusCounts = {
-        emProducao: transformedSOs.filter(so => so.statusAtual === 'Em Produção').length,
+        emProducao: transformedSOs.filter(so => !so.isDelivered && so.statusAtual === 'Em Produção').length,
         emImportacao: transformedSOs.filter(so => {
+          if (so.isDelivered) return false;
           const status = so.statusAtual?.toLowerCase() || '';
           const isProduction = status.includes('produção') || status.includes('producao');
-          const isDelivered = so.isDelivered || status.includes('entregue');
-          return !isProduction && !isDelivered;
+          return !isProduction;
         }).length,
         atrasadas
       };
