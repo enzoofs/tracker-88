@@ -13,8 +13,27 @@ import {
   Truck,
   CheckCircle,
   X,
-  Loader2
+  Loader2,
+  Edit
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 interface CargoDetailsProps {
   cargo: {
@@ -35,10 +54,41 @@ interface CargoDetailsProps {
 const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
   const [sosVinculadas, setSosVinculadas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(cargo.status);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const { toast } = useToast();
+
+  const availableCargoStatuses = [
+    "Em Preparação",
+    "Aguardando Embarque",
+    "Em Trânsito",
+    "Desembaraço",
+    "Entregue"
+  ];
 
   useEffect(() => {
     loadCargoDetails();
   }, [cargo.numero_carga]);
+
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .rpc('has_role', { _user_id: user.id, _role: 'admin' });
+        
+        if (error) throw error;
+        setIsAdmin(data === true);
+      } catch (error) {
+        console.error('Error checking admin role:', error);
+      }
+    };
+
+    checkAdminRole();
+  }, []);
 
   const loadCargoDetails = async () => {
     try {
@@ -91,6 +141,126 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
     return sosVinculadas.reduce((sum, so) => sum + (so.valor_total || 0), 0);
   };
 
+  const handleManualStatusUpdate = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      // 1. Buscar SOs vinculadas
+      const { data: linkedSOs, error: soError } = await supabase
+        .from('carga_sales_orders')
+        .select('so_number')
+        .eq('numero_carga', cargo.numero_carga);
+
+      if (soError) throw soError;
+
+      const soNumbers = linkedSOs?.map(link => link.so_number) || [];
+
+      // 2. Determinar ultima_localizacao baseado no status
+      let ultimaLocalizacao = '';
+      const statusLower = selectedStatus.toLowerCase();
+      if (statusLower.includes('preparação')) {
+        ultimaLocalizacao = 'Origem';
+      } else if (statusLower.includes('embarque')) {
+        ultimaLocalizacao = 'Aeroporto de Origem';
+      } else if (statusLower.includes('trânsito')) {
+        ultimaLocalizacao = 'Em Voo';
+      } else if (statusLower.includes('desembaraço')) {
+        ultimaLocalizacao = 'Alfândega Brasil';
+      } else if (statusLower.includes('entregue')) {
+        ultimaLocalizacao = 'Destino Final';
+      }
+
+      // 3. Atualizar a carga
+      const { error: updateCargoError } = await supabase
+        .from('cargas')
+        .update({
+          status: selectedStatus,
+          ultima_localizacao: ultimaLocalizacao,
+          updated_at: new Date().toISOString()
+        })
+        .eq('numero_carga', cargo.numero_carga);
+
+      if (updateCargoError) throw updateCargoError;
+
+      // 4. Atualizar SOs vinculadas
+      if (soNumbers.length > 0) {
+        const { error: updateSOsError } = await supabase
+          .from('envios_processados')
+          .update({
+            status_atual: selectedStatus,
+            status_cliente: selectedStatus,
+            ultima_localizacao: ultimaLocalizacao,
+            data_ultima_atualizacao: new Date().toISOString()
+          })
+          .in('sales_order', soNumbers);
+
+        if (updateSOsError) throw updateSOsError;
+
+        // 5. Inserir histórico para cada SO
+        const historyRecords = soNumbers.map(so => ({
+          sales_order: so,
+          status: selectedStatus,
+          location: ultimaLocalizacao,
+          description: JSON.stringify({
+            fonte: 'Alteração manual de carga por admin',
+            admin_id: user.id,
+            numero_carga: cargo.numero_carga,
+            previous_status: cargo.status
+          }),
+          timestamp: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        }));
+
+        const { error: historyError } = await supabase
+          .from('shipment_history')
+          .insert(historyRecords);
+
+        if (historyError) throw historyError;
+      }
+
+      // 6. Inserir histórico da carga
+      const { error: cargoHistoryError } = await supabase
+        .from('carga_historico')
+        .insert({
+          numero_carga: cargo.numero_carga,
+          evento: 'Alteração Manual de Status',
+          descricao: `Status alterado de "${cargo.status}" para "${selectedStatus}" por admin`,
+          localizacao: ultimaLocalizacao,
+          data_evento: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        });
+
+      if (cargoHistoryError) throw cargoHistoryError;
+
+      console.log('✅ Status da carga atualizado:', {
+        carga: cargo.numero_carga,
+        from: cargo.status,
+        to: selectedStatus,
+        sos_afetadas: soNumbers.length
+      });
+
+      toast({
+        title: "Status da carga atualizado",
+        description: `Status alterado de "${cargo.status}" para "${selectedStatus}". ${soNumbers.length} SOs atualizadas.`,
+      });
+
+      setShowConfirmDialog(false);
+      setTimeout(() => {
+        onClose();
+        window.location.reload();
+      }, 1000);
+
+    } catch (error) {
+      console.error('Error updating cargo status:', error);
+      toast({
+        title: "Erro ao atualizar status",
+        description: "Não foi possível atualizar o status da carga.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-card rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden border border-border">
@@ -107,9 +277,36 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-3">
+            {isAdmin && (
+              <div className="flex items-center gap-2 border-r pr-3 mr-3">
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="w-[180px] h-8 text-xs">
+                    <SelectValue placeholder="Alterar status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCargoStatuses.map((status) => (
+                      <SelectItem key={status} value={status} className="text-xs">
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  size="sm" 
+                  onClick={() => setShowConfirmDialog(true)}
+                  disabled={selectedStatus === cargo.status}
+                  className="h-8 gap-2"
+                >
+                  <Edit className="h-3 w-3" />
+                  Atualizar
+                </Button>
+              </div>
+            )}
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
@@ -245,6 +442,29 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
             )}
           </div>
         </div>
+
+        {/* Dialog de Confirmação */}
+        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar alteração de status da carga</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você está alterando o status da carga <strong>{cargo.numero_carga}</strong> de 
+                <strong> "{cargo.status}"</strong> para <strong>"{selectedStatus}"</strong>.
+                <br /><br />
+                Todas as {sosVinculadas.length} SOs consolidadas nesta carga também serão atualizadas.
+                <br /><br />
+                Esta ação será registrada no histórico. Deseja continuar?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleManualStatusUpdate}>
+                Confirmar Alteração
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
