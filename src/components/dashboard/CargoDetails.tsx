@@ -33,6 +33,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
 
 interface CargoDetailsProps {
@@ -56,6 +58,10 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(cargo.status);
+  const [selectedTemperatura, setSelectedTemperatura] = useState(cargo.tipo_temperatura || '');
+  const [selectedDataChegada, setSelectedDataChegada] = useState(
+    cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toISOString().split('T')[0] : ''
+  );
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
 
@@ -65,6 +71,13 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
     "Em Trânsito",
     "Desembaraço",
     "Entregue"
+  ];
+
+  const temperatureTypes = [
+    "Ambiente",
+    "Refrigerado (2-8°C)",
+    "Congelado (-20°C)",
+    "Controlado (15-25°C)"
   ];
 
   useEffect(() => {
@@ -172,13 +185,23 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
       }
 
       // 3. Atualizar a carga
+      const cargoUpdate: any = {
+        status: selectedStatus,
+        ultima_localizacao: ultimaLocalizacao,
+        updated_at: new Date().toISOString()
+      };
+
+      if (selectedTemperatura) {
+        cargoUpdate.tipo_temperatura = selectedTemperatura;
+      }
+
+      if (selectedDataChegada) {
+        cargoUpdate.data_chegada_prevista = new Date(selectedDataChegada).toISOString();
+      }
+
       const { error: updateCargoError } = await supabase
         .from('cargas')
-        .update({
-          status: selectedStatus,
-          ultima_localizacao: ultimaLocalizacao,
-          updated_at: new Date().toISOString()
-        })
+        .update(cargoUpdate)
         .eq('numero_carga', cargo.numero_carga);
 
       if (updateCargoError) throw updateCargoError;
@@ -233,16 +256,18 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
 
       if (cargoHistoryError) throw cargoHistoryError;
 
-      console.log('✅ Status da carga atualizado:', {
+      console.log('✅ Carga atualizada:', {
         carga: cargo.numero_carga,
-        from: cargo.status,
-        to: selectedStatus,
+        status_from: cargo.status,
+        status_to: selectedStatus,
+        temperatura: selectedTemperatura,
+        data_chegada: selectedDataChegada,
         sos_afetadas: soNumbers.length
       });
 
       toast({
-        title: "Status da carga atualizado",
-        description: `Status alterado de "${cargo.status}" para "${selectedStatus}". ${soNumbers.length} SOs atualizadas.`,
+        title: "Carga atualizada com sucesso",
+        description: `Informações da carga ${cargo.numero_carga} atualizadas. ${soNumbers.length} SOs atualizadas.`,
       });
 
       setShowConfirmDialog(false);
@@ -318,7 +343,7 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
             ) : (
               <>
                 {/* Informações Gerais */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card className="border-border/50">
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-2 text-sm">
@@ -342,36 +367,16 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-2 text-sm">
                         <Thermometer className="h-4 w-4 text-primary" />
-                        Status da Carga
+                        Condições
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Badge className="capitalize text-base font-semibold">
+                      <Badge className="capitalize text-base font-semibold mb-2">
                         {cargo.status}
                       </Badge>
-                      <div className="text-xs text-muted-foreground mt-2">
+                      <div className="text-xs text-muted-foreground">
                         Temperatura: {cargo.tipo_temperatura || 'N/A'}
                       </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-border/50">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        Rota
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-sm font-medium">
-                        {cargo.origem || 'N/A'} → {cargo.destino || 'N/A'}
-                      </div>
-                      {cargo.transportadora && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
-                          <Truck className="h-3 w-3" />
-                          {cargo.transportadora}
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 </div>
@@ -445,16 +450,55 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
 
         {/* Dialog de Confirmação */}
         <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-          <AlertDialogContent>
+          <AlertDialogContent className="max-w-2xl">
             <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar alteração de status da carga</AlertDialogTitle>
-              <AlertDialogDescription>
-                Você está alterando o status da carga <strong>{cargo.numero_carga}</strong> de 
-                <strong> "{cargo.status}"</strong> para <strong>"{selectedStatus}"</strong>.
-                <br /><br />
-                Todas as {sosVinculadas.length} SOs consolidadas nesta carga também serão atualizadas.
-                <br /><br />
-                Esta ação será registrada no histórico. Deseja continuar?
+              <AlertDialogTitle>Atualizar informações da carga</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-4">
+                <div>
+                  Você está atualizando as informações da carga <strong>{cargo.numero_carga}</strong>.
+                  {sosVinculadas.length > 0 && (
+                    <>
+                      <br />
+                      Todas as {sosVinculadas.length} SOs consolidadas nesta carga também serão atualizadas com o novo status.
+                    </>
+                  )}
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="temperatura" className="text-sm font-medium">
+                      Tipo de Temperatura
+                    </Label>
+                    <Select value={selectedTemperatura} onValueChange={setSelectedTemperatura}>
+                      <SelectTrigger id="temperatura">
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {temperatureTypes.map((temp) => (
+                          <SelectItem key={temp} value={temp}>
+                            {temp}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="data-chegada" className="text-sm font-medium">
+                      Data de Chegada Prevista
+                    </Label>
+                    <Input
+                      id="data-chegada"
+                      type="date"
+                      value={selectedDataChegada}
+                      onChange={(e) => setSelectedDataChegada(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="text-xs text-muted-foreground pt-2">
+                  Esta ação será registrada no histórico.
+                </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
