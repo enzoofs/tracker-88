@@ -366,14 +366,32 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                         Chegada Prevista
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="text-sm font-medium">
-                        {formatDate(cargo.data_chegada_prevista)}
-                      </div>
-                      {cargo.data_chegada_prevista && (
-                        <div className="text-xs text-muted-foreground">
-                          {Math.ceil((new Date(cargo.data_chegada_prevista).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} dias
+                    <CardContent className="space-y-2">
+                      {isAdmin ? (
+                        <div className="space-y-2">
+                          <Input
+                            type="date"
+                            value={selectedDataChegada}
+                            onChange={(e) => setSelectedDataChegada(e.target.value)}
+                            className="h-9"
+                          />
+                          {selectedDataChegada && (
+                            <div className="text-xs text-muted-foreground">
+                              {Math.ceil((new Date(selectedDataChegada).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} dias
+                            </div>
+                          )}
                         </div>
+                      ) : (
+                        <>
+                          <div className="text-sm font-medium">
+                            {formatDate(cargo.data_chegada_prevista)}
+                          </div>
+                          {cargo.data_chegada_prevista && (
+                            <div className="text-xs text-muted-foreground">
+                              {Math.ceil((new Date(cargo.data_chegada_prevista).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} dias
+                            </div>
+                          )}
+                        </>
                       )}
                     </CardContent>
                   </Card>
@@ -385,12 +403,30 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                         Condições
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <Badge className="capitalize text-base font-semibold mb-2">
+                    <CardContent className="space-y-3">
+                      <Badge className="capitalize text-base font-semibold">
                         {cargo.status}
                       </Badge>
-                      <div className="text-xs text-muted-foreground">
-                        Temperatura: {cargo.tipo_temperatura || 'N/A'}
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1">Temperatura</Label>
+                        {isAdmin ? (
+                          <Select value={selectedTemperatura} onValueChange={setSelectedTemperatura}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {temperatureTypes.map((temp) => (
+                                <SelectItem key={temp} value={temp}>
+                                  {temp}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="text-sm font-medium">
+                            {cargo.tipo_temperatura || 'N/A'}
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -465,7 +501,7 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
 
         {/* Dialog de Confirmação */}
         <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-          <AlertDialogContent className="max-w-2xl">
+          <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Atualizar informações da carga</AlertDialogTitle>
               <AlertDialogDescription className="space-y-4">
@@ -477,38 +513,6 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                       Todas as {sosVinculadas.length} SOs consolidadas nesta carga também serão atualizadas com o novo status.
                     </>
                   )}
-                </div>
-
-                <div className="space-y-3 pt-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="temperatura" className="text-sm font-medium">
-                      Tipo de Temperatura
-                    </Label>
-                    <Select value={selectedTemperatura} onValueChange={setSelectedTemperatura}>
-                      <SelectTrigger id="temperatura">
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {temperatureTypes.map((temp) => (
-                          <SelectItem key={temp} value={temp}>
-                            {temp}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="data-chegada" className="text-sm font-medium">
-                      Data de Chegada Prevista
-                    </Label>
-                    <Input
-                      id="data-chegada"
-                      type="date"
-                      value={selectedDataChegada}
-                      onChange={(e) => setSelectedDataChegada(e.target.value)}
-                    />
-                  </div>
                 </div>
 
                 <div className="text-xs text-muted-foreground pt-2">
