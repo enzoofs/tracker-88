@@ -243,12 +243,23 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
       }
 
       // 6. Inserir histórico da carga
+      const descricaoPartes = [];
+      if (selectedStatus !== cargo.status) {
+        descricaoPartes.push(`Status: "${cargo.status}" → "${selectedStatus}"`);
+      }
+      if (selectedTemperatura && selectedTemperatura !== cargo.tipo_temperatura) {
+        descricaoPartes.push(`Temperatura: "${cargo.tipo_temperatura || 'N/A'}" → "${selectedTemperatura}"`);
+      }
+      if (selectedDataChegada && selectedDataChegada !== (cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toISOString().split('T')[0] : '')) {
+        descricaoPartes.push(`Chegada prevista: "${cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toLocaleDateString('pt-BR') : 'N/A'}" → "${new Date(selectedDataChegada).toLocaleDateString('pt-BR')}"`);
+      }
+
       const { error: cargoHistoryError } = await supabase
         .from('carga_historico')
         .insert({
           numero_carga: cargo.numero_carga,
-          evento: 'Alteração Manual de Status',
-          descricao: `Status alterado de "${cargo.status}" para "${selectedStatus}" por admin`,
+          evento: 'Alteração Manual de Carga',
+          descricao: `Alterações feitas por admin: ${descricaoPartes.join('; ')}`,
           localizacao: ultimaLocalizacao,
           data_evento: new Date().toISOString(),
           created_at: new Date().toISOString()
@@ -320,7 +331,11 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                 <Button 
                   size="sm" 
                   onClick={() => setShowConfirmDialog(true)}
-                  disabled={selectedStatus === cargo.status}
+                  disabled={
+                    selectedStatus === cargo.status && 
+                    selectedTemperatura === (cargo.tipo_temperatura || '') &&
+                    selectedDataChegada === (cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toISOString().split('T')[0] : '')
+                  }
                   className="h-8 gap-2"
                 >
                   <Edit className="h-3 w-3" />
