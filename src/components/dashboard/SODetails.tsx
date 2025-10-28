@@ -28,12 +28,14 @@ import {
   FileText,
   Clock,
   DollarSign,
-  Edit
+  Edit,
+  Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Timeline from './Timeline';
 import { getAlertLevel } from '@/hooks/useAlertLevel';
+import { useSOTimeline } from '@/hooks/useSOTimeline';
 
 interface SO {
   id: string;
@@ -71,18 +73,9 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
   const [selectedStatus, setSelectedStatus] = useState(so.statusAtual);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
-
-  // Definição dos estágios da jornada
-  const STAGES = [
-    { id: 'em_producao', title: 'Em Produção', icon: '🏭', order: 0 },
-    { id: 'fedex', title: 'FedEx', icon: '📦', order: 1 },
-    { id: 'no_armazem', title: 'No Armazém', icon: '🏢', order: 2 },
-    { id: 'embarque_agendado', title: 'Embarque Agendado', icon: '📅', order: 3 },
-    { id: 'embarque_confirmado', title: 'Embarque Confirmado', icon: '🛫', order: 4 },
-    { id: 'chegada_brasil', title: 'Chegada no Brasil', icon: '🇧🇷', order: 5 },
-    { id: 'desembaraco', title: 'Desembaraço', icon: '📋', order: 6 },
-    { id: 'entregue', title: 'Entregue', icon: '✅', order: 7 }
-  ];
+  
+  // Usar o hook para buscar timeline real
+  const { events: timelineEvents, loading: loadingTimeline } = useSOTimeline(so);
 
   const availableStatuses = [
     "Em Produção",
@@ -165,9 +158,9 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
 
       setShowConfirmDialog(false);
       
-      // Close after a delay
+      // Reload page to refresh timeline
       setTimeout(() => {
-        onClose();
+        window.location.reload();
       }, 1000);
 
     } catch (error) {
@@ -179,77 +172,6 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
       });
     }
   };
-
-  // Função para construir a timeline baseada no status atual
-  const buildTimelineFromStatus = (): TimelineEvent[] => {
-    console.log('🔨 Construindo timeline para status:', so.statusAtual);
-    
-    // Mapear status atual para o índice do estágio
-    const statusLower = so.statusAtual.toLowerCase();
-    let currentStageIndex = 0;
-    
-    if (statusLower.includes('produção') || statusLower.includes('producao')) {
-      currentStageIndex = 0;
-    } else if (statusLower.includes('fedex')) {
-      currentStageIndex = 1;
-    } else if (statusLower.includes('armazém') || statusLower.includes('armazem')) {
-      currentStageIndex = 2;
-    } else if (statusLower.includes('embarque agendado')) {
-      currentStageIndex = 3;
-    } else if (statusLower.includes('embarque confirmado') || statusLower.includes('embarcado')) {
-      currentStageIndex = 4;
-    } else if (statusLower.includes('chegada') || statusLower.includes('brasil')) {
-      currentStageIndex = 5;
-    } else if (statusLower.includes('desembaraço') || statusLower.includes('desembaraco')) {
-      currentStageIndex = 6;
-    } else if (statusLower.includes('entregue') || statusLower.includes('destino')) {
-      currentStageIndex = 7;
-    }
-    
-    console.log('📍 Estágio atual detectado:', currentStageIndex, STAGES[currentStageIndex]?.title);
-    
-    // Criar eventos para TODOS os estágios
-    const events: TimelineEvent[] = STAGES.map((stage, index) => {
-      let status: 'completed' | 'current' | 'upcoming';
-      let data: string;
-      
-      if (index < currentStageIndex) {
-        status = 'completed';
-        // Para eventos passados, usar uma data estimada anterior
-        const daysAgo = (currentStageIndex - index) * 2;
-        data = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
-      } else if (index === currentStageIndex) {
-        status = 'current';
-        // Usar a data de última atualização ou data da ordem
-        data = so.dataUltimaAtualizacao || so.dataOrdem || new Date().toISOString();
-      } else {
-        status = 'upcoming';
-        // Para eventos futuros, usar uma data estimada futura
-        const daysAhead = (index - currentStageIndex) * 3;
-        data = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString();
-      }
-      
-      return {
-        id: `${stage.id}_${index}`,
-        tipo: stage.id,
-        titulo: stage.title,
-        data: data,
-        status: status,
-        detalhes: stage.title
-      };
-    });
-    
-    console.log('✅ Eventos criados:', events.length, {
-      completed: events.filter(e => e.status === 'completed').length,
-      current: events.filter(e => e.status === 'current').length,
-      upcoming: events.filter(e => e.status === 'upcoming').length
-    });
-    
-    return events;
-  };
-
-  // Gerar eventos da timeline baseado no status atual
-  const timelineEvents = buildTimelineFromStatus();
 
   const alertLevel = getAlertLevel(so);
 
@@ -439,7 +361,11 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {timelineEvents.length > 0 ? (
+                {loadingTimeline ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : timelineEvents.length > 0 ? (
                   <Timeline events={timelineEvents} />
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
