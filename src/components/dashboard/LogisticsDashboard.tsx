@@ -105,13 +105,13 @@ const LogisticsDashboard: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load real data from Supabase
+      // Load real data from Supabase - SEM LIMITE para carregar todas as SOs
       const {
         data: enviosData,
         error: enviosError
       } = await supabase.from('envios_processados').select('*').order('created_at', {
         ascending: false
-      }).limit(100);
+      });
       if (enviosError) throw enviosError;
 
       // Load cargas data
