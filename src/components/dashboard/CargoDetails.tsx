@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 
 interface CargoDetailsProps {
@@ -49,6 +51,7 @@ interface CargoDetailsProps {
     data_chegada_prevista?: string;
     tipo_temperatura?: string;
     transportadora?: string;
+    observacoes?: string;
   };
   onClose: () => void;
 }
@@ -62,6 +65,8 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
   const [selectedDataChegada, setSelectedDataChegada] = useState(
     cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toISOString().split('T')[0] : ''
   );
+  const [observacoes, setObservacoes] = useState(cargo.observacoes || '');
+  const [isSavingObservacoes, setIsSavingObservacoes] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
 
@@ -152,6 +157,33 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
 
   const getTotalValue = () => {
     return sosVinculadas.reduce((sum, so) => sum + (so.valor_total || 0), 0);
+  };
+
+  const handleSaveObservacoes = async () => {
+    try {
+      setIsSavingObservacoes(true);
+      
+      const { error } = await supabase
+        .from('cargas')
+        .update({ observacoes })
+        .eq('numero_carga', cargo.numero_carga);
+
+      if (error) throw error;
+
+      toast({
+        title: "Observações salvas",
+        description: "As observações foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error saving observacoes:', error);
+      toast({
+        title: "Erro ao salvar observações",
+        description: "Não foi possível salvar as observações.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSavingObservacoes(false);
+    }
   };
 
   const handleManualStatusUpdate = async () => {
@@ -350,151 +382,198 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
         </div>
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
-          <div className="p-6 space-y-6">
+          <div className="p-6">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : (
-              <>
-                {/* Informações Gerais */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card className="border-border/50">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-primary" />
-                        Chegada Prevista
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {isAdmin ? (
-                        <div className="space-y-2">
-                          <Input
-                            type="date"
-                            value={selectedDataChegada}
-                            onChange={(e) => setSelectedDataChegada(e.target.value)}
-                            className="h-9"
-                          />
-                          {selectedDataChegada && (
-                            <div className="text-xs text-muted-foreground">
-                              {Math.ceil((new Date(selectedDataChegada).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} dias
+              <Tabs defaultValue="info" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="info">Informações</TabsTrigger>
+                  <TabsTrigger value="observacoes">Observações</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="info" className="space-y-6">
+                  {/* Informações Gerais */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="border-border/50">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-primary" />
+                          Chegada Prevista
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {isAdmin ? (
+                          <div className="space-y-2">
+                            <Input
+                              type="date"
+                              value={selectedDataChegada}
+                              onChange={(e) => setSelectedDataChegada(e.target.value)}
+                              className="h-9"
+                            />
+                            {selectedDataChegada && (
+                              <div className="text-xs text-muted-foreground">
+                                {Math.ceil((new Date(selectedDataChegada).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} dias
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-sm font-medium">
+                              {formatDate(cargo.data_chegada_prevista)}
+                            </div>
+                            {cargo.data_chegada_prevista && (
+                              <div className="text-xs text-muted-foreground">
+                                {Math.ceil((new Date(cargo.data_chegada_prevista).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} dias
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-border/50">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                          <Thermometer className="h-4 w-4 text-primary" />
+                          Condições
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <Badge className="capitalize text-base font-semibold">
+                          {cargo.status}
+                        </Badge>
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1">Temperatura</Label>
+                          {isAdmin ? (
+                            <Select value={selectedTemperatura} onValueChange={setSelectedTemperatura}>
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Selecione o tipo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {temperatureTypes.map((temp) => (
+                                  <SelectItem key={temp} value={temp}>
+                                    {temp}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <div className="text-sm font-medium">
+                              {cargo.tipo_temperatura || 'N/A'}
                             </div>
                           )}
                         </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* SOs Consolidadas */}
+                  <Card className="border-border/50">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2">
+                          <Package className="h-5 w-5 text-primary" />
+                          Sales Orders Consolidadas ({sosVinculadas.length})
+                        </CardTitle>
+                        <div className="text-sm font-medium">
+                          Total: R$ {getTotalValue().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      {sosVinculadas.length > 0 ? (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>SO</TableHead>
+                              <TableHead>Cliente</TableHead>
+                              <TableHead>Produtos</TableHead>
+                              <TableHead>Valor</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Tracking</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {sosVinculadas.map((so) => (
+                              <TableRow key={so.id}>
+                                <TableCell className="font-medium">{so.sales_order}</TableCell>
+                                <TableCell>{so.cliente}</TableCell>
+                                <TableCell className="max-w-xs truncate">
+                                  {typeof so.produtos === 'string' ? so.produtos : JSON.stringify(so.produtos)}
+                                </TableCell>
+                                <TableCell>
+                                  R$ {(so.valor_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                      {getStatusIcon(cargo.status)}
+                                      <span className="text-sm font-semibold">{cargo.status}</span>
+                                    </div>
+                                    <span className="text-xs text-muted-foreground">
+                                      (SO: {so.status_atual})
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-xs font-mono">
+                                  {so.tracking_numbers || 'N/A'}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       ) : (
-                        <>
-                          <div className="text-sm font-medium">
-                            {formatDate(cargo.data_chegada_prevista)}
-                          </div>
-                          {cargo.data_chegada_prevista && (
-                            <div className="text-xs text-muted-foreground">
-                              {Math.ceil((new Date(cargo.data_chegada_prevista).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} dias
-                            </div>
-                          )}
-                        </>
+                        <div className="p-8 text-center text-muted-foreground">
+                          Nenhuma SO vinculada a esta carga
+                        </div>
                       )}
                     </CardContent>
                   </Card>
+                </TabsContent>
 
+                <TabsContent value="observacoes" className="space-y-4">
                   <Card className="border-border/50">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-sm">
-                        <Thermometer className="h-4 w-4 text-primary" />
-                        Condições
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span>Observações da Carga</span>
+                        {isAdmin && (
+                          <Button 
+                            size="sm" 
+                            onClick={handleSaveObservacoes}
+                            disabled={isSavingObservacoes || observacoes === (cargo.observacoes || '')}
+                          >
+                            {isSavingObservacoes ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                Salvando...
+                              </>
+                            ) : (
+                              'Salvar'
+                            )}
+                          </Button>
+                        )}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      <Badge className="capitalize text-base font-semibold">
-                        {cargo.status}
-                      </Badge>
-                      <div>
-                        <Label className="text-xs text-muted-foreground mb-1">Temperatura</Label>
-                        {isAdmin ? (
-                          <Select value={selectedTemperatura} onValueChange={setSelectedTemperatura}>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Selecione o tipo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {temperatureTypes.map((temp) => (
-                                <SelectItem key={temp} value={temp}>
-                                  {temp}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <div className="text-sm font-medium">
-                            {cargo.tipo_temperatura || 'N/A'}
-                          </div>
-                        )}
-                      </div>
+                    <CardContent>
+                      {isAdmin ? (
+                        <Textarea
+                          value={observacoes}
+                          onChange={(e) => setObservacoes(e.target.value)}
+                          placeholder="Digite observações sobre esta carga..."
+                          className="min-h-[200px] resize-y"
+                        />
+                      ) : (
+                        <div className="min-h-[200px] p-4 rounded-md border bg-muted/30 text-sm">
+                          {cargo.observacoes || 'Nenhuma observação registrada.'}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
-                </div>
-
-                {/* SOs Consolidadas */}
-                <Card className="border-border/50">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <Package className="h-5 w-5 text-primary" />
-                        Sales Orders Consolidadas ({sosVinculadas.length})
-                      </CardTitle>
-                      <div className="text-sm font-medium">
-                        Total: R$ {getTotalValue().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {sosVinculadas.length > 0 ? (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>SO</TableHead>
-                            <TableHead>Cliente</TableHead>
-                            <TableHead>Produtos</TableHead>
-                            <TableHead>Valor</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Tracking</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {sosVinculadas.map((so) => (
-                            <TableRow key={so.id}>
-                              <TableCell className="font-medium">{so.sales_order}</TableCell>
-                              <TableCell>{so.cliente}</TableCell>
-                              <TableCell className="max-w-xs truncate">
-                                {typeof so.produtos === 'string' ? so.produtos : JSON.stringify(so.produtos)}
-                              </TableCell>
-                              <TableCell>
-                                R$ {(so.valor_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col gap-1">
-                                  <div className="flex items-center gap-2">
-                                    {getStatusIcon(cargo.status)}
-                                    <span className="text-sm font-semibold">{cargo.status}</span>
-                                  </div>
-                                  <span className="text-xs text-muted-foreground">
-                                    (SO: {so.status_atual})
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-xs font-mono">
-                                {so.tracking_numbers || 'N/A'}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    ) : (
-                      <div className="p-8 text-center text-muted-foreground">
-                        Nenhuma SO vinculada a esta carga
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
+                </TabsContent>
+              </Tabs>
             )}
           </div>
         </div>

@@ -79,6 +79,7 @@ export type Database = {
           invoices: Json | null
           mawb: string | null
           numero_carga: string
+          observacoes: string | null
           origem: string | null
           status: string | null
           tipo_temperatura: string | null
@@ -99,6 +100,7 @@ export type Database = {
           invoices?: Json | null
           mawb?: string | null
           numero_carga: string
+          observacoes?: string | null
           origem?: string | null
           status?: string | null
           tipo_temperatura?: string | null
@@ -119,6 +121,7 @@ export type Database = {
           invoices?: Json | null
           mawb?: string | null
           numero_carga?: string
+          observacoes?: string | null
           origem?: string | null
           status?: string | null
           tipo_temperatura?: string | null
