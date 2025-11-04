@@ -139,19 +139,12 @@ export const useAnalytics = (timeRange: string = '12m') => {
           badge: (index === 0 ? 'ouro' : index === 1 ? 'prata' : 'bronze') as 'ouro' | 'prata' | 'bronze'
         }));
 
-      // Buscar clientes reais
-      const { data: clientesData } = await supabase
-        .from('clientes')
-        .select('nome');
-      
-      const totalClientesReais = clientesData?.length || 0;
-      
-      // Top representantes com contagem de clientes reais
-      const representantes = [
-        { nome: `${totalClientesReais} Clientes Ativos`, valor: receitaTotal * 0.40, badge: 'ouro' as const },
-        { nome: 'Performance Geral', valor: receitaTotal * 0.35, badge: 'prata' as const },
-        { nome: 'Meta Alcançada', valor: receitaTotal * 0.25, badge: 'bronze' as const }
-      ];
+      // Use real top clients as representatives
+      const representantes = topClientes.map((cliente, index) => ({
+        nome: cliente.nome,
+        valor: cliente.valor,
+        badge: (index === 0 ? 'ouro' : index === 1 ? 'prata' : 'bronze') as 'ouro' | 'prata' | 'bronze'
+      }));
 
       // Calculate metrics based on real SLA data
       const STAGE_SLAS: Record<string, number> = {
@@ -195,37 +188,47 @@ export const useAnalytics = (timeRange: string = '12m') => {
         ? Math.round(((totalPedidos - pedidosAtrasados) / totalPedidos) * 100)
         : 95;
 
-      // Detectar mês parcial e fazer projeção
+      // Calculate growth trends and forecast
+      const mesAtual = tendenciaReceita[tendenciaReceita.length - 1];
+      const mesAnterior = tendenciaReceita[tendenciaReceita.length - 2];
+
+      // Check if current month is partial
       const hoje = new Date();
       const diasDecorridos = hoje.getDate();
       const diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
-      const mesAtual = tendenciaReceita[tendenciaReceita.length - 1];
       
       let previsaoProximoMes = 0;
+      let receitaParaComparacao = mesAtual.receita;
+      
       if (diasDecorridos < diasNoMes) {
-        // Mês parcial - fazer projeção
+        // Partial month - project full month
         const mediaDeariaMesAtual = mesAtual.receita / diasDecorridos;
         previsaoProximoMes = mediaDeariaMesAtual * diasNoMes;
+        receitaParaComparacao = previsaoProximoMes; // Use projection for comparison
       } else {
-        // Mês completo - usar média móvel
+        // Full month - use moving average
         const recentMonths = tendenciaReceita.slice(-3);
         const avgGrowth = recentMonths.reduce((sum, month) => sum + month.crescimento, 0) / recentMonths.length;
         previsaoProximoMes = receitaTotal * (1 + avgGrowth / 100) / 12;
+        receitaParaComparacao = mesAtual.receita;
       }
-      
-      const avgGrowth = mesAtual.crescimento;
-      
+
+      // Calculate real growth using projection for partial months
+      const crescimentoReal = mesAnterior?.receita > 0 
+        ? ((receitaParaComparacao - mesAnterior.receita) / mesAnterior.receita) * 100 
+        : 0;
+
       const insights = {
         tendenciaCrescimento: {
-          tipo: (avgGrowth > 5 ? 'positiva' : avgGrowth < -5 ? 'negativa' : 'estavel') as 'positiva' | 'negativa' | 'estavel',
-          percentual: Math.abs(avgGrowth)
+          tipo: (crescimentoReal > 5 ? 'positiva' : crescimentoReal < -5 ? 'negativa' : 'estavel') as 'positiva' | 'negativa' | 'estavel',
+          percentual: Math.abs(crescimentoReal)
         },
         previsaoProximoMes: {
           valor: previsaoProximoMes,
           confianca: Math.round(85 + Math.random() * 10)
         },
         atencaoNecessaria: [
-          ...(avgGrowth < -10 ? ['Declínio significativo na receita'] : []),
+          ...(crescimentoReal < -10 ? ['Declínio significativo na receita'] : []),
           ...(pedidosAtrasados > totalPedidos * 0.2 ? ['Alto número de pedidos atrasados'] : []),
           ...(eficienciaOperacional < 70 ? ['Eficiência operacional baixa'] : [])
         ]
