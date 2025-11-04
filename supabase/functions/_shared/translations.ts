@@ -1,12 +1,5 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
-
-// Traduções de status FedEx e outros termos em inglês
-const STATUS_TRANSLATIONS: Record<string, string> = {
+// Traduções compartilhadas para Edge Functions
+export const STATUS_TRANSLATIONS: Record<string, string> = {
   // FedEx statuses
   'Departed FedEx location': 'Saiu da Localização FedEx',
   'At FedEx destination facility': 'Na Instalação FedEx de Destino',

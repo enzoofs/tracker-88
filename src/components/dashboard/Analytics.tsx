@@ -103,7 +103,34 @@ const Analytics: React.FC = () => {
       const totalDeliveries = enviosData?.length || 0;
       const onTimeRate = 75 + Math.random() * 15; // 75-90%
       const averageDeliveryDays = 7; // Tempo médio fixo
-      const criticalDelays = Math.floor(totalDeliveries * 0.05); // 5% critical
+      
+      // Calculate critical delays using real data (orders overdue by >2 days beyond SLA)
+      const STAGE_SLAS: Record<string, number> = {
+        'Em Produção': 15,
+        'Enviado': 2,
+        'No Armazém': 3,
+        'Voo Internacional': 2,
+        'Desembaraço': 3,
+        'Entregue': 1
+      };
+      
+      let criticalDelays = 0;
+      enviosData?.forEach(envio => {
+        if (envio.is_delivered) return;
+        
+        const status = envio.status_atual;
+        const sla = STAGE_SLAS[status];
+        
+        if (sla) {
+          const startDate = envio.data_ordem || envio.data_ultima_atualizacao || envio.created_at;
+          const daysSinceUpdate = (Date.now() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24);
+          
+          // Critical if more than 2 days overdue
+          if (daysSinceUpdate > sla + 2) {
+            criticalDelays++;
+          }
+        }
+      });
 
       // Top clients by volume
       const topClients = Array.from(clientMap.entries())

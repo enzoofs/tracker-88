@@ -10,6 +10,7 @@ import { Search, Filter, ChevronUp, ChevronDown, Plane, Calendar } from 'lucide-
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getAlertLevel } from '@/hooks/useAlertLevel';
 import { useSLACalculator } from '@/hooks/useSLACalculator';
+import { translateFedExStatus } from '@/lib/utils';
 
 interface SO {
   id: string;
@@ -386,7 +387,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                       <Badge 
                         className={getStatusBadgeClass(getStatusVariant(so.statusAtual))}
                       >
-                        {so.statusAtual || 'Sem Status'}
+                        {translateFedExStatus(so.statusAtual) || 'Sem Status'}
                       </Badge>
                     </div>
                   </TableCell>

@@ -5,6 +5,43 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Import translation function
+const STATUS_TRANSLATIONS: Record<string, string> = {
+  'Departed FedEx location': 'Saiu da Localização FedEx',
+  'At FedEx destination facility': 'Na Instalação FedEx de Destino',
+  'On FedEx vehicle for delivery': 'Em Veículo FedEx para Entrega',
+  'In transit': 'Em Trânsito',
+  'Delivered': 'Entregue',
+  'Shipment exception': 'Exceção no Envio',
+  'Held at FedEx location': 'Retido na Localização FedEx',
+  'Picked up': 'Coletado',
+  'At local FedEx facility': 'Na Instalação FedEx Local',
+  'In clearance': 'Em Desembaraço',
+  'Customs cleared': 'Liberado pela Alfândega',
+  'Left FedEx origin facility': 'Saiu da Instalação FedEx de Origem',
+  'Arrived at FedEx location': 'Chegou na Localização FedEx',
+  'Shipment information sent': 'Informações de Envio Transmitidas',
+  'Package available for clearance': 'Pacote Disponível para Desembaraço',
+  'At destination sort facility': 'Em Distribuição FedEx',
+};
+
+const translateFedExStatus = (status: string): string => {
+  if (!status) return status;
+  
+  if (STATUS_TRANSLATIONS[status]) {
+    return STATUS_TRANSLATIONS[status];
+  }
+  
+  const statusLower = status.toLowerCase();
+  for (const [key, value] of Object.entries(STATUS_TRANSLATIONS)) {
+    if (statusLower.includes(key.toLowerCase())) {
+      return value;
+    }
+  }
+  
+  return status;
+};
+
 const sanitizeInput = (input: string, maxLength = 1000): string => {
   if (typeof input !== 'string') return '';
   return input.trim().slice(0, maxLength).replace(/[<>'"&]/g, '');
@@ -72,10 +109,10 @@ Deno.serve(async (req) => {
       };
 
       // Only update status fields
-      if (payload.status) updateData.status = payload.status;
-      if (payload.status_atual) updateData.status_atual = payload.status_atual;
-      if (payload.status_cliente) updateData.status_cliente = payload.status_cliente;
-      if (payload.ultima_localizacao) updateData.ultima_localizacao = payload.ultima_localizacao;
+      if (payload.status) updateData.status = translateFedExStatus(payload.status);
+      if (payload.status_atual) updateData.status_atual = translateFedExStatus(payload.status_atual);
+      if (payload.status_cliente) updateData.status_cliente = translateFedExStatus(payload.status_cliente);
+      if (payload.ultima_localizacao) updateData.ultima_localizacao = translateFedExStatus(payload.ultima_localizacao);
       
       // Update tracking info if provided
       if (payload.tracking_numbers) {
@@ -85,22 +122,11 @@ Deno.serve(async (req) => {
       if (payload.ship_to) updateData.ship_to = payload.ship_to;
       if (payload.data_envio) updateData.data_envio = payload.data_envio;
 
-      // Convert "At destination sort facility" to "Em Distribuição FedEx"
-      if (payload.ultima_localizacao && payload.ultima_localizacao.toLowerCase().includes('at destination sort facility')) {
-        updateData.ultima_localizacao = 'Em Distribuição FedEx';
-        updateData.status_atual = 'Em Distribuição FedEx';
-      }
-
-      // Convert "On FedEx vehicle for delivery" to "Em Veículo FedEx"
-      if (payload.ultima_localizacao && payload.ultima_localizacao.toLowerCase().includes('on fedex vehicle for delivery')) {
-        updateData.ultima_localizacao = 'Em Veículo FedEx';
-        updateData.status_atual = 'Em Veículo FedEx';
-      }
-
       // Update delivery flags based on status
       if (payload.status_atual) {
-        updateData.is_at_warehouse = payload.status_atual.toLowerCase().includes('armazém');
-        updateData.is_delivered = payload.status_atual.toLowerCase().includes('entregue');
+        const translatedStatus = translateFedExStatus(payload.status_atual);
+        updateData.is_at_warehouse = translatedStatus.toLowerCase().includes('armazém');
+        updateData.is_delivered = translatedStatus.toLowerCase().includes('entregue');
       }
 
       const result = await supabase
@@ -127,10 +153,10 @@ Deno.serve(async (req) => {
           valor_total: payload.valor_total || 0,
           tracking_numbers: payload.tracking_numbers ? sanitizeInput(payload.tracking_numbers, 500) : null,
           data_envio: payload.data_envio,
-          status: payload.status || 'Em Trânsito',
-          status_atual: payload.status_atual || 'Em Trânsito',
-          status_cliente: payload.status_cliente || payload.status_atual || 'Em Trânsito',
-          ultima_localizacao: payload.ultima_localizacao || 'Em Trânsito',
+          status: translateFedExStatus(payload.status || 'Em Trânsito'),
+          status_atual: translateFedExStatus(payload.status_atual || 'Em Trânsito'),
+          status_cliente: translateFedExStatus(payload.status_cliente || payload.status_atual || 'Em Trânsito'),
+          ultima_localizacao: translateFedExStatus(payload.ultima_localizacao || 'Em Trânsito'),
           carrier: payload.carrier || 'FedEx',
           ship_to: payload.ship_to || null,
           data_ultima_atualizacao: new Date().toISOString()

@@ -9,6 +9,7 @@ import {
   CheckCircle,
   Circle
 } from 'lucide-react';
+import { translateFedExStatus } from '@/lib/utils';
 
 interface TimelineEvent {
   id: string;
@@ -92,7 +93,10 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
   };
 
   const getStatusTitle = (evento: string) => {
-    const status = mapEventToStatus(evento);
+    // First translate any FedEx status
+    const translatedEvento = translateFedExStatus(evento);
+    
+    const status = mapEventToStatus(translatedEvento);
     const titleMap: Record<string, string> = {
       'em_producao': 'Em Produção',
       'fedex': 'FedEx',
@@ -104,7 +108,7 @@ const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
       'desembaraco': 'Desembaraço',
       'entregue': 'Entregue'
     };
-    return titleMap[status] || evento;
+    return titleMap[status] || translatedEvento;
   };
 
   const getStatusIcon = (status: string) => {

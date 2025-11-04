@@ -38,6 +38,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
+import { translateFedExStatus } from '@/lib/utils';
 
 interface CargoDetailsProps {
   cargo: {
@@ -511,10 +512,10 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                                   <div className="flex flex-col gap-1">
                                     <div className="flex items-center gap-2">
                                       {getStatusIcon(cargo.status)}
-                                      <span className="text-sm font-semibold">{cargo.status}</span>
+                                      <span className="text-sm font-semibold">{translateFedExStatus(cargo.status)}</span>
                                     </div>
                                     <span className="text-xs text-muted-foreground">
-                                      (SO: {so.status_atual})
+                                      (SO: {translateFedExStatus(so.status_atual)})
                                     </span>
                                   </div>
                                 </TableCell>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Truck, Package, Clock, TrendingUp, Plane, AlertCircle } from 'lucide-react';
+import { Truck, Package, Clock, TrendingUp, Plane, AlertCircle, CheckCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getCriticalSummary } from '@/hooks/useAlertLevel';
@@ -63,6 +63,15 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
     setDialogOpen(true);
   };
   
+  // Calcular taxa de entrega no prazo
+  const totalSOs = allSOs.length;
+  const entreguesNoPrazo = allSOs.filter(so => {
+    if (!so.isDelivered) return false;
+    const sla = useSLACalculator(so);
+    return sla?.urgency !== 'overdue';
+  }).length;
+  const taxaEntregaNoPrazo = totalSOs > 0 ? Math.round((entreguesNoPrazo / totalSOs) * 100) : 0;
+
   const metricCards = [
     {
       title: "SOs Ativas",
@@ -72,11 +81,11 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
       trend: "+12%"
     },
     {
-      title: "Chegadas Previstas",
-      value: data.expectedArrivals,
-      icon: Clock,
-      variant: "transit" as const,
-      trend: "próximos 7 dias"
+      title: "Taxa de Entrega no Prazo",
+      value: `${taxaEntregaNoPrazo}%`,
+      icon: CheckCircle,
+      variant: "delivered" as const,
+      trend: "dos pedidos"
     },
     {
       title: "Valor em Movimento",
@@ -108,6 +117,8 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
         return 'text-status-transit';
       case 'alert':
         return 'text-status-alert';
+      case 'delivered':
+        return 'text-status-delivered';
       default:
         return 'text-primary';
     }

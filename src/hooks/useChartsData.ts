@@ -31,13 +31,18 @@ export const useChartsData = () => {
         statusCount.set(status, (statusCount.get(status) || 0) + 1);
       });
 
-      // Convert to chart format and sort (exclude "Entregue")
+      // Convert to chart format and sort (INCLUDE all statuses including "Entregue")
+      const total = Array.from(statusCount.values()).reduce((sum, qty) => sum + qty, 0);
+      
       const statusDistribution = Array.from(statusCount.entries())
-        .map(([status, quantidade]) => ({ status, quantidade }))
+        .map(([status, quantidade]) => ({ 
+          status, 
+          quantidade,
+          percentual: total > 0 ? Math.round((quantidade / total) * 100) : 0
+        }))
         .filter(item => 
           item.quantidade > 0 && 
-          item.status !== 'Não informado' &&
-          item.status.toLowerCase() !== 'entregue'
+          item.status !== 'Não informado'
         )
         .sort((a, b) => b.quantidade - a.quantidade);
 
