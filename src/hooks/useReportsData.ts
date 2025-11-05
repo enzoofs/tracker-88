@@ -117,29 +117,47 @@ export const useReportsData = (timeRange: string = '30d') => {
         }))
         .sort((a, b) => b.valorTotal - a.valorTotal);
 
-      // Process fornecedores (simplified from produtos field)
-      const fornecedorMap = new Map<string, number>();
-      enviosData?.forEach(envio => {
-        const produtosStr = typeof envio.produtos === 'string' ? envio.produtos : JSON.stringify(envio.produtos || '');
-        const fornecedor = produtosStr.split(',')[0]?.trim() || 'Não informado';
-        fornecedorMap.set(fornecedor, (fornecedorMap.get(fornecedor) || 0) + 1);
+      // Calculate real average delivery time based on delivered orders
+      const deliveredOrders = enviosData?.filter(e => e.is_delivered && e.data_envio && e.created_at) || [];
+      const avgDeliveryTime = deliveredOrders.length > 0
+        ? deliveredOrders.reduce((sum, envio) => {
+            const created = new Date(envio.created_at);
+            const delivered = new Date(envio.data_envio!);
+            const diffDays = Math.floor((delivered.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+            return sum + diffDays;
+          }, 0) / deliveredOrders.length
+        : 0;
+
+      // Process fornecedores by carrier
+      const fornecedorMap = new Map<string, { count: number; deliveryTimes: number[] }>();
+      deliveredOrders.forEach(envio => {
+        const fornecedor = envio.carrier || 'Não informado';
+        if (!fornecedorMap.has(fornecedor)) {
+          fornecedorMap.set(fornecedor, { count: 0, deliveryTimes: [] });
+        }
+        const created = new Date(envio.created_at);
+        const delivered = new Date(envio.data_envio!);
+        const diffDays = Math.floor((delivered.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+        fornecedorMap.get(fornecedor)!.count += 1;
+        fornecedorMap.get(fornecedor)!.deliveryTimes.push(diffDays);
       });
 
       const fornecedores = Array.from(fornecedorMap.entries())
-        .map(([fornecedor, totalPedidos]) => ({
+        .map(([fornecedor, data]) => ({
           fornecedor,
-          totalPedidos,
-          tempoMedioEntrega: 20 + Math.random() * 15 // Mock data
+          totalPedidos: data.count,
+          tempoMedioEntrega: data.deliveryTimes.reduce((a, b) => a + b, 0) / data.deliveryTimes.length
         }))
         .filter(item => item.fornecedor !== 'Não informado')
         .sort((a, b) => b.totalPedidos - a.totalPedidos);
 
-      // Process representantes (mock data since not in current schema)
-      const representantes = [
-        { representante: 'João Silva', totalPedidos: Math.floor(totalPedidos * 0.3), valorTotal: valorTotal * 0.3, clientesUnicos: Math.floor(clientes.length * 0.25) },
-        { representante: 'Maria Santos', totalPedidos: Math.floor(totalPedidos * 0.25), valorTotal: valorTotal * 0.25, clientesUnicos: Math.floor(clientes.length * 0.2) },
-        { representante: 'Pedro Oliveira', totalPedidos: Math.floor(totalPedidos * 0.2), valorTotal: valorTotal * 0.2, clientesUnicos: Math.floor(clientes.length * 0.15) }
-      ].sort((a, b) => b.valorTotal - a.valorTotal);
+      // Representatives removed - no data available in schema
+      const representantes: Array<{
+        representante: string;
+        totalPedidos: number;
+        valorTotal: number;
+        clientesUnicos: number;
+      }> = [];
 
       // Process entregas by status
       const statusMap = new Map<string, number>();

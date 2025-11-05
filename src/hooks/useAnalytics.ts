@@ -116,10 +116,28 @@ export const useAnalytics = (timeRange: string = '12m') => {
         return { mes, receita: data.receita, crescimento };
       });
 
-      const crescimentoClientes = Array.from(monthlyData.entries()).map(([mes, data]) => ({
+      // Calculate GENUINELY new clients per month (first order ever)
+      const allClientFirstOrders = new Map<string, string>();
+      enviosData?.forEach(envio => {
+        const cliente = envio.cliente;
+        const orderDate = parseDate(envio.created_at);
+        const existingDate = allClientFirstOrders.get(cliente);
+        if (!existingDate || orderDate < parseDate(existingDate)) {
+          allClientFirstOrders.set(cliente, envio.created_at);
+        }
+      });
+
+      const novosClientesPorMes = new Map<string, number>();
+      allClientFirstOrders.forEach((firstOrderDate) => {
+        const date = parseDate(firstOrderDate);
+        const mes = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+        novosClientesPorMes.set(mes, (novosClientesPorMes.get(mes) || 0) + 1);
+      });
+
+      const crescimentoClientes = Array.from(monthlyData.entries()).map(([mes]) => ({
         mes,
-        novosClientes: data.clientes.size,
-        totalClientes: data.clientes.size
+        novosClientes: novosClientesPorMes.get(mes) || 0,
+        totalClientes: 0
       }));
 
       // Calculate top performers

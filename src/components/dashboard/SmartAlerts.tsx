@@ -7,278 +7,343 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Bell, AlertTriangle, Clock, Package, TrendingDown, 
+  Bell, AlertTriangle, Clock, Package, 
   Settings, Plus, X, CheckCircle, Zap, Target,
-  Thermometer, Truck, Globe, Activity
+  Thermometer, Activity
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSLACalculator } from '@/hooks/useSLACalculator';
 
 interface AlertRule {
   id: string;
   name: string;
-  description: string;
-  type: 'delay' | 'temperature' | 'custom' | 'performance' | 'volume';
+  type: string;
   condition: string;
   threshold: number;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  isActive: boolean;
-  recipients: string[];
-  lastTriggered?: string;
-  triggerCount: number;
+  active: boolean;
 }
 
 interface ActiveAlert {
   id: string;
-  ruleId: string;
-  ruleName: string;
+  rule_id: string | null;
+  sales_order: string | null;
   message: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  timestamp: string;
-  salesOrder?: string;
-  cliente?: string;
   status: 'active' | 'acknowledged' | 'resolved';
-  details: any;
+  timestamp: string;
 }
 
 const SmartAlerts: React.FC = () => {
   const [alertRules, setAlertRules] = useState<AlertRule[]>([]);
   const [activeAlerts, setActiveAlerts] = useState<ActiveAlert[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newRule, setNewRule] = useState<Partial<AlertRule>>({
+  const [showNewRuleForm, setShowNewRuleForm] = useState(false);
+  const [newRule, setNewRule] = useState({
     name: '',
-    description: '',
     type: 'delay',
     condition: 'greater_than',
     threshold: 0,
-    severity: 'medium',
-    isActive: true,
-    recipients: []
+    severity: 'medium' as 'low' | 'medium' | 'high' | 'critical'
   });
-  const [showNewRuleForm, setShowNewRuleForm] = useState(false);
   const { toast } = useToast();
 
-  // Predefined alert rules
-  const defaultRules: AlertRule[] = [
-    {
-      id: '1',
-      name: 'Atraso Crítico na Entrega',
-      description: 'Alertar quando entregas atrasam mais de 5 dias do prazo',
-      type: 'delay',
-      condition: 'greater_than',
-      threshold: 5,
-      severity: 'critical',
-      isActive: true,
-      recipients: ['logistics@company.com'],
-      triggerCount: 12,
-      lastTriggered: '2024-01-15T10:30:00Z'
-    },
-    {
-      id: '2',
-      name: 'Temperatura Fora do Padrão',
-      description: 'Monitorar cargas que requerem temperatura controlada',
-      type: 'temperature',
-      condition: 'outside_range',
-      threshold: 8,
-      severity: 'high',
-      isActive: true,
-      recipients: ['quality@company.com', 'logistics@company.com'],
-      triggerCount: 3,
-      lastTriggered: '2024-01-14T15:45:00Z'
-    },
-    {
-      id: '3',
-      name: 'Queda na Performance de Entrega',
-      description: 'Alertar quando taxa de pontualidade cai abaixo de 85%',
-      type: 'performance',
-      condition: 'less_than',
-      threshold: 85,
-      severity: 'medium',
-      isActive: true,
-      recipients: ['management@company.com'],
-      triggerCount: 2,
-      lastTriggered: '2024-01-13T09:15:00Z'
-    },
-    {
-      id: '4',
-      name: 'Volume Alto de Pedidos',
-      description: 'Alertar quando volume diário excede capacidade planejada',
-      type: 'volume',
-      condition: 'greater_than',
-      threshold: 50,
-      severity: 'medium',
-      isActive: true,
-      recipients: ['operations@company.com'],
-      triggerCount: 8,
-      lastTriggered: '2024-01-15T16:20:00Z'
-    }
-  ];
+  const loadData = async () => {
+    try {
+      setLoading(true);
 
-  // Generate active alerts based on current data
-  const generateActiveAlerts = (): ActiveAlert[] => {
-    const alerts: ActiveAlert[] = [
-      {
-        id: 'alert-1',
-        ruleId: '1',
-        ruleName: 'Atraso Crítico na Entrega',
-        message: 'SO-2024-0123 está 7 dias atrasada na entrega para cliente ABC Corp',
-        severity: 'critical',
-        timestamp: '2024-01-15T10:30:00Z',
-        salesOrder: 'SO-2024-0123',
-        cliente: 'ABC Corp',
-        status: 'active',
-        details: {
-          expectedDate: '2024-01-08',
-          currentDate: '2024-01-15',
-          delayDays: 7,
-          lastLocation: 'São Paulo - SP'
+      // Load alert rules
+      const { data: rulesData, error: rulesError } = await supabase
+        .from('alert_rules')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (rulesError) throw rulesError;
+
+      setAlertRules((rulesData || []).map(rule => ({
+        ...rule,
+        severity: rule.severity as 'low' | 'medium' | 'high' | 'critical'
+      })));
+
+      // Load active alerts
+      const { data: alertsData, error: alertsError } = await supabase
+        .from('active_alerts')
+        .select('*')
+        .in('status', ['active', 'acknowledged'])
+        .order('timestamp', { ascending: false });
+
+      if (alertsError) throw alertsError;
+
+      setActiveAlerts((alertsData || []).map(alert => ({
+        ...alert,
+        severity: alert.severity as 'low' | 'medium' | 'high' | 'critical',
+        status: alert.status as 'active' | 'acknowledged' | 'resolved'
+      })));
+
+      // Generate alerts based on current SO data
+      await generateAlertsFromSOs();
+
+    } catch (error) {
+      console.error('Error loading alerts:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os alertas.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateAlertsFromSOs = async () => {
+    try {
+      // Get all rules
+      const { data: rules } = await supabase
+        .from('alert_rules')
+        .select('*')
+        .eq('active', true);
+
+      if (!rules || rules.length === 0) return;
+
+      // Get all SOs
+      const { data: envios } = await supabase
+        .from('envios_processados')
+        .select('*')
+        .eq('is_delivered', false);
+
+      if (!envios) return;
+
+      // Check each SO against delay rules
+      for (const envio of envios) {
+        const now = new Date();
+        const lastUpdate = new Date(envio.data_ultima_atualizacao || envio.created_at);
+        const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Check delay rules
+        const delayRule = rules.find(r => r.type === 'delay' && daysSinceUpdate >= r.threshold);
+        if (delayRule) {
+          // Check if alert already exists
+          const { data: existing } = await supabase
+            .from('active_alerts')
+            .select('id')
+            .eq('sales_order', envio.sales_order)
+            .eq('rule_id', delayRule.id)
+            .in('status', ['active', 'acknowledged'])
+            .single();
+
+          if (!existing) {
+            await supabase
+              .from('active_alerts')
+              .insert({
+                rule_id: delayRule.id,
+                sales_order: envio.sales_order,
+                message: `Pedido ${envio.sales_order} está há ${daysSinceUpdate} dias sem atualização (Cliente: ${envio.cliente})`,
+                severity: delayRule.severity,
+                status: 'active'
+              });
+          }
         }
-      },
-      {
-        id: 'alert-2',
-        ruleId: '2',
-        ruleName: 'Temperatura Fora do Padrão',
-        message: 'Carga 1234 registrou temperatura de 15°C, acima do limite de 8°C',
-        severity: 'high',
-        timestamp: '2024-01-14T15:45:00Z',
-        salesOrder: 'SO-2024-0098',
-        cliente: 'BioTech Ltd',
-        status: 'acknowledged',
-        details: {
-          currentTemp: 15,
-          maxTemp: 8,
-          location: 'Armazém Miami',
-          duration: '2 horas'
-        }
-      },
-      {
-        id: 'alert-3',
-        ruleId: '3',
-        ruleName: 'Queda na Performance',
-        message: 'Taxa de pontualidade desta semana caiu para 82%',
-        severity: 'medium',
-        timestamp: '2024-01-13T09:15:00Z',
-        status: 'active',
-        details: {
-          currentRate: 82,
-          targetRate: 85,
-          weeklyDeliveries: 45,
-          onTimeDeliveries: 37
+
+        // Check delivery deadline rules
+        const deliveryRule = rules.find(r => r.type === 'delivery');
+        if (deliveryRule) {
+          // Use SLA calculator
+          const slaInfo = useSLACalculator(envio as any);
+          if (slaInfo && slaInfo.daysRemaining <= deliveryRule.threshold) {
+            const { data: existing } = await supabase
+              .from('active_alerts')
+              .select('id')
+              .eq('sales_order', envio.sales_order)
+              .eq('rule_id', deliveryRule.id)
+              .in('status', ['active', 'acknowledged'])
+              .single();
+
+            if (!existing) {
+              await supabase
+                .from('active_alerts')
+                .insert({
+                  rule_id: deliveryRule.id,
+                  sales_order: envio.sales_order,
+                  message: `Entrega crítica: ${envio.sales_order} deve ser entregue em ${slaInfo.daysRemaining} dias (Cliente: ${envio.cliente})`,
+                  severity: deliveryRule.severity,
+                  status: 'active'
+                });
+            }
+          }
         }
       }
-    ];
 
-    return alerts;
+      // Reload alerts after generation
+      const { data: updatedAlerts } = await supabase
+        .from('active_alerts')
+        .select('*')
+        .in('status', ['active', 'acknowledged'])
+        .order('timestamp', { ascending: false });
+
+      if (updatedAlerts) {
+        setActiveAlerts(updatedAlerts.map(alert => ({
+          ...alert,
+          severity: alert.severity as 'low' | 'medium' | 'high' | 'critical',
+          status: alert.status as 'active' | 'acknowledged' | 'resolved'
+        })));
+      }
+
+    } catch (error) {
+      console.error('Error generating alerts:', error);
+    }
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      
-      // In a real implementation, these would come from Supabase
-      setAlertRules(defaultRules);
-      setActiveAlerts(generateActiveAlerts());
-      
-      setLoading(false);
-    };
-
     loadData();
+    
+    // Refresh alerts every 5 minutes
+    const interval = setInterval(() => {
+      generateAlertsFromSOs();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
-  const toggleRule = async (ruleId: string) => {
-    setAlertRules(prev => 
-      prev.map(rule => 
-        rule.id === ruleId 
-          ? { ...rule, isActive: !rule.isActive }
-          : rule
-      )
-    );
+  const toggleRule = async (ruleId: string, currentState: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('alert_rules')
+        .update({ active: !currentState })
+        .eq('id', ruleId);
 
-    toast({
-      title: "Regra atualizada",
-      description: "A configuração do alerta foi salva com sucesso."
-    });
+      if (error) throw error;
+
+      setAlertRules(prev => 
+        prev.map(rule => 
+          rule.id === ruleId 
+            ? { ...rule, active: !currentState }
+            : rule
+        )
+      );
+
+      toast({
+        title: "Regra atualizada",
+        description: "A configuração do alerta foi salva com sucesso."
+      });
+    } catch (error) {
+      console.error('Error toggling rule:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a regra.",
+        variant: "destructive"
+      });
+    }
   };
 
   const addNewRule = async () => {
-    if (!newRule.name || !newRule.description) {
+    if (!newRule.name) {
       toast({
         title: "Erro",
-        description: "Nome e descrição são obrigatórios.",
+        description: "Nome da regra é obrigatório.",
         variant: "destructive"
       });
       return;
     }
 
-    const rule: AlertRule = {
-      id: Date.now().toString(),
-      name: newRule.name!,
-      description: newRule.description!,
-      type: newRule.type!,
-      condition: newRule.condition!,
-      threshold: newRule.threshold!,
-      severity: newRule.severity!,
-      isActive: newRule.isActive!,
-      recipients: newRule.recipients!,
-      triggerCount: 0
-    };
+    try {
+      const { error } = await supabase
+        .from('alert_rules')
+        .insert({
+          name: newRule.name,
+          type: newRule.type,
+          condition: newRule.condition,
+          threshold: newRule.threshold,
+          severity: newRule.severity,
+          active: true
+        });
 
-    setAlertRules(prev => [...prev, rule]);
-    setShowNewRuleForm(false);
-    setNewRule({
-      name: '',
-      description: '',
-      type: 'delay',
-      condition: 'greater_than',
-      threshold: 0,
-      severity: 'medium',
-      isActive: true,
-      recipients: []
-    });
+      if (error) throw error;
 
-    toast({
-      title: "Regra criada",
-      description: "Nova regra de alerta foi adicionada com sucesso."
-    });
+      toast({
+        title: "Regra criada",
+        description: "Nova regra de alerta foi adicionada com sucesso."
+      });
+
+      setShowNewRuleForm(false);
+      setNewRule({
+        name: '',
+        type: 'delay',
+        condition: 'greater_than',
+        threshold: 0,
+        severity: 'medium'
+      });
+
+      loadData();
+    } catch (error) {
+      console.error('Error adding rule:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível criar a regra.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const acknowledgeAlert = (alertId: string) => {
-    setActiveAlerts(prev =>
-      prev.map(alert =>
-        alert.id === alertId
-          ? { ...alert, status: 'acknowledged' }
-          : alert
-      )
-    );
+  const acknowledgeAlert = async (alertId: string) => {
+    try {
+      const { error } = await supabase
+        .from('active_alerts')
+        .update({ 
+          status: 'acknowledged',
+          acknowledged_at: new Date().toISOString()
+        })
+        .eq('id', alertId);
 
-    toast({
-      title: "Alerta reconhecido",
-      description: "O alerta foi marcado como reconhecido."
-    });
+      if (error) throw error;
+
+      setActiveAlerts(prev =>
+        prev.map(alert =>
+          alert.id === alertId
+            ? { ...alert, status: 'acknowledged' }
+            : alert
+        )
+      );
+
+      toast({
+        title: "Alerta reconhecido",
+        description: "O alerta foi marcado como reconhecido."
+      });
+    } catch (error) {
+      console.error('Error acknowledging alert:', error);
+    }
   };
 
-  const resolveAlert = (alertId: string) => {
-    setActiveAlerts(prev =>
-      prev.map(alert =>
-        alert.id === alertId
-          ? { ...alert, status: 'resolved' }
-          : alert
-      )
-    );
+  const resolveAlert = async (alertId: string) => {
+    try {
+      const { error } = await supabase
+        .from('active_alerts')
+        .update({ 
+          status: 'resolved',
+          resolved_at: new Date().toISOString()
+        })
+        .eq('id', alertId);
 
-    toast({
-      title: "Alerta resolvido",
-      description: "O alerta foi marcado como resolvido."
-    });
+      if (error) throw error;
+
+      setActiveAlerts(prev => prev.filter(alert => alert.id !== alertId));
+
+      toast({
+        title: "Alerta resolvido",
+        description: "O alerta foi marcado como resolvido."
+      });
+    } catch (error) {
+      console.error('Error resolving alert:', error);
+    }
   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'text-red-500 bg-red-50 border-red-200';
-      case 'high': return 'text-orange-500 bg-orange-50 border-orange-200';
-      case 'medium': return 'text-yellow-500 bg-yellow-50 border-yellow-200';
-      case 'low': return 'text-blue-500 bg-blue-50 border-blue-200';
-      default: return 'text-gray-500 bg-gray-50 border-gray-200';
+      case 'critical': return 'border-destructive';
+      case 'high': return 'border-orange-500';
+      case 'medium': return 'border-status-production';
+      case 'low': return 'border-blue-500';
+      default: return 'border-border';
     }
   };
 
@@ -288,6 +353,7 @@ const SmartAlerts: React.FC = () => {
       case 'temperature': return <Thermometer className="h-4 w-4" />;
       case 'performance': return <Target className="h-4 w-4" />;
       case 'volume': return <Package className="h-4 w-4" />;
+      case 'tracking': return <Activity className="h-4 w-4" />;
       default: return <Bell className="h-4 w-4" />;
     }
   };
@@ -338,9 +404,9 @@ const SmartAlerts: React.FC = () => {
             <Card className="shadow-card">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
                   <div>
-                    <div className="text-2xl font-bold text-red-500">
+                    <div className="text-2xl font-bold text-destructive">
                       {activeAlerts.filter(a => a.severity === 'critical').length}
                     </div>
                     <div className="text-xs text-muted-foreground">Críticos</div>
@@ -366,9 +432,9 @@ const SmartAlerts: React.FC = () => {
             <Card className="shadow-card">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <CheckCircle className="h-4 w-4 text-status-delivered" />
                   <div>
-                    <div className="text-2xl font-bold text-green-500">
+                    <div className="text-2xl font-bold text-status-delivered">
                       {activeAlerts.filter(a => a.status === 'acknowledged').length}
                     </div>
                     <div className="text-xs text-muted-foreground">Reconhecidos</div>
@@ -380,7 +446,7 @@ const SmartAlerts: React.FC = () => {
             <Card className="shadow-card">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-blue-500" />
+                  <Activity className="h-4 w-4 text-primary" />
                   <div>
                     <div className="text-2xl font-bold">
                       {activeAlerts.length}
@@ -394,57 +460,65 @@ const SmartAlerts: React.FC = () => {
 
           {/* Active Alerts List */}
           <div className="space-y-4">
-            {activeAlerts.map((alert) => (
-              <Card key={alert.id} className={`shadow-card border-l-4 ${getSeverityColor(alert.severity)}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={alert.severity === 'critical' ? 'destructive' : 'secondary'}>
-                        {alert.severity}
-                      </Badge>
-                      <span className="font-medium">{alert.ruleName}</span>
-                      {alert.status === 'acknowledged' && (
-                        <Badge variant="outline">Reconhecido</Badge>
-                      )}
+            {activeAlerts.length === 0 ? (
+              <Card className="shadow-card">
+                <CardContent className="p-8 text-center">
+                  <CheckCircle className="h-12 w-12 text-status-delivered mx-auto mb-3" />
+                  <p className="text-lg font-medium">Nenhum alerta ativo</p>
+                  <p className="text-sm text-muted-foreground">Tudo funcionando perfeitamente!</p>
+                </CardContent>
+              </Card>
+            ) : (
+              activeAlerts.map((alert) => (
+                <Card key={alert.id} className={`shadow-card border-l-4 ${getSeverityColor(alert.severity)}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={alert.severity === 'critical' ? 'destructive' : 'secondary'}>
+                          {alert.severity}
+                        </Badge>
+                        {alert.status === 'acknowledged' && (
+                          <Badge variant="outline">Reconhecido</Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDate(alert.timestamp)}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatDate(alert.timestamp)}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-sm mb-3">{alert.message}</p>
-                  
-                  {alert.salesOrder && (
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
-                      <span>SO: {alert.salesOrder}</span>
-                      {alert.cliente && <span>Cliente: {alert.cliente}</span>}
-                    </div>
-                  )}
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-sm mb-3">{alert.message}</p>
+                    
+                    {alert.sales_order && (
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+                        <span>SO: {alert.sales_order}</span>
+                      </div>
+                    )}
 
-                  <div className="flex items-center gap-2">
-                    {alert.status === 'active' && (
-                      <>
-                        <Button size="sm" variant="outline" onClick={() => acknowledgeAlert(alert.id)}>
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Reconhecer
-                        </Button>
+                    <div className="flex items-center gap-2">
+                      {alert.status === 'active' && (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => acknowledgeAlert(alert.id)}>
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Reconhecer
+                          </Button>
+                          <Button size="sm" onClick={() => resolveAlert(alert.id)}>
+                            <X className="h-3 w-3 mr-1" />
+                            Resolver
+                          </Button>
+                        </>
+                      )}
+                      {alert.status === 'acknowledged' && (
                         <Button size="sm" onClick={() => resolveAlert(alert.id)}>
                           <X className="h-3 w-3 mr-1" />
                           Resolver
                         </Button>
-                      </>
-                    )}
-                    {alert.status === 'acknowledged' && (
-                      <Button size="sm" onClick={() => resolveAlert(alert.id)}>
-                        <X className="h-3 w-3 mr-1" />
-                        Resolver
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
 
@@ -466,7 +540,7 @@ const SmartAlerts: React.FC = () => {
                     <Label htmlFor="name">Nome da Regra</Label>
                     <Input
                       id="name"
-                      value={newRule.name || ''}
+                      value={newRule.name}
                       onChange={(e) => setNewRule(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="Ex: Atraso na Entrega"
                     />
@@ -476,49 +550,25 @@ const SmartAlerts: React.FC = () => {
                     <select
                       className="w-full h-10 px-3 border rounded-md"
                       value={newRule.type}
-                      onChange={(e) => setNewRule(prev => ({ ...prev, type: e.target.value as any }))}
+                      onChange={(e) => setNewRule(prev => ({ ...prev, type: e.target.value }))}
                     >
                       <option value="delay">Atraso</option>
                       <option value="temperature">Temperatura</option>
                       <option value="performance">Performance</option>
                       <option value="volume">Volume</option>
-                      <option value="custom">Personalizado</option>
+                      <option value="tracking">Tracking</option>
                     </select>
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="description">Descrição</Label>
-                  <Input
-                    id="description"
-                    value={newRule.description || ''}
-                    onChange={(e) => setNewRule(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Descreva quando este alerta deve ser acionado"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="condition">Condição</Label>
-                    <select
-                      className="w-full h-10 px-3 border rounded-md"
-                      value={newRule.condition}
-                      onChange={(e) => setNewRule(prev => ({ ...prev, condition: e.target.value }))}
-                    >
-                      <option value="greater_than">Maior que</option>
-                      <option value="less_than">Menor que</option>
-                      <option value="equals">Igual a</option>
-                      <option value="outside_range">Fora do intervalo</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="threshold">Limite</Label>
+                    <Label htmlFor="threshold">Limite (dias)</Label>
                     <Input
                       id="threshold"
                       type="number"
-                      value={newRule.threshold || 0}
-                      onChange={(e) => setNewRule(prev => ({ ...prev, threshold: Number(e.target.value) }))}
-                      placeholder="0"
+                      value={newRule.threshold}
+                      onChange={(e) => setNewRule(prev => ({ ...prev, threshold: parseInt(e.target.value) || 0 }))}
                     />
                   </div>
                   <div>
@@ -536,61 +586,33 @@ const SmartAlerts: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button onClick={addNewRule}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar Regra
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowNewRuleForm(false)}>
-                    Cancelar
-                  </Button>
-                </div>
+                <Button onClick={addNewRule} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Regra
+                </Button>
               </CardContent>
             </Card>
           )}
 
-          {/* Existing Rules */}
-          <div className="space-y-4">
+          {/* Rules List */}
+          <div className="space-y-3">
             {alertRules.map((rule) => (
               <Card key={rule.id} className="shadow-card">
-                <CardHeader>
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {getTypeIcon(rule.type)}
                       <div>
-                        <CardTitle className="text-base">{rule.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{rule.description}</p>
+                        <div className="font-medium">{rule.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Limite: {rule.threshold} | Severidade: {rule.severity}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant={rule.severity === 'critical' ? 'destructive' : 'secondary'}>
-                        {rule.severity}
-                      </Badge>
-                      <Switch
-                        checked={rule.isActive}
-                        onCheckedChange={() => toggleRule(rule.id)}
-                      />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Condição:</span>
-                      <div className="font-medium">
-                        {rule.condition.replace('_', ' ')} {rule.threshold}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Acionado:</span>
-                      <div className="font-medium">{rule.triggerCount}x</div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Último:</span>
-                      <div className="font-medium">
-                        {rule.lastTriggered ? formatDate(rule.lastTriggered) : 'Nunca'}
-                      </div>
-                    </div>
+                    <Switch
+                      checked={rule.active}
+                      onCheckedChange={() => toggleRule(rule.id, rule.active)}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -598,65 +620,28 @@ const SmartAlerts: React.FC = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-6">
-          {/* Analytics about alerts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Performance dos Alertas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Taxa de Resolução</span>
-                    <span className="font-bold">87%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Tempo Médio Resposta</span>
-                    <span className="font-bold">2.3h</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Alertas Preventivos</span>
-                    <span className="font-bold">64%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Economia Estimada</span>
-                    <span className="font-bold text-green-600">R$ 145k</span>
-                  </div>
+        <TabsContent value="analytics" className="space-y-4">
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle>Estatísticas de Alertas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Total de Regras Ativas:</span>
+                  <span className="font-bold">{alertRules.filter(r => r.active).length}</span>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Tendências Mensais</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Alertas Gerados</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold">156</span>
-                      <TrendingDown className="h-3 w-3 text-green-500" />
-                      <span className="text-xs text-green-500">-12%</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Falsos Positivos</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold">8</span>
-                      <TrendingDown className="h-3 w-3 text-green-500" />
-                      <span className="text-xs text-green-500">-23%</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Regras Ativas</span>
-                    <span className="font-bold">{alertRules.filter(r => r.isActive).length}</span>
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Alertas Ativos:</span>
+                  <span className="font-bold">{activeAlerts.filter(a => a.status === 'active').length}</span>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Alertas Reconhecidos:</span>
+                  <span className="font-bold">{activeAlerts.filter(a => a.status === 'acknowledged').length}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

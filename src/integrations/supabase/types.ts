@@ -14,6 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      active_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string | null
+          id: string
+          message: string
+          resolved_at: string | null
+          rule_id: string | null
+          sales_order: string | null
+          severity: string
+          status: string
+          timestamp: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          resolved_at?: string | null
+          rule_id?: string | null
+          sales_order?: string | null
+          severity: string
+          status?: string
+          timestamp?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          resolved_at?: string | null
+          rule_id?: string | null
+          sales_order?: string | null
+          severity?: string
+          status?: string
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "active_alerts_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "alert_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alert_rules: {
+        Row: {
+          active: boolean
+          condition: string
+          created_at: string | null
+          id: string
+          name: string
+          severity: string
+          threshold: number
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          condition: string
+          created_at?: string | null
+          id?: string
+          name: string
+          severity: string
+          threshold: number
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          condition?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          severity?: string
+          threshold?: number
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       carga_historico: {
         Row: {
           created_at: string | null
