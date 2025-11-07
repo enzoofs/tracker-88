@@ -85,7 +85,7 @@ const StageTimingAnalysis: React.FC = () => {
               Análise de Tempo por Etapa
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-2">
-              Comparação do tempo real vs. SLA esperado para cada etapa do processo
+              Tempo médio nas 4 etapas principais do processo vs. SLA esperado
             </p>
           </div>
           <div className="text-right">
@@ -147,7 +147,7 @@ const StageTimingAnalysis: React.FC = () => {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         {getStatusIcon(stage.status)}
-                        {stage.stage === 'Entregue' ? 'Entrega' : stage.stage}
+                        {stage.stage}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {stage.count} registros

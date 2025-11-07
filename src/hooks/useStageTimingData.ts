@@ -23,8 +23,7 @@ const STAGE_ORDER = [
   'No Armazém',
   'Voo Internacional',
   'Chegada no Brasil',
-  'Desembaraço',
-  'Entregue'
+  'Desembaraço'
 ];
 
 // SLAs esperados por etapa (em dias)
@@ -33,8 +32,7 @@ const STAGE_SLAS: Record<string, number> = {
   'No Armazém': 5,
   'Voo Internacional': 2,
   'Chegada no Brasil': 4,
-  'Desembaraço': 3,
-  'Entregue': 0
+  'Desembaraço': 3
 };
 
 export const useStageTimingData = () => {
@@ -61,6 +59,9 @@ export const useStageTimingData = () => {
       const soMap = new Map<string, Array<{ status: string; timestamp: Date }>>();
       
       historyData?.forEach(record => {
+        // Ignorar status "Atualizado" - são apenas updates de localização
+        if (record.status === 'Atualizado') return;
+        
         if (!soMap.has(record.sales_order)) {
           soMap.set(record.sales_order, []);
         }
@@ -73,7 +74,7 @@ export const useStageTimingData = () => {
       // Load current orders to include orders still in stages
       const { data: currentOrders, error: ordersError } = await supabase
         .from('envios_processados')
-        .select('sales_order, status_atual, data_ordem, data_envio, created_at');
+        .select('sales_order, status_atual, data_ordem, data_envio, created_at, data_ultima_atualizacao');
 
       if (ordersError) throw ordersError;
 
@@ -94,17 +95,6 @@ export const useStageTimingData = () => {
           
           // Find when order exited this stage (next different status in STAGE_ORDER)
           let exitTime: number | null = null;
-          
-          // Special handling for final stage "Entregue"
-          if (stage === 'Entregue') {
-            // "Entregue" is a milestone marking completion
-            // Record it with minimal time to show it happened
-            if (!stageTimes.has(stage)) {
-              stageTimes.set(stage, []);
-            }
-            stageTimes.get(stage)!.push(0.1); // 0.1 days to show it exists
-            return;
-          }
           
           for (let i = entryIndex + 1; i < history.length; i++) {
             const nextStatus = history[i].status;
@@ -130,8 +120,8 @@ export const useStageTimingData = () => {
           
           const daysInStage = (exitTime - entryTime) / (1000 * 60 * 60 * 24);
           
-          // Only record positive time values
-          if (daysInStage > 0) {
+          // Validar dados antes de registrar (filtrar valores absurdos)
+          if (daysInStage > 0 && daysInStage < 90) {
             if (!stageTimes.has(stage)) {
               stageTimes.set(stage, []);
             }
@@ -152,24 +142,29 @@ export const useStageTimingData = () => {
         // Skip if already processed with valid stage history
         if (hasValidHistory) return;
         
-        // Calculate time from order creation/entry to now
-        let startTime: Date;
-        if (stage === 'Em Produção' && order.data_ordem) {
-          startTime = new Date(order.data_ordem);
-        } else if (stage === 'No Armazém' && order.data_envio) {
-          startTime = new Date(order.data_envio);
-        } else {
-          startTime = new Date(order.created_at);
-        }
+        // Usar data_ultima_atualizacao como momento de entrada na etapa
+        const entryTime = new Date(order.data_ultima_atualizacao || order.created_at);
+        const daysInStage = (Date.now() - entryTime.getTime()) / (1000 * 60 * 60 * 24);
         
-        const daysInStage = (Date.now() - startTime.getTime()) / (1000 * 60 * 60 * 24);
-        
-        if (daysInStage > 0) {
+        // Validar dados antes de registrar (filtrar valores absurdos)
+        if (daysInStage > 0 && daysInStage < 90) {
           if (!stageTimes.has(stage)) {
             stageTimes.set(stage, []);
           }
           stageTimes.get(stage)!.push(daysInStage);
         }
+      });
+
+      // Log para debug
+      console.log('Stage Timing Debug:', {
+        totalSOs: currentOrders?.length,
+        sosComHistorico: soMap.size,
+        sosSemHistorico: (currentOrders?.length || 0) - soMap.size,
+        stageTimes: Array.from(stageTimes.entries()).map(([stage, times]) => ({
+          stage,
+          count: times.length,
+          avg: (times.reduce((a,b) => a+b, 0) / times.length).toFixed(1)
+        }))
       });
 
       // Calculate statistics for each stage with SLA comparison
@@ -204,7 +199,7 @@ export const useStageTimingData = () => {
         });
 
       // Calculate total average days and SLA only for stages after arrival in Brazil
-      const brazilStages = ['Chegada no Brasil', 'Desembaraço', 'Entregue'];
+      const brazilStages = ['Chegada no Brasil', 'Desembaraço'];
       const totalAverageDays = stages
         .filter(stage => brazilStages.includes(stage.stage))
         .reduce((sum, stage) => sum + stage.avgDays, 0);
