@@ -19,20 +19,18 @@ interface StageTimingData {
 }
 
 const STAGE_ORDER = [
-  'Em Produção',
-  'No Armazém',
-  'Voo Internacional',
+  'Enviado',
+  'Em Trânsito',
   'Chegada no Brasil',
   'Desembaraço'
 ];
 
 // SLAs esperados por etapa (em dias)
 const STAGE_SLAS: Record<string, number> = {
-  'Em Produção': 15,
-  'No Armazém': 5,
-  'Voo Internacional': 2,
+  'Enviado': 2,
+  'Em Trânsito': 3,
   'Chegada no Brasil': 4,
-  'Desembaraço': 3
+  'Desembaraço': 7
 };
 
 export const useStageTimingData = () => {
@@ -130,30 +128,7 @@ export const useStageTimingData = () => {
         });
       });
 
-      // Add time for orders currently in stages
-      currentOrders?.forEach(order => {
-        const stage = order.status_atual;
-        if (!STAGE_ORDER.includes(stage)) return;
-        
-        // Check if this SO has any valid stage transitions in history
-        const hasValidHistory = soMap.has(order.sales_order) && 
-          soMap.get(order.sales_order)!.some(h => STAGE_ORDER.includes(h.status));
-        
-        // Skip if already processed with valid stage history
-        if (hasValidHistory) return;
-        
-        // Usar data_ultima_atualizacao como momento de entrada na etapa
-        const entryTime = new Date(order.data_ultima_atualizacao || order.created_at);
-        const daysInStage = (Date.now() - entryTime.getTime()) / (1000 * 60 * 60 * 24);
-        
-        // Validar dados antes de registrar (filtrar valores absurdos)
-        if (daysInStage > 0 && daysInStage < 90) {
-          if (!stageTimes.has(stage)) {
-            stageTimes.set(stage, []);
-          }
-          stageTimes.get(stage)!.push(daysInStage);
-        }
-      });
+      // Remover cálculo para SOs sem histórico válido - dados imprecisos
 
       // Log para debug
       console.log('Stage Timing Debug:', {
