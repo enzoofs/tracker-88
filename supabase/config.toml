@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.upsert-carga]
 verify_jwt = false
+
+[functions.cleanup-auth-attempts]
+verify_jwt = false

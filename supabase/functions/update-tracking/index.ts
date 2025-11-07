@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { checkRateLimit, recordFailedAttempt, recordSuccessfulAttempt } from '../_shared/rate-limiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -52,17 +53,33 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Initialize Supabase client early for rate limiting
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  // Check rate limit BEFORE authentication
+  const rateLimitCheck = await checkRateLimit(req, supabase, '/functions/update-tracking');
+  if (rateLimitCheck.blocked) {
+    console.warn(`⚠️ IP blocked until: ${rateLimitCheck.blockedUntil}`);
+    return rateLimitCheck.response!;
+  }
+
   try {
     const authHeader = req.headers.get('authorization');
     const token = authHeader?.replace(/^Bearer\s+/i, '');
     const expectedToken = Deno.env.get('N8N_SHARED_TOKEN');
     
     if (!token || token !== expectedToken) {
+      await recordFailedAttempt(supabase, req, '/functions/update-tracking');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Token válido - registrar sucesso
+    await recordSuccessfulAttempt(supabase, req, '/functions/update-tracking');
 
     const payload = await req.json();
     const salesOrder = sanitizeInput(payload.sales_order, 100);
@@ -79,9 +96,7 @@ Deno.serve(async (req) => {
       status: payload.status_atual
     });
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Supabase client already initialized
 
     // Check if record exists
     const { data: existing } = await supabase

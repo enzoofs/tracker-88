@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { checkRateLimit, recordFailedAttempt, recordSuccessfulAttempt } from '../_shared/rate-limiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,17 +12,34 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Initialize Supabase client early for rate limiting
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  // Check rate limit BEFORE authentication
+  const rateLimitCheck = await checkRateLimit(req, supabase, '/functions/link-sos-to-carga');
+  if (rateLimitCheck.blocked) {
+    console.warn(`⚠️ IP blocked until: ${rateLimitCheck.blockedUntil}`);
+    return rateLimitCheck.response!;
+  }
+
   try {
     const authHeader = req.headers.get('Authorization');
     const expectedToken = Deno.env.get('N8N_SHARED_TOKEN');
     
     if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
       console.error('Invalid token');
+      await recordFailedAttempt(supabase, req, '/functions/link-sos-to-carga');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Token válido - registrar sucesso
+    await recordSuccessfulAttempt(supabase, req, '/functions/link-sos-to-carga');
 
     const payload = await req.json();
     console.log('Received payload:', payload);
@@ -51,10 +69,7 @@ serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Supabase client already initialized
 
     console.log('Checking carga:', numeroCargaStr);
     const { data: carga, error: cargaError } = await supabase

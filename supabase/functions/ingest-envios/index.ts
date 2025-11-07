@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { checkRateLimit, recordFailedAttempt, recordSuccessfulAttempt } from '../_shared/rate-limiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,11 +27,24 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Initialize Supabase client early for rate limiting
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  // Check rate limit BEFORE authentication
+  const rateLimitCheck = await checkRateLimit(req, supabase, '/functions/ingest-envios');
+  if (rateLimitCheck.blocked) {
+    console.warn(`⚠️ IP blocked until: ${rateLimitCheck.blockedUntil}`);
+    return rateLimitCheck.response!;
+  }
+
   try {
     // Validate N8N token
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       console.error('Missing authorization header');
+      await recordFailedAttempt(supabase, req, '/functions/ingest-envios');
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -50,11 +64,15 @@ Deno.serve(async (req) => {
 
     if (token !== expectedToken) {
       console.error('Invalid token provided');
+      await recordFailedAttempt(supabase, req, '/functions/ingest-envios');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Token válido - registrar sucesso
+    await recordSuccessfulAttempt(supabase, req, '/functions/ingest-envios');
 
     // Parse request body with size limit
     const text = await req.text();
@@ -127,10 +145,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Supabase client already initialized
 
     // ⭐ ATUALIZADO: Prepare row with tracking info
     const row = {

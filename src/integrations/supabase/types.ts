@@ -97,6 +97,33 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_attempts: {
+        Row: {
+          attempted_at: string | null
+          blocked_until: string | null
+          endpoint: string
+          id: string
+          ip_address: string
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string | null
+          blocked_until?: string | null
+          endpoint: string
+          id?: string
+          ip_address: string
+          success: boolean
+        }
+        Update: {
+          attempted_at?: string | null
+          blocked_until?: string | null
+          endpoint?: string
+          id?: string
+          ip_address?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       carga_historico: {
         Row: {
           created_at: string | null
@@ -468,6 +495,42 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: string | null
+          resource_id: string | null
+          resource_type: string
+          success: boolean
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type: string
+          success: boolean
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          success?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       shipment_history: {
         Row: {
           created_at: string | null
@@ -560,6 +623,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_auth_attempts: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
