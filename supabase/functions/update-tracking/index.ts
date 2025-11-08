@@ -170,23 +170,39 @@ Deno.serve(async (req) => {
       
       // Only insert if it's a meaningful stage (not "Atualizado")
       if (logicalStage && logicalStage !== 'Atualizado') {
-        await supabase
+        // Check last recorded stage to avoid duplicate entries
+        const { data: lastHistory } = await supabase
           .from('shipment_history')
-          .insert({
-            sales_order: salesOrder,
-            status: logicalStage,
-            location: translateFedExStatus(payload.ultima_localizacao || ''),
-            tracking_number: sanitizeInput(payload.tracking_numbers, 500),
-            description: JSON.stringify({
-              carrier: payload.carrier,
-              original_status: payload.status_atual,
-              fonte: 'Update via n8n'
-            }),
-            timestamp: new Date().toISOString(),
-            created_at: new Date().toISOString()
-          });
+          .select('status')
+          .eq('sales_order', salesOrder)
+          .order('timestamp', { ascending: false })
+          .limit(1)
+          .maybeSingle();
         
-        console.log('📝 Histórico atualizado com estágio:', logicalStage);
+        // Only insert if stage changed
+        if (!lastHistory || lastHistory.status !== logicalStage) {
+          await supabase
+            .from('shipment_history')
+            .insert({
+              sales_order: salesOrder,
+              status: logicalStage,
+              location: translateFedExStatus(payload.ultima_localizacao || ''),
+              tracking_number: sanitizeInput(payload.tracking_numbers, 500),
+              description: JSON.stringify({
+                carrier: payload.carrier,
+                original_status: payload.status_atual,
+                fonte: 'Update via n8n'
+              }),
+              timestamp: new Date().toISOString(),
+              created_at: new Date().toISOString()
+            });
+          
+          console.log('📝 Mudança de estágio detectada:', lastHistory?.status || 'inicial', '->', logicalStage);
+        } else {
+          console.log('⏭️ Mesmo estágio, histórico não duplicado:', logicalStage);
+        }
+      } else {
+        console.log('⏭️ Status "Atualizado" ignorado - não é um gargalo crítico');
       }
     }
 

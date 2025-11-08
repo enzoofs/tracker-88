@@ -46,63 +46,37 @@ export function translateFedExStatus(status: string): string {
 }
 
 // Mapear status FedEx para estágios lógicos do sistema
+// Foca nos 3 gargalos críticos: Em Produção, No Armazém, Desembaraço
 export function mapToLogicalStage(status: string, location: string): string {
   const statusLower = status.toLowerCase();
-  const locationLower = location?.toLowerCase() || '';
   
-  // Entregue
-  if (statusLower.includes('delivered') || statusLower.includes('entregue')) {
-    return 'Entregue';
+  // GARGALO 1: Em Produção
+  if (statusLower.includes('produção') || statusLower.includes('producao') || statusLower.includes('production')) {
+    return 'Em Produção';
   }
   
-  // Desembaraço (alfândega/customs)
+  // GARGALO 2: No Armazém
+  if (statusLower.includes('armazém') || statusLower.includes('armazem') || statusLower.includes('warehouse')) {
+    return 'No Armazém';
+  }
+  
+  // GARGALO 3: Desembaraço
   if (
+    statusLower.includes('desembaraço') || 
+    statusLower.includes('desembaraco') || 
     statusLower.includes('clearance') || 
     statusLower.includes('customs') || 
-    statusLower.includes('desembaraço') ||
-    statusLower.includes('alfândega')
+    statusLower.includes('alfândega') ||
+    statusLower.includes('alfandega')
   ) {
     return 'Desembaraço';
   }
   
-  // Chegada no Brasil (localização brasileira)
-  if (
-    locationLower.includes('brazil') ||
-    locationLower.includes('brasil') ||
-    locationLower.includes('sao paulo') ||
-    locationLower.includes('são paulo') ||
-    locationLower.includes('rio de janeiro') ||
-    locationLower.includes('guarulhos') ||
-    locationLower.includes('campinas') ||
-    locationLower.includes('viracopos')
-  ) {
-    return 'Chegada no Brasil';
+  // Entregue (estágio final)
+  if (statusLower.includes('entregue') || statusLower.includes('delivered')) {
+    return 'Entregue';
   }
   
-  // Em Trânsito (qualquer movimento internacional)
-  if (
-    statusLower.includes('transit') ||
-    statusLower.includes('trânsito') ||
-    statusLower.includes('departed') ||
-    statusLower.includes('left') ||
-    statusLower.includes('arrived at') ||
-    statusLower.includes('at fedex') ||
-    statusLower.includes('saiu')
-  ) {
-    return 'Em Trânsito';
-  }
-  
-  // Enviado (picked up, shipment info sent)
-  if (
-    statusLower.includes('picked up') ||
-    statusLower.includes('pickup') ||
-    statusLower.includes('information sent') ||
-    statusLower.includes('coletado') ||
-    statusLower.includes('enviado')
-  ) {
-    return 'Enviado';
-  }
-  
-  // Default: retornar o status original se não houver match
-  return status;
+  // Qualquer outro status = ignorar (não registrar no histórico)
+  return 'Atualizado';
 }

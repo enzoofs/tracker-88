@@ -18,19 +18,18 @@ interface StageTimingData {
   totalSLA: number;
 }
 
+// Foco nos 3 gargalos críticos do processo
 const STAGE_ORDER = [
-  'Enviado',
-  'Em Trânsito',
-  'Chegada no Brasil',
+  'Em Produção',
+  'No Armazém',
   'Desembaraço'
 ];
 
-// SLAs esperados por etapa (em dias)
+// SLAs esperados por etapa (em dias) - apenas os gargalos críticos
 const STAGE_SLAS: Record<string, number> = {
-  'Enviado': 2,
-  'Em Trânsito': 3,
-  'Chegada no Brasil': 4,
-  'Desembaraço': 7
+  'Em Produção': 7,    // 7 dias para produzir
+  'No Armazém': 3,     // 3 dias no armazém
+  'Desembaraço': 5     // 5 dias para desembaraçar
 };
 
 export const useStageTimingData = () => {
@@ -173,12 +172,10 @@ export const useStageTimingData = () => {
           };
         });
 
-      // Calculate total average days and SLA only for stages after arrival in Brazil
-      const brazilStages = ['Chegada no Brasil', 'Desembaraço'];
+      // Calculate total average days and SLA for all critical bottlenecks
       const totalAverageDays = stages
-        .filter(stage => brazilStages.includes(stage.stage))
         .reduce((sum, stage) => sum + stage.avgDays, 0);
-      const totalSLA = brazilStages.reduce((sum, stage) => sum + (STAGE_SLAS[stage] || 0), 0);
+      const totalSLA = STAGE_ORDER.reduce((sum, stage) => sum + (STAGE_SLAS[stage] || 0), 0);
 
       setData({
         stages,
