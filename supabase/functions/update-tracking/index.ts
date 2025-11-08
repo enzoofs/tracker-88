@@ -1,47 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { checkRateLimit, recordFailedAttempt, recordSuccessfulAttempt } from '../_shared/rate-limiter.ts';
+import { translateFedExStatus, mapToLogicalStage } from '../_shared/translations.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Import translation function
-const STATUS_TRANSLATIONS: Record<string, string> = {
-  'Departed FedEx location': 'Saiu da Localização FedEx',
-  'At FedEx destination facility': 'Na Instalação FedEx de Destino',
-  'On FedEx vehicle for delivery': 'Em Veículo FedEx para Entrega',
-  'In transit': 'Em Trânsito',
-  'Delivered': 'Entregue',
-  'Shipment exception': 'Exceção no Envio',
-  'Held at FedEx location': 'Retido na Localização FedEx',
-  'Picked up': 'Coletado',
-  'At local FedEx facility': 'Na Instalação FedEx Local',
-  'In clearance': 'Em Desembaraço',
-  'Customs cleared': 'Liberado pela Alfândega',
-  'Left FedEx origin facility': 'Saiu da Instalação FedEx de Origem',
-  'Arrived at FedEx location': 'Chegou na Localização FedEx',
-  'Shipment information sent': 'Informações de Envio Transmitidas',
-  'Package available for clearance': 'Pacote Disponível para Desembaraço',
-  'At destination sort facility': 'Em Distribuição FedEx',
-};
-
-const translateFedExStatus = (status: string): string => {
-  if (!status) return status;
-  
-  if (STATUS_TRANSLATIONS[status]) {
-    return STATUS_TRANSLATIONS[status];
-  }
-  
-  const statusLower = status.toLowerCase();
-  for (const [key, value] of Object.entries(STATUS_TRANSLATIONS)) {
-    if (statusLower.includes(key.toLowerCase())) {
-      return value;
-    }
-  }
-  
-  return status;
-};
+// Translation functions now imported from shared module
 
 const sanitizeInput = (input: string, maxLength = 1000): string => {
   if (typeof input !== 'string') return '';
@@ -194,24 +160,34 @@ Deno.serve(async (req) => {
 
     console.log('✅ Envio processado:', salesOrder, existing ? '(atualizado)' : '(criado)');
 
-    // INSERT no histórico
-    if (payload.tracking_numbers) {
-      await supabase
-        .from('shipment_history')
-        .insert({
-          sales_order: salesOrder,
-          status: 'Atualizado',
-          location: payload.ultima_localizacao,
-          tracking_number: sanitizeInput(payload.tracking_numbers, 500),
-          description: JSON.stringify({
-            carrier: payload.carrier,
-            fonte: 'Update via n8n'
-          }),
-          timestamp: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        });
+    // INSERT no histórico com mapeamento para estágio lógico
+    if (payload.tracking_numbers && payload.status_atual) {
+      // Map status to logical stage
+      const logicalStage = mapToLogicalStage(
+        payload.status_atual, 
+        payload.ultima_localizacao || ''
+      );
       
-      console.log('📝 Histórico atualizado');
+      // Only insert if it's a meaningful stage (not "Atualizado")
+      if (logicalStage && logicalStage !== 'Atualizado') {
+        await supabase
+          .from('shipment_history')
+          .insert({
+            sales_order: salesOrder,
+            status: logicalStage,
+            location: translateFedExStatus(payload.ultima_localizacao || ''),
+            tracking_number: sanitizeInput(payload.tracking_numbers, 500),
+            description: JSON.stringify({
+              carrier: payload.carrier,
+              original_status: payload.status_atual,
+              fonte: 'Update via n8n'
+            }),
+            timestamp: new Date().toISOString(),
+            created_at: new Date().toISOString()
+          });
+        
+        console.log('📝 Histórico atualizado com estágio:', logicalStage);
+      }
     }
 
     return new Response(

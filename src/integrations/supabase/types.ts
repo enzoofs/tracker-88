@@ -623,6 +623,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      backfill_shipment_history: { Args: never; Returns: undefined }
       cleanup_old_auth_attempts: { Args: never; Returns: undefined }
       has_role: {
         Args: {
