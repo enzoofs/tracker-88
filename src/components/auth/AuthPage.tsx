@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +14,7 @@ import {
   CheckCircle 
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 
 interface AuthPageProps {
   onSuccess?: () => void;
@@ -20,18 +23,19 @@ interface AuthPageProps {
 const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  });
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setMessage(null);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
+        email: data.email,
+        password: data.password,
       });
 
       if (error) {
@@ -69,7 +73,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="login-email">Email</Label>
               <div className="relative">
@@ -78,12 +82,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                   id="login-email"
                   type="email"
                   placeholder="seu@email.com"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
                   className="pl-10"
-                  required
+                  {...register('email')}
                 />
               </div>
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -94,12 +99,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                   id="login-password"
                   type="password"
                   placeholder="••••••••"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
                   className="pl-10"
-                  required
+                  {...register('password')}
                 />
               </div>
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
+              )}
             </div>
 
             <Button 

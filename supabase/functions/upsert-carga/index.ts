@@ -7,6 +7,7 @@
 // ============================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { checkRateLimit, recordFailedAttempt, recordSuccessfulAttempt } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +21,21 @@ Deno.serve(async (req) => {
 
   try {
     // ============================================
+    // 0. RATE LIMITING
+    // ============================================
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Variáveis SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não configuradas");
+    }
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const rateLimitCheck = await checkRateLimit(req, supabase, '/functions/upsert-carga');
+    if (rateLimitCheck.blocked) {
+      return rateLimitCheck.response;
+    }
+
+    // ============================================
     // 1. AUTENTICAÇÃO
     // ============================================
     const authHeader = req.headers.get("authorization");
@@ -28,11 +44,14 @@ Deno.serve(async (req) => {
 
     if (!token || token !== expectedToken) {
       console.error("❌ Token inválido");
+      await recordFailedAttempt(supabase, req, '/functions/upsert-carga');
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    await recordSuccessfulAttempt(supabase, req, '/functions/upsert-carga');
 
     // ============================================
     // 2. VALIDAÇÃO DO PAYLOAD
@@ -51,16 +70,6 @@ Deno.serve(async (req) => {
     }
 
     console.log("🔄 Processando carga:", data.numero_carga);
-
-    // ============================================
-    // 3. CRIAR CLIENTE SUPABASE
-    // ============================================
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Variáveis SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não configuradas");
-    }
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // ============================================
     // 4. BUSCAR CARGA EXISTENTE
