@@ -129,7 +129,11 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
     return 0;
   });
 
-  // isDelayed logic moved to use useSLACalculator for consistency
+  const isDelayed = (so: SO) => {
+    const lastUpdate = new Date(so.dataUltimaAtualizacao);
+    const daysSinceUpdate = Math.floor((Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+    return daysSinceUpdate > 7; // Consider delayed if no update for more than 7 days
+  };
 
   const isArrivingToday = (so: SO) => {
     const lastUpdate = new Date(so.dataUltimaAtualizacao);
@@ -322,10 +326,10 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
             </TableHeader>
             <TableBody>
               {filteredData.map((so) => {
-                const slaInfo = useSLACalculator(so);
-                const delayed = slaInfo?.urgency === 'overdue';
+                const delayed = isDelayed(so);
                 const arrivingToday = isArrivingToday(so);
                 const isNew = isNewSO(so);
+                const slaInfo = useSLACalculator(so);
                 const hasCargoStatus = so.cargoNumber && so.statusOriginal;
                 
                  return (
