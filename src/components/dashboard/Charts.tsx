@@ -1,35 +1,11 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
-} from 'recharts';
-import { BarChart3, Users, Building } from 'lucide-react';
 import { useChartsData } from '@/hooks/useChartsData';
 import ExecutiveDashboard from './ExecutiveDashboard';
 import TrendsAnalysis from './TrendsAnalysis';
 
 const Charts: React.FC = () => {
   const { data, loading } = useChartsData();
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[...Array(2)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="space-y-2">
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80 bg-muted rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -41,10 +17,9 @@ const Charts: React.FC = () => {
       </div>
 
       <Tabs defaultValue="executive" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 max-w-4xl mx-auto">
+        <TabsList className="grid w-full grid-cols-2 max-w-4xl mx-auto">
           <TabsTrigger value="executive">Visão Geral & Dashboard Executivo</TabsTrigger>
           <TabsTrigger value="trends">Análise de Tendências</TabsTrigger>
-          <TabsTrigger value="charts">Gráficos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="executive" className="space-y-6">
@@ -53,15 +28,6 @@ const Charts: React.FC = () => {
 
         <TabsContent value="trends" className="space-y-6">
           <TrendsAnalysis />
-        </TabsContent>
-
-        <TabsContent value="charts" className="space-y-6">
-          <div className="flex justify-center items-center h-96 text-muted-foreground">
-            <div className="text-center">
-              <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Nenhum gráfico disponível no momento</p>
-            </div>
-          </div>
         </TabsContent>
       </Tabs>
     </div>
