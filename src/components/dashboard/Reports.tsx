@@ -14,7 +14,6 @@ import {
 import { useReportsData } from '@/hooks/useReportsData';
 import ReportFilters from './ReportFilters';
 import * as XLSX from 'xlsx';
-import StageTimingAnalysis from './StageTimingAnalysis';
 
 const Reports: React.FC = () => {
   const [timeRange, setTimeRange] = useState('30d');
@@ -115,9 +114,6 @@ const Reports: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Stage Timing Analysis */}
-      <StageTimingAnalysis />
 
       {/* Relatórios Tabulares */}
       <Tabs defaultValue="clientes" className="space-y-6">
