@@ -6,9 +6,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
-} from 'recharts';
-import {
   Download, Users, Building, UserCheck, Truck, Package, DollarSign, Target, BarChart3
 } from 'lucide-react';
 import { useReportsData } from '@/hooks/useReportsData';
@@ -32,8 +29,6 @@ const Reports: React.FC = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, reportType);
     XLSX.writeFile(workbook, `${reportType}-${timeRange}.xlsx`);
   };
-
-  const COLORS = ['hsl(var(--primary))', 'hsl(var(--status-delivered))', 'hsl(var(--status-shipping))', 'hsl(var(--status-production))'];
 
   if (loading) {
     return (
