@@ -117,10 +117,9 @@ const Reports: React.FC = () => {
 
       {/* Relatórios Tabulares */}
       <Tabs defaultValue="clientes" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
-          <TabsTrigger value="entregas">Entregas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="clientes" className="space-y-4">
@@ -213,54 +212,6 @@ const Reports: React.FC = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="entregas" className="space-y-4">
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Truck className="h-5 w-5" />
-                Relatório de Entregas
-              </CardTitle>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => exportToExcel('Entregas', data.entregas)}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Quantidade</TableHead>
-                    <TableHead>Percentual</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.entregas.map((entrega, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{entrega.status}</TableCell>
-                      <TableCell>{entrega.quantidade}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold">{entrega.percentual.toFixed(1)}%</span>
-                          <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-primary" 
-                              style={{ width: `${entrega.percentual}%` }}
-                            />
-                          </div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
