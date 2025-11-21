@@ -66,24 +66,6 @@ export const useSOTimeline = (so: SO) => {
     { id: 'entregue', title: 'Entregue', order: 7 }
   ];
 
-  // Função para adicionar dias úteis (pula finais de semana)
-  const addBusinessDays = (date: Date, daysToAdd: number): Date => {
-    const result = new Date(date);
-    let daysAdded = 0;
-    
-    while (daysAdded < daysToAdd) {
-      result.setDate(result.getDate() + 1);
-      const dayOfWeek = result.getDay();
-      
-      // Se não for sábado (6) nem domingo (0), conta como dia útil
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        daysAdded++;
-      }
-    }
-    
-    return result;
-  };
-
   useEffect(() => {
     const fetchTimeline = async () => {
       try {
@@ -185,15 +167,14 @@ export const useSOTimeline = (so: SO) => {
             status = 'upcoming';
             
             // Se o estágio futuro for Entregue e o atual for Desembaraço, usar 2 dias úteis
-            let forecastDate: Date;
+            let daysAhead: number;
             if (stage.id === 'entregue' && currentStage.id === 'desembaraco') {
-              forecastDate = addBusinessDays(new Date(), 2);
+              daysAhead = 2;
             } else {
-              const daysAhead = (stage.order - currentStageOrder) * 4;
-              forecastDate = addBusinessDays(new Date(), daysAhead);
+              daysAhead = (stage.order - currentStageOrder) * 4;
             }
             
-            data = forecastDate.toISOString();
+            data = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString();
           }
 
           return {
