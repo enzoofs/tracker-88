@@ -165,7 +165,15 @@ export const useSOTimeline = (so: SO) => {
           } else {
             // Estágio futuro
             status = 'upcoming';
-            const daysAhead = (stage.order - currentStageOrder) * 4;
+            
+            // Se o estágio futuro for Entregue e o atual for Desembaraço, usar 2 dias úteis
+            let daysAhead: number;
+            if (stage.id === 'entregue' && currentStage.id === 'desembaraco') {
+              daysAhead = 2;
+            } else {
+              daysAhead = (stage.order - currentStageOrder) * 4;
+            }
+            
             data = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString();
           }
 
