@@ -182,6 +182,14 @@ export const useSOTimeline = (so: SO) => {
             // Estágio futuro
             status = 'upcoming';
             
+            // Usar a data do estágio atual como referência
+            const currentStageDate = new Date(
+              completedStagesMap.get(currentStage.id)?.date || 
+              so.dataUltimaAtualizacao || 
+              so.dataOrdem || 
+              new Date()
+            );
+            
             // Se o estágio futuro for Entregue e o atual for Desembaraço, usar 2 dias úteis
             let daysAhead: number;
             if (stage.id === 'entregue' && currentStage.id === 'desembaraco') {
@@ -190,8 +198,8 @@ export const useSOTimeline = (so: SO) => {
               daysAhead = (stage.order - currentStageOrder) * 4;
             }
             
-            // Usar addBusinessDays para considerar apenas dias úteis
-            data = addBusinessDays(new Date(), daysAhead).toISOString();
+            // Usar addBusinessDays a partir da data do estágio atual
+            data = addBusinessDays(currentStageDate, daysAhead).toISOString();
           }
 
           return {
