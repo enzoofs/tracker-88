@@ -1,6 +1,22 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Função para adicionar dias úteis a uma data
+const addBusinessDays = (date: Date, days: number): Date => {
+  const result = new Date(date);
+  let addedDays = 0;
+  
+  while (addedDays < days) {
+    result.setDate(result.getDate() + 1);
+    // 0 = Domingo, 6 = Sábado
+    if (result.getDay() !== 0 && result.getDay() !== 6) {
+      addedDays++;
+    }
+  }
+  
+  return result;
+};
+
 interface TimelineEvent {
   id: string;
   tipo: string;
@@ -174,7 +190,8 @@ export const useSOTimeline = (so: SO) => {
               daysAhead = (stage.order - currentStageOrder) * 4;
             }
             
-            data = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString();
+            // Usar addBusinessDays para considerar apenas dias úteis
+            data = addBusinessDays(new Date(), daysAhead).toISOString();
           }
 
           return {
@@ -206,7 +223,7 @@ export const useSOTimeline = (so: SO) => {
           titulo: stage.title,
           data: stage.order <= currentStage.order 
             ? new Date(Date.now() - (currentStage.order - stage.order) * 3 * 24 * 60 * 60 * 1000).toISOString()
-            : new Date(Date.now() + (stage.order - currentStage.order) * 4 * 24 * 60 * 60 * 1000).toISOString(),
+            : addBusinessDays(new Date(), (stage.order - currentStage.order) * 4).toISOString(),
           status: (stage.order < currentStage.order ? 'completed' : 
                    stage.order === currentStage.order ? 'current' : 'upcoming') as 'completed' | 'current' | 'upcoming'
         }));
