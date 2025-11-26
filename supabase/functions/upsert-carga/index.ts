@@ -92,9 +92,17 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString(),
     };
 
+    // PROTEÇÃO: Não permitir reverter status de carga já entregue
+    const statusEntregue = cargaExistente?.status === "Entregue";
+    
     // Status (sem mapeamento - usa direto do workflow)
     if (data.status_atual) {
-      updateData.status = data.status_atual;
+      // Se a carga já está entregue, só permite atualizar se o novo status também for "Entregue"
+      if (statusEntregue && data.status_atual !== "Entregue") {
+        console.log(`⚠️ PROTEÇÃO: Carga ${data.numero_carga} já está entregue - ignorando mudança de status para "${data.status_atual}"`);
+      } else {
+        updateData.status = data.status_atual;
+      }
     }
 
     // MAWB/HAWB
