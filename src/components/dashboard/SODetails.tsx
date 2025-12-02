@@ -47,6 +47,8 @@ interface SO {
   ultimaLocalizacao: string;
   dataUltimaAtualizacao: string;
   dataOrdem?: string;
+  dataEnvio?: string;   // Data de envio FedEx
+  createdAt?: string;   // Data de criação no sistema
   erpOrder?: string;
   webOrder?: string;
   trackingNumbers?: string;

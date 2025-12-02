@@ -46,6 +46,8 @@ interface DashboardData {
     ultimaLocalizacao: string;
     dataUltimaAtualizacao: string;
     dataOrdem?: string;
+    dataEnvio?: string;
+    createdAt?: string;
     erpOrder?: string;
     webOrder?: string;
     trackingNumbers?: string;
@@ -183,6 +185,8 @@ const LogisticsDashboard: React.FC = () => {
           ultimaLocalizacao: envio.ultima_localizacao || '',
           dataUltimaAtualizacao: envio.data_ultima_atualizacao || envio.updated_at,
           dataOrdem: envio.data_ordem,
+          dataEnvio: envio.data_envio,           // Data de envio FedEx
+          createdAt: envio.created_at,           // Data de entrada no sistema
           erpOrder: envio.erp_order,
           webOrder: envio.web_order,
           trackingNumbers: Array.isArray(envio.tracking_numbers) ? envio.tracking_numbers.join(', ') : envio.tracking_numbers || '',

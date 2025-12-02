@@ -23,6 +23,9 @@ interface SO {
   cargoNumber?: string;
   ultimaLocalizacao: string;
   dataUltimaAtualizacao: string;
+  dataOrdem?: string;
+  dataEnvio?: string;
+  createdAt?: string;
   erpOrder?: string;
   webOrder?: string;
   trackingNumbers?: string;
