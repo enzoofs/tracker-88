@@ -98,7 +98,8 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
     const matchesSearch = 
       so.salesOrder.toLowerCase().includes(searchTerm.toLowerCase()) ||
       so.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      so.produtos.toLowerCase().includes(searchTerm.toLowerCase());
+      so.produtos.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (so.webOrder && so.webOrder.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const statusValue = (so.statusAtual || '').trim().toLowerCase();
     const filterValue = statusFilter.toLowerCase();
@@ -174,7 +175,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
           <div className="flex-1 relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por SO, cliente, produto ou localização..."
+              placeholder="Buscar por SO, WO, cliente ou produto..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8 transition-all duration-300 focus:ring-2 focus:ring-primary/20"
