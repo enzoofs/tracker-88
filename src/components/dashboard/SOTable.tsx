@@ -46,23 +46,27 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
 
   const getStatusVariant = (status: string | null) => {
     if (!status) return 'default';
+    const statusLower = status.toLowerCase();
     
-    switch (status.toLowerCase()) {
-      case 'em produção':
-      case 'em producao':
-        return 'production';
-      case 'em importação':
-      case 'em importacao':
-      case 'enviado':
-        return 'shipping';
-      case 'em trânsito':
-      case 'em transito':
-        return 'transit';
-      case 'entregue':
-        return 'delivered';
-      default:
-        return 'default';
+    if (statusLower.includes('produção') || statusLower.includes('producao')) {
+      return 'production';
     }
+    if (statusLower.includes('armazém') || statusLower.includes('armazem') || statusLower.includes('miami')) {
+      return 'shipping';
+    }
+    if (statusLower.includes('trânsito') || statusLower.includes('transito') || 
+        statusLower.includes('enviado') || statusLower.includes('fedex') ||
+        statusLower.includes('embarc')) {
+      return 'transit';
+    }
+    if (statusLower.includes('desembaraço') || statusLower.includes('desembaraco') ||
+        statusLower.includes('liberação') || statusLower.includes('liberacao')) {
+      return 'alert';
+    }
+    if (statusLower.includes('entregue') || statusLower.includes('delivered')) {
+      return 'delivered';
+    }
+    return 'default';
   };
 
   const getStatusBadgeClass = (variant: string) => {
