@@ -134,6 +134,9 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   });
 
   const isDelayed = (so: SO) => {
+    // Nunca mostrar como atrasado se já foi entregue
+    if (so.isDelivered) return false;
+    
     const lastUpdate = new Date(so.dataUltimaAtualizacao);
     const daysSinceUpdate = Math.floor((Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
     return daysSinceUpdate > 7; // Consider delayed if no update for more than 7 days
