@@ -76,7 +76,6 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
     "Aguardando Embarque",
     "Em Trânsito",
     "Em Desembaraço",
-    "Desembaraço",
     "Entregue"
   ];
 

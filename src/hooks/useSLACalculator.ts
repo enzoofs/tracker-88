@@ -26,14 +26,15 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   }
 
   // SLA interno - para determinar urgência (alerta visual)
+  // Prazo total: 10 dias úteis a partir da saída da fábrica
   const slaDaysMap: Record<string, number> = {
     'armazém': 5,
     'armazem': 5,
-    'fedex': 15,
-    'embarque agendado': 11,
-    'embarque confirmado': 9,
-    'chegada': 5,
-    'brasil': 5,
+    'fedex': 10,
+    'embarque agendado': 7,
+    'embarque confirmado': 5,
+    'chegada': 4,
+    'brasil': 4,
     'desembaraço': 2,
     'desembaraco': 2,
     'desembaraçado': 2,
@@ -41,14 +42,15 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   };
 
   // Previsão de entrega ao cliente - para informar ETA
+  // Prazo total: 10 dias úteis a partir da saída da fábrica
   const deliveryForecastMap: Record<string, number> = {
-    'armazém': 14,
-    'armazem': 14,
-    'fedex': 15,
-    'embarque agendado': 11,
-    'embarque confirmado': 9,
-    'chegada': 5,
-    'brasil': 5,
+    'armazém': 9,
+    'armazem': 9,
+    'fedex': 10,
+    'embarque agendado': 7,
+    'embarque confirmado': 5,
+    'chegada': 4,
+    'brasil': 4,
     'desembaraço': 2,
     'desembaraco': 2,
     'desembaraçado': 2,
@@ -71,8 +73,8 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   };
 
   // Encontrar o status correspondente
-  let slaDays = 15;           // Default para FedEx
-  let forecastDays = 15;      // Default para FedEx
+  let slaDays = 10;           // Default: 10 dias úteis a partir da saída da fábrica
+  let forecastDays = 10;      // Default: 10 dias úteis a partir da saída da fábrica
   let stage = 'FedEx';
   
   for (const key of Object.keys(slaDaysMap)) {
