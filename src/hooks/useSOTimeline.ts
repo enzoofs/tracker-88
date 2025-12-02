@@ -32,6 +32,8 @@ interface SO {
   statusAtual: string;
   dataUltimaAtualizacao: string;
   dataOrdem?: string;
+  dataEnvio?: string;   // Data de envio FedEx
+  createdAt?: string;   // Data de criação no sistema
 }
 
 export const useSOTimeline = (so: SO) => {
@@ -81,6 +83,28 @@ export const useSOTimeline = (so: SO) => {
     { id: 'desembaraco', title: 'Desembaraço', order: 6 },
     { id: 'entregue', title: 'Entregue', order: 7 }
   ];
+
+  // Garantir progressividade das datas na timeline
+  const ensureProgressiveDates = (timeline: TimelineEvent[]): TimelineEvent[] => {
+    const result = [...timeline];
+    
+    for (let i = 1; i < result.length; i++) {
+      const prevDate = new Date(result[i - 1].data);
+      const currDate = new Date(result[i].data);
+      
+      // Se a data atual for anterior ou igual à anterior, ajustar
+      if (currDate <= prevDate) {
+        // Adicionar 1 hora após o estágio anterior
+        const adjustedDate = new Date(prevDate.getTime() + 60 * 60 * 1000);
+        result[i] = {
+          ...result[i],
+          data: adjustedDate.toISOString()
+        };
+      }
+    }
+    
+    return result;
+  };
 
   useEffect(() => {
     const fetchTimeline = async () => {
@@ -152,11 +176,36 @@ export const useSOTimeline = (so: SO) => {
           }
         });
 
-        // 6. Determinar estágio atual
+        // 6. Usar dados reais confiáveis para estágios específicos
+        // Em Produção: usar createdAt (quando SO entrou no sistema)
+        if (so.createdAt) {
+          const createdDate = new Date(so.createdAt);
+          if (!completedStagesMap.has('em_producao') || 
+              completedStagesMap.get('em_producao')!.date > createdDate) {
+            completedStagesMap.set('em_producao', {
+              date: createdDate,
+              details: 'Entrada no sistema'
+            });
+          }
+        }
+
+        // FedEx: usar dataEnvio (quando saiu da fábrica)
+        if (so.dataEnvio) {
+          const envioDate = new Date(so.dataEnvio);
+          if (!completedStagesMap.has('fedex') || 
+              completedStagesMap.get('fedex')!.date > envioDate) {
+            completedStagesMap.set('fedex', {
+              date: envioDate,
+              details: 'Enviado via FedEx'
+            });
+          }
+        }
+
+        // 7. Determinar estágio atual
         const currentStage = mapStatusToStage(so.statusAtual);
         const currentStageOrder = currentStage.order;
 
-        // 7. Construir timeline com todos os estágios
+        // 8. Construir timeline com todos os estágios
         const timelineEvents: TimelineEvent[] = ALL_STAGES.map((stage, index) => {
           const completedInfo = completedStagesMap.get(stage.id);
           
@@ -165,10 +214,22 @@ export const useSOTimeline = (so: SO) => {
           let detalhes: string | undefined;
 
           if (stage.order < currentStageOrder) {
-            // Estágio passado
+            // Estágio passado - usar dados reais quando disponíveis
             status = 'completed';
-            data = completedInfo?.date.toISOString() || 
-                   new Date(Date.now() - (currentStageOrder - stage.order) * 3 * 24 * 60 * 60 * 1000).toISOString();
+            
+            if (completedInfo?.date) {
+              data = completedInfo.date.toISOString();
+            } else if (stage.id === 'em_producao' && so.createdAt) {
+              data = so.createdAt;
+            } else if (stage.id === 'fedex' && so.dataEnvio) {
+              data = so.dataEnvio;
+            } else {
+              // Fallback: calcular baseado no estágio atual
+              const currentDate = new Date(so.dataUltimaAtualizacao || so.dataOrdem || Date.now());
+              const daysBack = (currentStageOrder - stage.order) * 3;
+              data = new Date(currentDate.getTime() - daysBack * 24 * 60 * 60 * 1000).toISOString();
+            }
+            
             detalhes = completedInfo?.details;
           } else if (stage.order === currentStageOrder) {
             // Estágio atual
@@ -212,38 +273,65 @@ export const useSOTimeline = (so: SO) => {
           };
         });
 
+        // 9. Garantir progressividade das datas
+        const progressiveTimeline = ensureProgressiveDates(timelineEvents);
+
         console.log('✅ Timeline construída:', {
-          total: timelineEvents.length,
-          completed: timelineEvents.filter(e => e.status === 'completed').length,
-          current: timelineEvents.filter(e => e.status === 'current').length,
-          upcoming: timelineEvents.filter(e => e.status === 'upcoming').length
+          total: progressiveTimeline.length,
+          completed: progressiveTimeline.filter(e => e.status === 'completed').length,
+          current: progressiveTimeline.filter(e => e.status === 'current').length,
+          upcoming: progressiveTimeline.filter(e => e.status === 'upcoming').length
         });
 
-        setEvents(timelineEvents);
+        setEvents(progressiveTimeline);
       } catch (error) {
         console.error('Erro ao buscar timeline:', error);
         
-        // Fallback: criar timeline básica
+        // Fallback: criar timeline básica com progressividade garantida
         const currentStage = mapStatusToStage(so.statusAtual);
-        const fallbackEvents = ALL_STAGES.map((stage, index) => ({
-          id: `${stage.id}_${index}`,
-          tipo: stage.id,
-          titulo: stage.title,
-          data: stage.order <= currentStage.order 
-            ? new Date(Date.now() - (currentStage.order - stage.order) * 3 * 24 * 60 * 60 * 1000).toISOString()
-            : addBusinessDays(new Date(), (stage.order - currentStage.order) * 4).toISOString(),
-          status: (stage.order < currentStage.order ? 'completed' : 
-                   stage.order === currentStage.order ? 'current' : 'upcoming') as 'completed' | 'current' | 'upcoming'
-        }));
         
-        setEvents(fallbackEvents);
+        // Usar createdAt como base para estágios passados
+        const baseDate = new Date(so.createdAt || so.dataOrdem || Date.now());
+        
+        const fallbackEvents = ALL_STAGES.map((stage, index) => {
+          let data: string;
+          
+          if (stage.order < currentStage.order) {
+            // Estágios passados: calcular progressivamente a partir de createdAt
+            if (stage.id === 'em_producao' && so.createdAt) {
+              data = so.createdAt;
+            } else if (stage.id === 'fedex' && so.dataEnvio) {
+              data = so.dataEnvio;
+            } else {
+              data = addBusinessDays(baseDate, stage.order * 2).toISOString();
+            }
+          } else if (stage.order === currentStage.order) {
+            data = so.dataUltimaAtualizacao || so.dataOrdem || new Date().toISOString();
+          } else {
+            // Estágios futuros: calcular a partir do estágio atual
+            const currentDate = new Date(so.dataUltimaAtualizacao || so.dataOrdem || Date.now());
+            data = addBusinessDays(currentDate, (stage.order - currentStage.order) * 4).toISOString();
+          }
+          
+          return {
+            id: `${stage.id}_${index}`,
+            tipo: stage.id,
+            titulo: stage.title,
+            data: data,
+            status: (stage.order < currentStage.order ? 'completed' : 
+                     stage.order === currentStage.order ? 'current' : 'upcoming') as 'completed' | 'current' | 'upcoming'
+          };
+        });
+        
+        // Garantir progressividade mesmo no fallback
+        setEvents(ensureProgressiveDates(fallbackEvents));
       } finally {
         setLoading(false);
       }
     };
 
     fetchTimeline();
-  }, [so.salesOrder, so.statusAtual, so.dataUltimaAtualizacao, so.dataOrdem]);
+  }, [so.salesOrder, so.statusAtual, so.dataUltimaAtualizacao, so.dataOrdem, so.dataEnvio, so.createdAt]);
 
   return { events, loading };
 };
