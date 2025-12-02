@@ -32,7 +32,7 @@ interface DashboardData {
     criticalShipments: number;
     statusCounts?: {
       emProducao: number;
-      emTransito: number;
+      emImportacao: number;
       atrasadas: number;
     };
   };
@@ -80,7 +80,7 @@ const LogisticsDashboard: React.FC = () => {
       criticalShipments: 0,
       statusCounts: {
         emProducao: 0,
-        emTransito: 0,
+        emImportacao: 0,
         atrasadas: 0
       }
     },
@@ -177,13 +177,12 @@ const LogisticsDashboard: React.FC = () => {
           cliente: envio.cliente,
           produtos: typeof envio.produtos === 'string' ? envio.produtos : JSON.stringify(envio.produtos || ''),
           valorTotal: envio.valor_total,
-          statusAtual: cargoStatus || envio.status_atual,
+          statusAtual: cargoStatus || (envio.status_atual === 'Enviado' ? 'Em Importação' : envio.status_atual),
           statusOriginal: envio.status_atual,
           cargoNumber: cargoNum || null,
           ultimaLocalizacao: envio.ultima_localizacao || '',
           dataUltimaAtualizacao: envio.data_ultima_atualizacao || envio.updated_at,
           dataOrdem: envio.data_ordem,
-          dataEnvio: envio.data_envio,
           erpOrder: envio.erp_order,
           webOrder: envio.web_order,
           trackingNumbers: Array.isArray(envio.tracking_numbers) ? envio.tracking_numbers.join(', ') : envio.tracking_numbers || '',
@@ -225,7 +224,7 @@ const LogisticsDashboard: React.FC = () => {
       
       const statusCounts = {
         emProducao: transformedSOs.filter(so => !so.isDelivered && so.statusAtual === 'Em Produção').length,
-        emTransito: transformedSOs.filter(so => {
+        emImportacao: transformedSOs.filter(so => {
           if (so.isDelivered) return false;
           const status = so.statusAtual?.toLowerCase() || '';
           const isProduction = status.includes('produção') || status.includes('producao');

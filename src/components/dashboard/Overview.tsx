@@ -18,7 +18,7 @@ interface OverviewProps {
     criticalShipments: number;
     statusCounts?: {
       emProducao: number;
-      emTransito: number;
+      emImportacao: number;
       atrasadas: number;
     };
   };
@@ -56,7 +56,7 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
     
     setDialogTitle(
       category === 'producao' ? 'SOs em Produção' :
-      category === 'importacao' ? 'SOs em Trânsito' :
+      category === 'importacao' ? 'SOs em Importação' :
       'SOs Atrasadas'
     );
     setDialogSOs(filtered);
@@ -183,9 +183,9 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
               onClick={() => handleCardClick('importacao')}
             >
               <div className="text-2xl font-corporate font-bold text-status-shipping">
-                {data.statusCounts?.emTransito || 0}
+                {data.statusCounts?.emImportacao || 0}
               </div>
-              <div className="text-sm text-muted-foreground font-corporate">Em Trânsito</div>
+              <div className="text-sm text-muted-foreground font-corporate">Em Importação</div>
             </div>
             <div 
               className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate cursor-pointer transition-all hover:shadow-md hover:scale-105"

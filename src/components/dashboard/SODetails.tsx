@@ -79,11 +79,13 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
 
   const availableStatuses = [
     "Em Produção",
-    "FedEx",
+    "Enviado",
+    "Em Importação",
     "No Armazém",
     "Em Trânsito",
-    "Desembaraço",
-    "Entregue"
+    "Entregue",
+    "Atrasado",
+    "Pendente"
   ];
 
   // Check if user is admin

@@ -10,7 +10,7 @@ interface SLAResult {
   daysRemaining: number;           // Dias restantes para ENTREGA (baseado em deliveryForecastDays)
   urgency: 'ok' | 'warning' | 'critical' | 'overdue';  // Baseado em slaDays
   expectedDays: number;            // SLA interno (5 dias para armazém)
-  deliveryForecastDays: number;    // Previsão de entrega ao cliente (12 dias)
+  deliveryForecastDays: number;    // Previsão de entrega ao cliente (14 dias para armazém)
   daysSinceUpdate: number;
   stage: string;
 }
@@ -29,38 +29,30 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   const slaDaysMap: Record<string, number> = {
     'armazém': 5,
     'armazem': 5,
-    'fedex': 12,
-    'enviado': 12,
-    'em trânsito': 8,
-    'em transito': 8,
-    'embarque': 10,
+    'fedex': 15,
+    'embarque agendado': 11,
+    'embarque confirmado': 9,
     'chegada': 5,
     'brasil': 5,
     'desembaraço': 2,
     'desembaraco': 2,
     'desembaraçado': 2,
-    'desembaracado': 2,
-    'liberação': 2,
-    'liberacao': 2
+    'desembaracado': 2
   };
 
-  // Previsão de entrega ao cliente - 12 dias úteis total
+  // Previsão de entrega ao cliente - para informar ETA
   const deliveryForecastMap: Record<string, number> = {
-    'armazém': 10,
-    'armazem': 10,
-    'fedex': 12,
-    'enviado': 12,
-    'em trânsito': 6,
-    'em transito': 6,
-    'embarque': 8,
-    'chegada': 4,
-    'brasil': 4,
+    'armazém': 14,
+    'armazem': 14,
+    'fedex': 15,
+    'embarque agendado': 11,
+    'embarque confirmado': 9,
+    'chegada': 5,
+    'brasil': 5,
     'desembaraço': 2,
     'desembaraco': 2,
     'desembaraçado': 2,
-    'desembaracado': 2,
-    'liberação': 2,
-    'liberacao': 2
+    'desembaracado': 2
   };
 
   // Mapeamento de nomes de estágios
@@ -68,23 +60,19 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
     'armazém': 'No Armazém',
     'armazem': 'No Armazém',
     'fedex': 'FedEx',
-    'enviado': 'FedEx',
-    'em trânsito': 'Em Trânsito',
-    'em transito': 'Em Trânsito',
-    'embarque': 'Em Trânsito',
+    'embarque agendado': 'Embarque Agendado',
+    'embarque confirmado': 'Embarque Confirmado',
     'chegada': 'Chegada no Brasil',
     'brasil': 'Chegada no Brasil',
     'desembaraço': 'Desembaraço',
     'desembaraco': 'Desembaraço',
     'desembaraçado': 'Desembaraçado',
-    'desembaracado': 'Desembaraçado',
-    'liberação': 'Desembaraço',
-    'liberacao': 'Desembaraço'
+    'desembaracado': 'Desembaraçado'
   };
 
   // Encontrar o status correspondente
-  let slaDays = 12;           // Default para FedEx (12 dias)
-  let forecastDays = 12;      // Default para FedEx (12 dias)
+  let slaDays = 15;           // Default para FedEx
+  let forecastDays = 15;      // Default para FedEx
   let stage = 'FedEx';
   
   for (const key of Object.keys(slaDaysMap)) {
@@ -101,7 +89,7 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   const now = new Date();
   const daysSinceUpdate = Math.floor((now.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  // Urgência baseada no SLA interno
+  // Urgência baseada no SLA interno (5 dias para armazém)
   const slaRemaining = slaDays - daysSinceUpdate;
   let urgency: 'ok' | 'warning' | 'critical' | 'overdue';
   if (slaRemaining < 0) {
@@ -114,12 +102,12 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
     urgency = 'ok';
   }
 
-  // ETA baseada na previsão de entrega ao cliente
+  // ETA baseada na previsão de entrega ao cliente (14 dias para armazém)
   const daysRemaining = forecastDays - daysSinceUpdate;
 
   return {
-    daysRemaining,                    // Dias para ENTREGA
-    urgency,                          // Urgência baseada no SLA interno
+    daysRemaining,                    // Dias para ENTREGA (14 - decorridos para armazém)
+    urgency,                          // Urgência baseada no SLA interno (5 dias)
     expectedDays: slaDays,            // SLA interno
     deliveryForecastDays: forecastDays, // Previsão ao cliente
     daysSinceUpdate,

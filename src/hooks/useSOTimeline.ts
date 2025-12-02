@@ -32,51 +32,54 @@ interface SO {
   statusAtual: string;
   dataUltimaAtualizacao: string;
   dataOrdem?: string;
-  dataEnvio?: string;
 }
 
 export const useSOTimeline = (so: SO) => {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Mapeamento de status para estágios da timeline - FLUXO SIMPLIFICADO
+  // Mapeamento de status para estágios da timeline
   const mapStatusToStage = (status: string): { id: string; title: string; order: number } => {
     const statusLower = status.toLowerCase();
     
     if (statusLower.includes('produção') || statusLower.includes('producao')) {
       return { id: 'em_producao', title: 'Em Produção', order: 0 };
     }
-    if (statusLower.includes('enviado') || statusLower.includes('fedex') || 
-        statusLower.includes('picked up') || statusLower.includes('shipment information')) {
+    if (statusLower.includes('enviado') || statusLower.includes('fedex')) {
       return { id: 'fedex', title: 'FedEx', order: 1 };
     }
-    if (statusLower.includes('armazém') || statusLower.includes('armazem') || statusLower.includes('miami')) {
+    if (statusLower.includes('armazém') || statusLower.includes('armazem')) {
       return { id: 'no_armazem', title: 'No Armazém', order: 2 };
     }
-    if (statusLower.includes('trânsito') || statusLower.includes('transito') || 
-        statusLower.includes('embarc') || statusLower.includes('voo')) {
-      return { id: 'em_transito', title: 'Em Trânsito', order: 3 };
+    if (statusLower.includes('aguardando embarque')) {
+      return { id: 'embarque_agendado', title: 'Embarque Agendado', order: 3 };
     }
-    if (statusLower.includes('desembaraço') || statusLower.includes('desembaraco') || 
-        statusLower.includes('alfândega') || statusLower.includes('alfandega') ||
-        statusLower.includes('liberação') || statusLower.includes('liberacao')) {
-      return { id: 'desembaraco', title: 'Desembaraço', order: 4 };
+    if (statusLower.includes('embarcado') || statusLower.includes('embarque confirmado')) {
+      return { id: 'embarque_confirmado', title: 'Embarque Confirmado', order: 4 };
     }
-    if (statusLower.includes('entregue') || statusLower.includes('delivered') || statusLower.includes('destino')) {
-      return { id: 'entregue', title: 'Entregue', order: 5 };
+    if (statusLower.includes('trânsito') || statusLower.includes('transito') || statusLower.includes('voo')) {
+      return { id: 'chegada_brasil', title: 'Chegada no Brasil', order: 5 };
+    }
+    if (statusLower.includes('desembaraço') || statusLower.includes('desembaraco')) {
+      return { id: 'desembaraco', title: 'Desembaraço', order: 6 };
+    }
+    if (statusLower.includes('entregue') || statusLower.includes('destino')) {
+      return { id: 'entregue', title: 'Entregue', order: 7 };
     }
     
     return { id: 'em_producao', title: status, order: 0 };
   };
 
-  // Estágios simplificados - apenas 6 estágios
+  // Todos os estágios possíveis na ordem
   const ALL_STAGES = [
     { id: 'em_producao', title: 'Em Produção', order: 0 },
     { id: 'fedex', title: 'FedEx', order: 1 },
     { id: 'no_armazem', title: 'No Armazém', order: 2 },
-    { id: 'em_transito', title: 'Em Trânsito', order: 3 },
-    { id: 'desembaraco', title: 'Desembaraço', order: 4 },
-    { id: 'entregue', title: 'Entregue', order: 5 }
+    { id: 'embarque_agendado', title: 'Embarque Agendado', order: 3 },
+    { id: 'embarque_confirmado', title: 'Embarque Confirmado', order: 4 },
+    { id: 'chegada_brasil', title: 'Chegada no Brasil', order: 5 },
+    { id: 'desembaraco', title: 'Desembaraço', order: 6 },
+    { id: 'entregue', title: 'Entregue', order: 7 }
   ];
 
   useEffect(() => {
@@ -149,86 +152,64 @@ export const useSOTimeline = (so: SO) => {
           }
         });
 
-        // 6. Usar data_envio para o estágio FedEx se disponível
-        if (so.dataEnvio && !completedStagesMap.has('fedex')) {
-          completedStagesMap.set('fedex', {
-            date: new Date(so.dataEnvio),
-            details: 'Enviado via FedEx'
-          });
-        }
-
-        // 7. Determinar estágio atual
+        // 6. Determinar estágio atual
         const currentStage = mapStatusToStage(so.statusAtual);
         const currentStageOrder = currentStage.order;
 
-        // 8. Construir timeline com todos os estágios
-        const timelineEvents: TimelineEvent[] = [];
-        let previousDate: Date | null = null;
-
-        ALL_STAGES.forEach((stage, index) => {
+        // 7. Construir timeline com todos os estágios
+        const timelineEvents: TimelineEvent[] = ALL_STAGES.map((stage, index) => {
           const completedInfo = completedStagesMap.get(stage.id);
           
           let status: 'completed' | 'current' | 'upcoming';
-          let eventDate: Date;
+          let data: string;
           let detalhes: string | undefined;
 
           if (stage.order < currentStageOrder) {
-            // Estágio passado - COMPLETADO
+            // Estágio passado
             status = 'completed';
-            
-            if (completedInfo?.date) {
-              eventDate = completedInfo.date;
-            } else {
-              // Estimar baseado no estágio anterior
-              const baseDate = previousDate || new Date(so.dataOrdem || so.dataUltimaAtualizacao);
-              eventDate = addBusinessDays(baseDate, 2);
-            }
-            
+            data = completedInfo?.date.toISOString() || 
+                   new Date(Date.now() - (currentStageOrder - stage.order) * 3 * 24 * 60 * 60 * 1000).toISOString();
             detalhes = completedInfo?.details;
           } else if (stage.order === currentStageOrder) {
-            // Estágio atual - CURRENT
+            // Estágio atual
             status = 'current';
-            
-            if (completedInfo?.date) {
-              eventDate = completedInfo.date;
-            } else {
-              eventDate = new Date(so.dataUltimaAtualizacao || so.dataOrdem || new Date());
-            }
-            
+            data = completedInfo?.date.toISOString() || 
+                   so.dataUltimaAtualizacao || 
+                   so.dataOrdem || 
+                   new Date().toISOString();
             detalhes = completedInfo?.details;
           } else {
-            // Estágio futuro - UPCOMING
+            // Estágio futuro
             status = 'upcoming';
             
-            // Calcular baseado no estágio anterior (previousDate)
-            const baseDate = previousDate || new Date(so.dataUltimaAtualizacao || so.dataOrdem || new Date());
+            // Usar a data do estágio atual como referência
+            const currentStageDate = new Date(
+              completedStagesMap.get(currentStage.id)?.date || 
+              so.dataUltimaAtualizacao || 
+              so.dataOrdem || 
+              new Date()
+            );
             
-            // Dias úteis até cada estágio futuro
+            // Se o estágio futuro for Entregue e o atual for Desembaraço, usar 2 dias úteis
             let daysAhead: number;
             if (stage.id === 'entregue' && currentStage.id === 'desembaraco') {
-              daysAhead = 2; // 2 dias úteis após desembaraço
+              daysAhead = 2;
             } else {
-              daysAhead = 3; // 3 dias úteis para próximo estágio
+              daysAhead = (stage.order - currentStageOrder) * 4;
             }
             
-            eventDate = addBusinessDays(baseDate, daysAhead);
+            // Usar addBusinessDays a partir da data do estágio atual
+            data = addBusinessDays(currentStageDate, daysAhead).toISOString();
           }
 
-          // GARANTIR ORDEM CRONOLÓGICA: data atual nunca pode ser anterior à anterior
-          if (previousDate && eventDate < previousDate) {
-            eventDate = new Date(previousDate.getTime() + 24 * 60 * 60 * 1000); // +1 dia
-          }
-
-          previousDate = eventDate;
-
-          timelineEvents.push({
+          return {
             id: `${stage.id}_${index}`,
             tipo: stage.id,
             titulo: stage.title,
-            data: eventDate.toISOString(),
+            data: data,
             status: status,
             detalhes: detalhes
-          });
+          };
         });
 
         console.log('✅ Timeline construída:', {
@@ -244,35 +225,16 @@ export const useSOTimeline = (so: SO) => {
         
         // Fallback: criar timeline básica
         const currentStage = mapStatusToStage(so.statusAtual);
-        let previousDate: Date | null = null;
-        
-        const fallbackEvents = ALL_STAGES.map((stage, index) => {
-          let eventDate: Date;
-          
-          if (stage.order <= currentStage.order) {
-            const baseDate = previousDate || new Date(so.dataOrdem || so.dataUltimaAtualizacao);
-            eventDate = stage.order === 0 ? baseDate : addBusinessDays(baseDate, 2);
-          } else {
-            const baseDate = previousDate || new Date();
-            eventDate = addBusinessDays(baseDate, 3);
-          }
-          
-          // Garantir ordem cronológica
-          if (previousDate && eventDate < previousDate) {
-            eventDate = new Date(previousDate.getTime() + 24 * 60 * 60 * 1000);
-          }
-          
-          previousDate = eventDate;
-          
-          return {
-            id: `${stage.id}_${index}`,
-            tipo: stage.id,
-            titulo: stage.title,
-            data: eventDate.toISOString(),
-            status: (stage.order < currentStage.order ? 'completed' : 
-                     stage.order === currentStage.order ? 'current' : 'upcoming') as 'completed' | 'current' | 'upcoming'
-          };
-        });
+        const fallbackEvents = ALL_STAGES.map((stage, index) => ({
+          id: `${stage.id}_${index}`,
+          tipo: stage.id,
+          titulo: stage.title,
+          data: stage.order <= currentStage.order 
+            ? new Date(Date.now() - (currentStage.order - stage.order) * 3 * 24 * 60 * 60 * 1000).toISOString()
+            : addBusinessDays(new Date(), (stage.order - currentStage.order) * 4).toISOString(),
+          status: (stage.order < currentStage.order ? 'completed' : 
+                   stage.order === currentStage.order ? 'current' : 'upcoming') as 'completed' | 'current' | 'upcoming'
+        }));
         
         setEvents(fallbackEvents);
       } finally {
@@ -281,7 +243,7 @@ export const useSOTimeline = (so: SO) => {
     };
 
     fetchTimeline();
-  }, [so.salesOrder, so.statusAtual, so.dataUltimaAtualizacao, so.dataOrdem, so.dataEnvio]);
+  }, [so.salesOrder, so.statusAtual, so.dataUltimaAtualizacao, so.dataOrdem]);
 
   return { events, loading };
 };
