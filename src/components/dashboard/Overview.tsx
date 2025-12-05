@@ -35,7 +35,15 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
       .reduce((sum, so) => sum + (so.valorTotal || 0), 0);
     
     // Taxa de entrega no prazo - cálculo real baseado em SLA de 10 dias úteis
-    const deliveredSOs = allSOs.filter(so => so.isDelivered);
+    // Filtrar para últimos 30 dias (consistente com Analytics)
+    const cutoffDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    
+    const recentSOs = allSOs.filter(so => {
+      const createdAt = so.createdAt ? new Date(so.createdAt) : null;
+      return createdAt && createdAt >= cutoffDate;
+    });
+    
+    const deliveredSOs = recentSOs.filter(so => so.isDelivered);
     let onTimeCount = 0;
     let totalWithShipDate = 0;
     
