@@ -1,19 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Função para adicionar dias úteis a uma data
-const addBusinessDays = (date: Date, days: number): Date => {
+// Previsão de entrega: 15 dias corridos após saída da fábrica
+const DELIVERY_FORECAST_DAYS = 15;
+
+// Função para adicionar dias corridos a uma data
+const addCalendarDays = (date: Date, days: number): Date => {
   const result = new Date(date);
-  let addedDays = 0;
-  
-  while (addedDays < days) {
-    result.setDate(result.getDate() + 1);
-    // 0 = Domingo, 6 = Sábado
-    if (result.getDay() !== 0 && result.getDay() !== 6) {
-      addedDays++;
-    }
-  }
-  
+  result.setDate(result.getDate() + days);
   return result;
 };
 
@@ -243,24 +237,36 @@ export const useSOTimeline = (so: SO) => {
             // Estágio futuro
             status = 'upcoming';
             
-            // Usar a data do estágio atual como referência
-            const currentStageDate = new Date(
-              completedStagesMap.get(currentStage.id)?.date || 
-              so.dataUltimaAtualizacao || 
-              so.dataOrdem || 
-              new Date()
-            );
-            
-            // Se o estágio futuro for Entregue e o atual for Desembaraço, usar 2 dias úteis
-            let daysAhead: number;
-            if (stage.id === 'entregue' && currentStage.id === 'desembaraco') {
-              daysAhead = 2;
+            // Se temos dataEnvio, calcular previsão baseada em 15 dias corridos
+            if (so.dataEnvio) {
+              const envioDate = new Date(so.dataEnvio);
+              const deliveryDate = addCalendarDays(envioDate, DELIVERY_FORECAST_DAYS);
+              
+              // Calcular dias proporcionais para cada estágio futuro
+              const stagesRemaining = 7 - currentStageOrder; // Até entrega
+              const daysPerStage = DELIVERY_FORECAST_DAYS / stagesRemaining;
+              const daysAhead = Math.round((stage.order - currentStageOrder) * daysPerStage);
+              
+              const currentStageDate = new Date(
+                completedStagesMap.get(currentStage.id)?.date || 
+                so.dataUltimaAtualizacao || 
+                so.dataOrdem || 
+                new Date()
+              );
+              
+              data = addCalendarDays(currentStageDate, daysAhead).toISOString();
             } else {
-              daysAhead = (stage.order - currentStageOrder) * 4;
+              // Fallback: usar cálculo proporcional
+              const currentStageDate = new Date(
+                completedStagesMap.get(currentStage.id)?.date || 
+                so.dataUltimaAtualizacao || 
+                so.dataOrdem || 
+                new Date()
+              );
+              
+              const daysAhead = (stage.order - currentStageOrder) * 3;
+              data = addCalendarDays(currentStageDate, daysAhead).toISOString();
             }
-            
-            // Usar addBusinessDays a partir da data do estágio atual
-            data = addBusinessDays(currentStageDate, daysAhead).toISOString();
           }
 
           return {
@@ -303,14 +309,14 @@ export const useSOTimeline = (so: SO) => {
             } else if (stage.id === 'fedex' && so.dataEnvio) {
               data = so.dataEnvio;
             } else {
-              data = addBusinessDays(baseDate, stage.order * 2).toISOString();
+              data = addCalendarDays(baseDate, stage.order * 2).toISOString();
             }
           } else if (stage.order === currentStage.order) {
             data = so.dataUltimaAtualizacao || so.dataOrdem || new Date().toISOString();
           } else {
-            // Estágios futuros: calcular a partir do estágio atual
+            // Estágios futuros: calcular a partir do estágio atual usando 15 dias corridos
             const currentDate = new Date(so.dataUltimaAtualizacao || so.dataOrdem || Date.now());
-            data = addBusinessDays(currentDate, (stage.order - currentStage.order) * 4).toISOString();
+            data = addCalendarDays(currentDate, (stage.order - currentStage.order) * 3).toISOString();
           }
           
           return {

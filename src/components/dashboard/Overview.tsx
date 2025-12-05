@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Truck, Package, Clock, TrendingUp, TrendingDown, Minus, Plane, AlertCircle, CheckCircle } from 'lucide-react';
 import { StatusDetailDialog } from './StatusDetailDialog';
 import { useSLACalculator } from '@/hooks/useSLACalculator';
-import { calculateBusinessDays } from '@/lib/statusNormalizer';
+import { DELIVERY_SLA_DAYS } from '@/lib/statusNormalizer';
 
 interface OverviewProps {
   data: {
@@ -34,7 +34,7 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
       .filter(so => !so.isDelivered)
       .reduce((sum, so) => sum + (so.valorTotal || 0), 0);
     
-    // Taxa de entrega no prazo - cálculo real baseado em SLA de 10 dias úteis
+    // Taxa de entrega no prazo - cálculo real baseado em SLA de 15 dias corridos
     // Filtrar para últimos 30 dias (consistente com Analytics)
     const cutoffDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     
@@ -53,10 +53,10 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
         totalWithShipDate++;
         const shipDate = new Date(so.dataEnvio);
         const deliveryDate = new Date(so.dataUltimaAtualizacao || Date.now());
-        const businessDays = calculateBusinessDays(shipDate, deliveryDate);
+        const calendarDays = Math.ceil((deliveryDate.getTime() - shipDate.getTime()) / (1000 * 60 * 60 * 24));
         
-        // SLA de 10 dias úteis
-        if (businessDays <= 10) {
+        // SLA de 15 dias corridos
+        if (calendarDays <= DELIVERY_SLA_DAYS) {
           onTimeCount++;
         }
       }
