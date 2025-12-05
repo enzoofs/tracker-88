@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Truck, Package, Clock, TrendingUp, TrendingDown, Minus, Plane, AlertCircle, CheckCircle } from 'lucide-react';
 import { StatusDetailDialog } from './StatusDetailDialog';
 import { useSLACalculator } from '@/hooks/useSLACalculator';
 import { DELIVERY_SLA_DAYS } from '@/lib/statusNormalizer';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OverviewProps {
   data: {
@@ -26,6 +27,79 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogTitle, setDialogTitle] = useState('');
   const [dialogSOs, setDialogSOs] = useState<any[]>([]);
+  const [deliveryRateData, setDeliveryRateData] = useState<{ rate: number; total: number }>({ rate: 0, total: 0 });
+
+  // Buscar taxa de entrega real usando created_at → timestamp de "Entregue" no shipment_history
+  useEffect(() => {
+    const fetchDeliveryRate = async () => {
+      try {
+        // Buscar SOs entregues nos últimos 90 dias com timestamp real de entrega
+        const { data: deliveryData, error } = await supabase
+          .from('envios_processados')
+          .select(`
+            sales_order,
+            created_at,
+            is_delivered
+          `)
+          .eq('is_delivered', true)
+          .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
+
+        if (error) throw error;
+
+        if (!deliveryData || deliveryData.length === 0) {
+          setDeliveryRateData({ rate: 0, total: 0 });
+          return;
+        }
+
+        // Buscar timestamps de entrega do shipment_history
+        const salesOrders = deliveryData.map(d => d.sales_order);
+        const { data: historyData, error: historyError } = await supabase
+          .from('shipment_history')
+          .select('sales_order, timestamp')
+          .in('sales_order', salesOrders)
+          .ilike('status', '%entregue%');
+
+        if (historyError) throw historyError;
+
+        // Criar mapa de SO → timestamp de entrega
+        const deliveryTimestamps: Record<string, Date> = {};
+        historyData?.forEach(h => {
+          const ts = new Date(h.timestamp);
+          // Pegar o timestamp mais recente de entrega para cada SO
+          if (!deliveryTimestamps[h.sales_order] || ts > deliveryTimestamps[h.sales_order]) {
+            deliveryTimestamps[h.sales_order] = ts;
+          }
+        });
+
+        // Calcular taxa de entrega no prazo
+        let onTimeCount = 0;
+        let totalWithDeliveryDate = 0;
+
+        deliveryData.forEach(so => {
+          const deliveryTs = deliveryTimestamps[so.sales_order];
+          if (deliveryTs && so.created_at) {
+            totalWithDeliveryDate++;
+            const createdAt = new Date(so.created_at);
+            const calendarDays = Math.ceil((deliveryTs.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (calendarDays <= DELIVERY_SLA_DAYS) {
+              onTimeCount++;
+            }
+          }
+        });
+
+        const rate = totalWithDeliveryDate > 0 
+          ? Math.round((onTimeCount / totalWithDeliveryDate) * 100) 
+          : 0;
+
+        setDeliveryRateData({ rate, total: totalWithDeliveryDate });
+      } catch (error) {
+        console.error('Error fetching delivery rate:', error);
+      }
+    };
+
+    fetchDeliveryRate();
+  }, [allSOs]);
 
   // Calculate real metrics from allSOs data
   const metrics = useMemo(() => {
@@ -33,38 +107,6 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
     const totalValue = allSOs
       .filter(so => !so.isDelivered)
       .reduce((sum, so) => sum + (so.valorTotal || 0), 0);
-    
-    // Taxa de entrega no prazo - cálculo real baseado em SLA de 15 dias corridos
-    // Filtrar para últimos 30 dias (consistente com Analytics)
-    const cutoffDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    
-    const recentSOs = allSOs.filter(so => {
-      const createdAt = so.createdAt ? new Date(so.createdAt) : null;
-      return createdAt && createdAt >= cutoffDate;
-    });
-    
-    const deliveredSOs = recentSOs.filter(so => so.isDelivered);
-    let onTimeCount = 0;
-    let totalWithShipDate = 0;
-    
-    deliveredSOs.forEach(so => {
-      // Só conta se tiver data de envio para calcular o SLA
-      if (so.dataEnvio) {
-        totalWithShipDate++;
-        const shipDate = new Date(so.dataEnvio);
-        const deliveryDate = new Date(so.dataUltimaAtualizacao || Date.now());
-        const calendarDays = Math.ceil((deliveryDate.getTime() - shipDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        // SLA de 15 dias corridos
-        if (calendarDays <= DELIVERY_SLA_DAYS) {
-          onTimeCount++;
-        }
-      }
-    });
-    
-    const taxaEntregaNoPrazo = totalWithShipDate > 0 
-      ? Math.round((onTimeCount / totalWithShipDate) * 100) 
-      : 0;
     
     // Calculate month-over-month trend for active SOs
     const now = new Date();
@@ -88,12 +130,10 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
     
     return {
       totalValue,
-      taxaEntregaNoPrazo,
-      percentChange,
-      currentMonthSOs,
-      previousMonthSOs
+      taxaEntregaNoPrazo: deliveryRateData.rate,
+      percentChange
     };
-  }, [allSOs]);
+  }, [allSOs, deliveryRateData]);
   
   const handleCardClick = (category: 'producao' | 'importacao' | 'atrasadas') => {
     const filtered = allSOs.filter(so => {
