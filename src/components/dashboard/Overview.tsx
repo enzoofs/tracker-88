@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Truck, Package, Clock, TrendingUp, TrendingDown, Minus, Plane, AlertCircle, CheckCircle } from 'lucide-react';
 import { StatusDetailDialog } from './StatusDetailDialog';
 import { useSLACalculator } from '@/hooks/useSLACalculator';
+import { calculateBusinessDays } from '@/lib/statusNormalizer';
 
 interface OverviewProps {
   data: {
@@ -33,14 +34,29 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
       .filter(so => !so.isDelivered)
       .reduce((sum, so) => sum + (so.valorTotal || 0), 0);
     
-    // Taxa de entrega no prazo - calculate properly
+    // Taxa de entrega no prazo - cálculo real baseado em SLA de 10 dias úteis
     const deliveredSOs = allSOs.filter(so => so.isDelivered);
-    const totalDelivered = deliveredSOs.length;
+    let onTimeCount = 0;
+    let totalWithShipDate = 0;
     
-    // For delivered SOs, we consider on-time if they were delivered
-    // This is a simplified calculation since we don't have exact delivery dates for all
-    const onTimeCount = deliveredSOs.length; // All delivered are considered on-time for now
-    const taxaEntregaNoPrazo = totalDelivered > 0 ? Math.round((onTimeCount / totalDelivered) * 100) : 0;
+    deliveredSOs.forEach(so => {
+      // Só conta se tiver data de envio para calcular o SLA
+      if (so.dataEnvio) {
+        totalWithShipDate++;
+        const shipDate = new Date(so.dataEnvio);
+        const deliveryDate = new Date(so.dataUltimaAtualizacao || Date.now());
+        const businessDays = calculateBusinessDays(shipDate, deliveryDate);
+        
+        // SLA de 10 dias úteis
+        if (businessDays <= 10) {
+          onTimeCount++;
+        }
+      }
+    });
+    
+    const taxaEntregaNoPrazo = totalWithShipDate > 0 
+      ? Math.round((onTimeCount / totalWithShipDate) * 100) 
+      : 0;
     
     // Calculate month-over-month trend for active SOs
     const now = new Date();
