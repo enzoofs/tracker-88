@@ -48,22 +48,29 @@ export function translateFedExStatus(status: string): string {
 // Mapear status FedEx para estágios lógicos do sistema
 // Foca nos 3 gargalos críticos: Em Produção, No Armazém, Desembaraço
 export function mapToLogicalStage(status: string, location: string): string {
-  const statusLower = status.toLowerCase();
+  const statusLower = (status || '').toLowerCase();
+  const locationLower = (location || '').toLowerCase();
   
   // GARGALO 1: Em Produção
   if (statusLower.includes('produção') || statusLower.includes('producao') || statusLower.includes('production')) {
     return 'Em Produção';
   }
   
-  // GARGALO 2: No Armazém
-  if (statusLower.includes('armazém') || statusLower.includes('armazem') || statusLower.includes('warehouse')) {
+  // GARGALO 2: No Armazém (inclui Miami warehouse)
+  if (
+    statusLower.includes('armazém') || 
+    statusLower.includes('armazem') || 
+    statusLower.includes('warehouse') ||
+    locationLower.includes('miami')
+  ) {
     return 'No Armazém';
   }
   
-  // GARGALO 3: Desembaraço
+  // GARGALO 3: Desembaraço (unificar todas as variações)
   if (
     statusLower.includes('desembaraço') || 
     statusLower.includes('desembaraco') || 
+    statusLower.includes('em desembaraço') ||
     statusLower.includes('clearance') || 
     statusLower.includes('customs') || 
     statusLower.includes('alfândega') ||
@@ -77,6 +84,33 @@ export function mapToLogicalStage(status: string, location: string): string {
     return 'Entregue';
   }
   
+  // Status FedEx que indicam trânsito (não são gargalos)
+  if (
+    statusLower.includes('departed') ||
+    statusLower.includes('arrived') ||
+    statusLower.includes('in transit') ||
+    statusLower.includes('em trânsito') ||
+    statusLower.includes('left') ||
+    statusLower.includes('saiu') ||
+    statusLower.includes('fedex') ||
+    statusLower.includes('enviado') ||
+    statusLower.includes('shipped')
+  ) {
+    return 'Em Trânsito';
+  }
+  
   // Qualquer outro status = ignorar (não registrar no histórico)
   return 'Atualizado';
+}
+
+// Normalizar status para garantir consistência
+export function normalizeStatusForDB(status: string): string {
+  const mapped = mapToLogicalStage(status, '');
+  
+  // Se não for um estágio reconhecido, manter o original
+  if (mapped === 'Atualizado') {
+    return status;
+  }
+  
+  return mapped;
 }

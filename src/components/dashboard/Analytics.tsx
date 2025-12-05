@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell
+  BarChart, Bar
 } from 'recharts';
 import {
   TrendingUp,
@@ -11,11 +11,10 @@ import {
   Users,
   Package,
   AlertTriangle,
-  CheckCircle,
-  Truck,
-  Calendar
+  CheckCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeStatus, calculateBusinessDays, STAGE_SLAS } from '@/lib/statusNormalizer';
 
 interface AnalyticsData {
   deliveryTrend: Array<{ date: string; deliveries: number; onTime: number; delayed: number; }>;
@@ -27,7 +26,11 @@ interface AnalyticsData {
     criticalDelays: number;
   };
   topClients: Array<{ cliente: string; volume: number; value: number; }>;
-  statusDistribution: Array<{ name: string; value: number; color: string; }>;
+  monthComparison: {
+    currentMonth: number;
+    previousMonth: number;
+    percentChange: number;
+  };
 }
 
 const Analytics: React.FC = () => {
@@ -41,7 +44,7 @@ const Analytics: React.FC = () => {
       criticalDelays: 0
     },
     topClients: [],
-    statusDistribution: []
+    monthComparison: { currentMonth: 0, previousMonth: 0, percentChange: 0 }
   });
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30d');
@@ -50,129 +53,213 @@ const Analytics: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load envios data for analytics
-      const { data: enviosData, error } = await supabase
+      // Load envios data
+      const { data: enviosData, error: enviosError } = await supabase
         .from('envios_processados')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (enviosError) throw enviosError;
 
-      // Generate delivery trend (last 30 days)
-      const deliveryTrend = Array.from({ length: 30 }, (_, i) => {
-        const date = new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000);
-        const deliveries = Math.floor(Math.random() * 15) + 5;
-        const onTime = Math.floor(deliveries * (0.7 + Math.random() * 0.2));
-        const delayed = deliveries - onTime;
-        
-        return {
-          date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-          deliveries,
-          onTime,
-          delayed
-        };
-      });
+      // Load shipment history for real delivery data
+      const { data: historyData, error: historyError } = await supabase
+        .from('shipment_history')
+        .select('*')
+        .order('timestamp', { ascending: true });
 
-      // Calculate average delivery time by client
-      const clientMap = new Map<string, { totalDays: number; count: number; value: number }>();
-      enviosData?.forEach(envio => {
-        const cliente = envio.cliente;
-        const days = Math.floor(Math.random() * 30) + 15; // Random delivery time
-        const value = Number(envio.valor_total) || Math.random() * 50000;
-        
-        if (clientMap.has(cliente)) {
-          const existing = clientMap.get(cliente)!;
-          existing.totalDays += days;
-          existing.count += 1;
-          existing.value += value;
-        } else {
-          clientMap.set(cliente, { totalDays: days, count: 1, value });
-        }
-      });
+      if (historyError) throw historyError;
 
-      const averageDeliveryTime = Array.from(clientMap.entries())
-        .map(([cliente, data]) => ({
-          cliente,
-          avgDays: Math.round(data.totalDays / data.count),
-          volume: data.count
-        }))
-        .sort((a, b) => b.volume - a.volume)
-        .slice(0, 10);
-
-      // Calculate performance metrics
-      const totalDeliveries = enviosData?.length || 0;
-      const onTimeRate = 75 + Math.random() * 15; // 75-90%
-      const averageDeliveryDays = 7; // Tempo médio fixo
-      
-      // Calculate critical delays using real data (orders overdue by >2 days beyond SLA)
-      const STAGE_SLAS: Record<string, number> = {
-        'Em Produção': 15,
-        'Enviado': 2,
-        'No Armazém': 3,
-        'Voo Internacional': 2,
-        'Desembaraço': 3,
-        'Entregue': 1
+      // Calculate time range filter
+      const rangeMap: Record<string, number> = {
+        '7d': 7,
+        '30d': 30,
+        '90d': 90,
+        '1y': 365
       };
+      const daysToFilter = rangeMap[timeRange] || 30;
+      const cutoffDate = new Date(Date.now() - daysToFilter * 24 * 60 * 60 * 1000);
+
+      // Filter data by time range
+      const filteredEnvios = enviosData?.filter(e => 
+        new Date(e.created_at || '') >= cutoffDate
+      ) || [];
+
+      // === DELIVERY TREND (Real Data) ===
+      // Group deliveries by date from shipment_history
+      const deliveryByDate = new Map<string, { total: number; onTime: number; delayed: number }>();
       
-      let criticalDelays = 0;
-      enviosData?.forEach(envio => {
-        if (envio.is_delivered) return;
-        
-        const status = envio.status_atual;
-        const sla = STAGE_SLAS[status];
-        
-        if (sla) {
-          const startDate = envio.data_ordem || envio.data_ultima_atualizacao || envio.created_at;
-          const daysSinceUpdate = (Date.now() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24);
-          
-          // Critical if more than 2 days overdue
-          if (daysSinceUpdate > sla + 2) {
-            criticalDelays++;
+      // Initialize days in range
+      for (let i = daysToFilter - 1; i >= 0; i--) {
+        const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+        const key = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        deliveryByDate.set(key, { total: 0, onTime: 0, delayed: 0 });
+      }
+
+      // Count actual deliveries from shipment_history
+      const deliveredSOs = new Set<string>();
+      historyData?.forEach(h => {
+        if (normalizeStatus(h.status) === 'Entregue' && !deliveredSOs.has(h.sales_order)) {
+          deliveredSOs.add(h.sales_order);
+          const date = new Date(h.timestamp || h.created_at || '');
+          if (date >= cutoffDate) {
+            const key = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            if (deliveryByDate.has(key)) {
+              const current = deliveryByDate.get(key)!;
+              current.total++;
+              
+              // Check if delivered on time (within 10 business days of ship date)
+              const envio = enviosData?.find(e => e.sales_order === h.sales_order);
+              if (envio?.data_envio) {
+                const businessDays = calculateBusinessDays(new Date(envio.data_envio), date);
+                if (businessDays <= 10) {
+                  current.onTime++;
+                } else {
+                  current.delayed++;
+                }
+              } else {
+                current.onTime++; // Assume on time if no ship date
+              }
+            }
           }
         }
       });
 
-      // Top clients by volume
-      const topClients = Array.from(clientMap.entries())
+      const deliveryTrend = Array.from(deliveryByDate.entries()).map(([date, data]) => ({
+        date,
+        deliveries: data.total,
+        onTime: data.onTime,
+        delayed: data.delayed
+      }));
+
+      // === AVERAGE DELIVERY TIME BY CLIENT (Real Data) ===
+      const clientDeliveryTimes = new Map<string, { totalDays: number; count: number; volume: number; value: number }>();
+      
+      filteredEnvios.forEach(envio => {
+        const cliente = envio.cliente;
+        if (!clientDeliveryTimes.has(cliente)) {
+          clientDeliveryTimes.set(cliente, { totalDays: 0, count: 0, volume: 0, value: 0 });
+        }
+        const data = clientDeliveryTimes.get(cliente)!;
+        data.volume++;
+        data.value += Number(envio.valor_total) || 0;
+        
+        // Calculate actual delivery time if delivered
+        if (envio.is_delivered && envio.data_envio) {
+          const shipDate = new Date(envio.data_envio);
+          const deliveryDate = new Date(envio.data_ultima_atualizacao || Date.now());
+          const days = Math.ceil((deliveryDate.getTime() - shipDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (days > 0 && days < 100) { // Sanity check
+            data.totalDays += days;
+            data.count++;
+          }
+        }
+      });
+
+      const averageDeliveryTime = Array.from(clientDeliveryTimes.entries())
         .map(([cliente, data]) => ({
           cliente,
-          volume: data.count,
+          avgDays: data.count > 0 ? Math.round(data.totalDays / data.count) : 0,
+          volume: data.volume
+        }))
+        .filter(c => c.avgDays > 0)
+        .sort((a, b) => b.volume - a.volume)
+        .slice(0, 10);
+
+      // === PERFORMANCE METRICS (Real Data) ===
+      const totalDeliveries = filteredEnvios.length;
+      const deliveredOrders = filteredEnvios.filter(e => e.is_delivered);
+      
+      // Calculate on-time rate based on 10 business day SLA
+      let onTimeCount = 0;
+      let totalDelivered = 0;
+      let totalDeliveryDays = 0;
+      
+      deliveredOrders.forEach(envio => {
+        if (envio.data_envio) {
+          totalDelivered++;
+          const shipDate = new Date(envio.data_envio);
+          const deliveryDate = new Date(envio.data_ultima_atualizacao || Date.now());
+          const businessDays = calculateBusinessDays(shipDate, deliveryDate);
+          
+          if (businessDays <= 10) {
+            onTimeCount++;
+          }
+          
+          const calendarDays = Math.ceil((deliveryDate.getTime() - shipDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (calendarDays > 0 && calendarDays < 100) {
+            totalDeliveryDays += calendarDays;
+          }
+        }
+      });
+
+      const onTimeRate = totalDelivered > 0 ? Math.round((onTimeCount / totalDelivered) * 100) : 0;
+      const averageDeliveryDays = totalDelivered > 0 ? Math.round(totalDeliveryDays / totalDelivered) : 0;
+
+      // Calculate critical delays (orders exceeding SLA by >50%)
+      let criticalDelays = 0;
+      filteredEnvios.forEach(envio => {
+        if (envio.is_delivered) return;
+        
+        const status = normalizeStatus(envio.status_atual);
+        const sla = STAGE_SLAS[status];
+        
+        if (sla && sla > 0) {
+          const startDate = envio.data_ultima_atualizacao || envio.created_at;
+          if (startDate) {
+            const daysInStage = calculateBusinessDays(new Date(startDate), new Date());
+            
+            // Critical if more than 50% over SLA
+            if (daysInStage > sla * 1.5) {
+              criticalDelays++;
+            }
+          }
+        }
+      });
+
+      // === TOP CLIENTS (Real Data) ===
+      const topClients = Array.from(clientDeliveryTimes.entries())
+        .map(([cliente, data]) => ({
+          cliente,
+          volume: data.volume,
           value: data.value
         }))
         .sort((a, b) => b.volume - a.volume)
         .slice(0, 5);
 
-      // Status distribution
-      const statusCounts = new Map<string, number>();
-      enviosData?.forEach(envio => {
-        const status = envio.status_cliente;
-        statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
-      });
+      // === MONTH COMPARISON (Real Data) ===
+      const now = new Date();
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
-      const statusColors = {
-        'Em Produção': '#3b82f6',
-        'Em Importação': '#f59e0b',
-        'Em Trânsito': '#10b981',
-        'Entregue': '#06b6d4'
-      };
+      const currentMonthDeliveries = filteredEnvios.filter(e => 
+        new Date(e.created_at || '') >= currentMonthStart
+      ).length;
 
-      const statusDistribution = Array.from(statusCounts.entries()).map(([name, value]) => ({
-        name,
-        value,
-        color: statusColors[name as keyof typeof statusColors] || '#6b7280'
-      }));
+      const previousMonthDeliveries = enviosData?.filter(e => {
+        const date = new Date(e.created_at || '');
+        return date >= previousMonthStart && date <= previousMonthEnd;
+      }).length || 0;
+
+      const percentChange = previousMonthDeliveries > 0 
+        ? Math.round(((currentMonthDeliveries - previousMonthDeliveries) / previousMonthDeliveries) * 100)
+        : 0;
 
       setData({
         deliveryTrend,
         averageDeliveryTime,
         performanceMetrics: {
-          onTimeRate: Math.round(onTimeRate),
-          averageDeliveryDays: Math.round(averageDeliveryDays),
+          onTimeRate,
+          averageDeliveryDays,
           totalDeliveries,
           criticalDelays
         },
         topClients,
-        statusDistribution
+        monthComparison: {
+          currentMonth: currentMonthDeliveries,
+          previousMonth: previousMonthDeliveries,
+          percentChange
+        }
       });
 
     } catch (error) {
@@ -237,7 +324,7 @@ const Analytics: React.FC = () => {
               {data.performanceMetrics.onTimeRate}%
             </div>
             <p className="text-xs text-muted-foreground">
-              +2.1% vs mês anterior
+              Baseado no SLA de 10 dias úteis
             </p>
           </CardContent>
         </Card>
@@ -249,17 +336,17 @@ const Analytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {data.performanceMetrics.averageDeliveryDays} dias
+              {data.performanceMetrics.averageDeliveryDays || '—'} dias
             </div>
             <p className="text-xs text-muted-foreground">
-              -1.5 dias vs mês anterior
+              Dias corridos após envio
             </p>
           </CardContent>
         </Card>
 
         <Card className="shadow-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Entregas</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de Pedidos</CardTitle>
             <Package className="h-4 w-4 text-status-shipping" />
           </CardHeader>
           <CardContent>
@@ -267,7 +354,7 @@ const Analytics: React.FC = () => {
               {data.performanceMetrics.totalDeliveries}
             </div>
             <p className="text-xs text-muted-foreground">
-              +12.3% vs mês anterior
+              {data.monthComparison.percentChange >= 0 ? '+' : ''}{data.monthComparison.percentChange}% vs mês anterior
             </p>
           </CardContent>
         </Card>
@@ -282,7 +369,7 @@ const Analytics: React.FC = () => {
               {data.performanceMetrics.criticalDelays}
             </div>
             <p className="text-xs text-muted-foreground">
-              -5 vs mês anterior
+              Pedidos acima de 150% do SLA
             </p>
           </CardContent>
         </Card>
@@ -359,30 +446,37 @@ const Analytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {data.averageDeliveryTime.slice(0, 5).map((client, index) => (
-                <div key={client.cliente} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
-                      {index + 1}
+              {data.averageDeliveryTime.length > 0 ? (
+                data.averageDeliveryTime.slice(0, 5).map((client, index) => (
+                  <div key={client.cliente} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{client.cliente}</p>
+                        <p className="text-xs text-muted-foreground">{client.volume} envios</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-sm">{client.cliente}</p>
-                      <p className="text-xs text-muted-foreground">{client.volume} envios</p>
+                    <div className="text-right">
+                      <div className="font-bold text-sm">{client.avgDays} dias</div>
+                      <div className={`text-xs ${client.avgDays <= 10 ? 'text-status-delivered' : client.avgDays <= 14 ? 'text-status-production' : 'text-destructive'}`}>
+                        {client.avgDays <= 10 ? 'No prazo' : client.avgDays <= 14 ? 'Próximo do SLA' : 'Acima do SLA'}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-bold text-sm">{client.avgDays} dias</div>
-                    <div className={`text-xs ${client.avgDays <= 25 ? 'text-status-delivered' : client.avgDays <= 30 ? 'text-status-production' : 'text-destructive'}`}>
-                      {client.avgDays <= 25 ? 'Excelente' : client.avgDays <= 30 ? 'Bom' : 'Atenção'}
-                    </div>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>Dados insuficientes para calcular tempo médio</p>
+                  <p className="text-xs mt-1">Necessário ter entregas concluídas com data de envio</p>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
-
     </div>
   );
 };
