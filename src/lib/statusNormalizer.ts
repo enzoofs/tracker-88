@@ -155,7 +155,17 @@ export function calculateBusinessDays(startDate: Date, endDate: Date): number {
 }
 
 /**
- * Verifica se um pedido está atrasado baseado no SLA de 10 dias úteis
+ * Calcula dias corridos entre duas datas
+ */
+export function calculateCalendarDays(startDate: Date, endDate: Date): number {
+  return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+// SLA de entrega: 15 dias corridos após saída da fábrica
+export const DELIVERY_SLA_DAYS = 15;
+
+/**
+ * Verifica se um pedido está atrasado baseado no SLA de 15 dias corridos
  */
 export function isOverdueBySLA(dataEnvio: string | null, isDelivered: boolean): boolean {
   if (isDelivered) return false;
@@ -163,7 +173,7 @@ export function isOverdueBySLA(dataEnvio: string | null, isDelivered: boolean): 
   
   const shipDate = new Date(dataEnvio);
   const today = new Date();
-  const businessDays = calculateBusinessDays(shipDate, today);
+  const calendarDays = calculateCalendarDays(shipDate, today);
   
-  return businessDays > 10; // SLA de 10 dias úteis
+  return calendarDays > DELIVERY_SLA_DAYS;
 }

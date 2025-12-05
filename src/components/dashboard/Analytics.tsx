@@ -14,7 +14,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeStatus, calculateBusinessDays, STAGE_SLAS } from '@/lib/statusNormalizer';
+import { normalizeStatus, calculateBusinessDays, STAGE_SLAS, DELIVERY_SLA_DAYS } from '@/lib/statusNormalizer';
 
 interface AnalyticsData {
   deliveryTrend: Array<{ date: string; deliveries: number; onTime: number; delayed: number; }>;
@@ -107,11 +107,11 @@ const Analytics: React.FC = () => {
               const current = deliveryByDate.get(key)!;
               current.total++;
               
-              // Check if delivered on time (within 10 business days of ship date)
+              // Check if delivered on time (within 15 calendar days of ship date)
               const envio = enviosData?.find(e => e.sales_order === h.sales_order);
               if (envio?.data_envio) {
-                const businessDays = calculateBusinessDays(new Date(envio.data_envio), date);
-                if (businessDays <= 10) {
+                const calendarDays = Math.ceil((date.getTime() - new Date(envio.data_envio).getTime()) / (1000 * 60 * 60 * 24));
+                if (calendarDays <= DELIVERY_SLA_DAYS) {
                   current.onTime++;
                 } else {
                   current.delayed++;
@@ -169,7 +169,7 @@ const Analytics: React.FC = () => {
       const totalDeliveries = filteredEnvios.length;
       const deliveredOrders = filteredEnvios.filter(e => e.is_delivered);
       
-      // Calculate on-time rate based on 10 business day SLA
+      // Calculate on-time rate based on 15 calendar day SLA
       let onTimeCount = 0;
       let totalDelivered = 0;
       let totalDeliveryDays = 0;
@@ -179,13 +179,12 @@ const Analytics: React.FC = () => {
           totalDelivered++;
           const shipDate = new Date(envio.data_envio);
           const deliveryDate = new Date(envio.data_ultima_atualizacao || Date.now());
-          const businessDays = calculateBusinessDays(shipDate, deliveryDate);
+          const calendarDays = Math.ceil((deliveryDate.getTime() - shipDate.getTime()) / (1000 * 60 * 60 * 24));
           
-          if (businessDays <= 10) {
+          if (calendarDays <= DELIVERY_SLA_DAYS) {
             onTimeCount++;
           }
           
-          const calendarDays = Math.ceil((deliveryDate.getTime() - shipDate.getTime()) / (1000 * 60 * 60 * 24));
           if (calendarDays > 0 && calendarDays < 100) {
             totalDeliveryDays += calendarDays;
           }
@@ -324,7 +323,7 @@ const Analytics: React.FC = () => {
               {data.performanceMetrics.onTimeRate}%
             </div>
             <p className="text-xs text-muted-foreground">
-              Baseado no SLA de 10 dias úteis
+              Baseado no SLA de 15 dias corridos
             </p>
           </CardContent>
         </Card>
@@ -460,8 +459,8 @@ const Analytics: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <div className="font-bold text-sm">{client.avgDays} dias</div>
-                      <div className={`text-xs ${client.avgDays <= 10 ? 'text-status-delivered' : client.avgDays <= 14 ? 'text-status-production' : 'text-destructive'}`}>
-                        {client.avgDays <= 10 ? 'No prazo' : client.avgDays <= 14 ? 'Próximo do SLA' : 'Acima do SLA'}
+                      <div className={`text-xs ${client.avgDays <= 15 ? 'text-status-delivered' : client.avgDays <= 18 ? 'text-status-production' : 'text-destructive'}`}>
+                        {client.avgDays <= 15 ? 'No prazo' : client.avgDays <= 18 ? 'Próximo do SLA' : 'Acima do SLA'}
                       </div>
                     </div>
                   </div>
