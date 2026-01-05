@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut, User, Bell, Plane, Box, Zap, Atom, Microscope, FileSpreadsheet, Moon, Sun } from 'lucide-react';
+import { BarChart3, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut, User, Bell, Plane, Box, Zap, Atom, Microscope, FileSpreadsheet, Moon, Sun, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +20,7 @@ import Charts from './Charts';
 import Reports from './Reports';
 import CargoCard from './CargoCard';
 import ParticleBackground from '../ui/ParticleBackground';
+import BulkCargoUpload from './BulkCargoUpload';
 interface DashboardData {
   overview: {
     activeSOs: number;
@@ -100,6 +101,7 @@ const LogisticsDashboard: React.FC = () => {
   const [showDeliveredCargas, setShowDeliveredCargas] = useState(false);
   const [filteredCargas, setFilteredCargas] = useState<any[]>([]);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const {
     toast
   } = useToast();
@@ -707,9 +709,20 @@ const LogisticsDashboard: React.FC = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold">Cargas Consolidadas</h2>
-                <Badge className="bg-primary/10 text-primary">
-                  {filteredCargas.length} cargas ativas
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={() => setShowBulkUpload(true)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 rounded-xl"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Importar Planilha
+                  </Button>
+                  <Badge className="bg-primary/10 text-primary">
+                    {filteredCargas.length} cargas ativas
+                  </Badge>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCargas.map((carga) => (
@@ -747,6 +760,13 @@ const LogisticsDashboard: React.FC = () => {
 
       {/* Notification Center */}
       <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} unreadCount={unreadNotifications} onCountUpdate={setUnreadNotifications} />
+
+      {/* Bulk Cargo Upload Modal */}
+      <BulkCargoUpload 
+        isOpen={showBulkUpload} 
+        onClose={() => setShowBulkUpload(false)} 
+        onSuccess={loadDashboardData}
+      />
 
       {/* Loading Overlay with Modern Design */}
       {loading && <div className="fixed inset-0 bg-background/80 backdrop-blur-lg z-40 flex items-center justify-center">
