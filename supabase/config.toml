@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.cleanup-auth-attempts]
 verify_jwt = false
+
+[functions.bulk-update-cargas]
+verify_jwt = false
