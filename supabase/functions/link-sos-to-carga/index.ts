@@ -140,7 +140,7 @@ serve(async (req) => {
       .from('envios_processados')
       .update({
         status_atual: 'No Armazém',
-        status_cliente: 'Em Importacao',
+        status_cliente: 'No Armazém',
         is_at_warehouse: true,
         ultima_localizacao: carga.origem || 'Armazem'
       })

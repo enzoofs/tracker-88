@@ -57,7 +57,7 @@ export const useSOTimeline = (so: SO) => {
       return { id: 'chegada_brasil', title: 'Chegada no Brasil', order: 5 };
     }
     if (statusLower.includes('desembaraço') || statusLower.includes('desembaraco')) {
-      return { id: 'desembaraco', title: 'Desembaraço', order: 6 };
+      return { id: 'desembaraco', title: 'Em Desembaraço', order: 6 };
     }
     if (statusLower.includes('entregue') || statusLower.includes('destino')) {
       return { id: 'entregue', title: 'Entregue', order: 7 };
@@ -74,7 +74,7 @@ export const useSOTimeline = (so: SO) => {
     { id: 'embarque_agendado', title: 'Embarque Agendado', order: 3 },
     { id: 'embarque_confirmado', title: 'Embarque Confirmado', order: 4 },
     { id: 'chegada_brasil', title: 'Chegada no Brasil', order: 5 },
-    { id: 'desembaraco', title: 'Desembaraço', order: 6 },
+    { id: 'desembaraco', title: 'Em Desembaraço', order: 6 },
     { id: 'entregue', title: 'Entregue', order: 7 }
   ];
 

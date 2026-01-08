@@ -21,13 +21,13 @@ const STATUS_NORMALIZATION_MAP: Record<string, string> = {
   'Enviado': 'Em Trânsito',
   'Shipped': 'Em Trânsito',
   
-  // Desembaraço variations - unificar
-  'Em Desembaraço': 'Desembaraço',
-  'In clearance': 'Desembaraço',
-  'Customs cleared': 'Desembaraço',
-  'Liberado pela Alfândega': 'Desembaraço',
-  'Package available for clearance': 'Desembaraço',
-  'Pacote Disponível para Desembaraço': 'Desembaraço',
+  // Desembaraço variations - unificar para "Em Desembaraço"
+  'Desembaraço': 'Em Desembaraço',
+  'In clearance': 'Em Desembaraço',
+  'Customs cleared': 'Em Desembaraço',
+  'Liberado pela Alfândega': 'Em Desembaraço',
+  'Package available for clearance': 'Em Desembaraço',
+  'Pacote Disponível para Desembaraço': 'Em Desembaraço',
   
   // Armazém variations
   'No Armazem': 'No Armazém',
@@ -50,28 +50,24 @@ const STATUS_NORMALIZATION_MAP: Record<string, string> = {
   'Aguardando Embarque': 'Aguardando Embarque',
   'Waiting for shipping': 'Aguardando Embarque',
   
-  // Importação
-  'Em Importação': 'Em Importação',
-  'In Import': 'Em Importação',
 };
 
 // Estágios válidos do sistema (3 gargalos críticos + outros)
 export const VALID_STAGES = [
   'Em Produção',      // GARGALO 1
   'No Armazém',       // GARGALO 2
-  'Desembaraço',      // GARGALO 3
+  'Em Desembaraço',   // GARGALO 3
   'Em Trânsito',
   'Entregue',
   'Em Consolidação',
   'Aguardando Embarque',
-  'Em Importação',
 ];
 
 // SLAs por estágio em dias úteis (baseado na regra de 10 dias úteis total)
 export const STAGE_SLAS: Record<string, number> = {
   'Em Produção': 5,      // Máximo 5 dias úteis em produção
   'No Armazém': 2,       // Máximo 2 dias úteis no armazém
-  'Desembaraço': 2,      // Máximo 2 dias úteis em desembaraço
+  'Em Desembaraço': 2,   // Máximo 2 dias úteis em desembaraço
   'Em Trânsito': 3,      // Máximo 3 dias em trânsito internacional
   'Entregue': 0,         // N/A
 };
@@ -105,7 +101,7 @@ export function normalizeStatus(status: string | null | undefined): string {
     return 'No Armazém';
   }
   if (statusLower.includes('desembaraço') || statusLower.includes('desembaraco') || statusLower.includes('clearance') || statusLower.includes('customs') || statusLower.includes('alfândega')) {
-    return 'Desembaraço';
+    return 'Em Desembaraço';
   }
   if (statusLower.includes('trânsito') || statusLower.includes('transito') || statusLower.includes('transit') || statusLower.includes('fedex')) {
     return 'Em Trânsito';
@@ -119,9 +115,6 @@ export function normalizeStatus(status: string | null | undefined): string {
   if (statusLower.includes('embarque')) {
     return 'Aguardando Embarque';
   }
-  if (statusLower.includes('importação') || statusLower.includes('importacao')) {
-    return 'Em Importação';
-  }
   
   // Se não reconhecido, retornar como está mas logar warning
   console.warn(`[StatusNormalizer] Status não reconhecido: "${status}"`);
@@ -133,7 +126,7 @@ export function normalizeStatus(status: string | null | undefined): string {
  */
 export function isCriticalBottleneck(status: string): boolean {
   const normalized = normalizeStatus(status);
-  return ['Em Produção', 'No Armazém', 'Desembaraço'].includes(normalized);
+  return ['Em Produção', 'No Armazém', 'Em Desembaraço'].includes(normalized);
 }
 
 /**

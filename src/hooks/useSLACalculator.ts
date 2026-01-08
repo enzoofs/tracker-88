@@ -35,10 +35,9 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
     'embarque confirmado': 7,
     'chegada': 5,
     'brasil': 5,
+    'em desembaraço': 2,
     'desembaraço': 2,
-    'desembaraco': 2,
-    'desembaraçado': 2,
-    'desembaracado': 2
+    'desembaraco': 2
   };
 
   // Previsão de entrega ao cliente - para informar ETA
@@ -51,10 +50,9 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
     'embarque confirmado': 7,
     'chegada': 5,
     'brasil': 5,
+    'em desembaraço': 2,
     'desembaraço': 2,
-    'desembaraco': 2,
-    'desembaraçado': 2,
-    'desembaracado': 2
+    'desembaraco': 2
   };
 
   // Mapeamento de nomes de estágios
@@ -66,10 +64,9 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
     'embarque confirmado': 'Embarque Confirmado',
     'chegada': 'Chegada no Brasil',
     'brasil': 'Chegada no Brasil',
-    'desembaraço': 'Desembaraço',
-    'desembaraco': 'Desembaraço',
-    'desembaraçado': 'Desembaraçado',
-    'desembaracado': 'Desembaraçado'
+    'em desembaraço': 'Em Desembaraço',
+    'desembaraço': 'Em Desembaraço',
+    'desembaraco': 'Em Desembaraço'
   };
 
   // Encontrar o status correspondente
