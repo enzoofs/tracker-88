@@ -63,17 +63,19 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
   const { toast } = useToast();
 
   // Parse date from DD/MM/YYYY format to ISO string
-  const parseDate = (dateStr: string | undefined): string | null => {
-    if (!dateStr || dateStr.trim() === '') return null;
+  const parseDate = (dateStr: string | number | undefined | null): string | null => {
+    if (dateStr === undefined || dateStr === null || dateStr === '') return null;
     
-    // Handle Excel serial date numbers
+    // Handle Excel serial date numbers first
     if (typeof dateStr === 'number') {
       const excelEpoch = new Date(1899, 11, 30);
       const date = new Date(excelEpoch.getTime() + dateStr * 86400000);
       return date.toISOString();
     }
     
+    // Convert to string and trim
     const str = String(dateStr).trim();
+    if (str === '') return null;
     
     // Try DD/MM/YYYY format
     const parts = str.split('/');
