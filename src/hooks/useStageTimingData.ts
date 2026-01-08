@@ -22,14 +22,14 @@ interface StageTimingData {
 const STAGE_ORDER = [
   'Em Produção',
   'No Armazém',
-  'Desembaraço'
+  'Em Desembaraço'
 ];
 
 // SLAs esperados por etapa (em dias) - apenas os gargalos críticos
 const STAGE_SLAS: Record<string, number> = {
   'Em Produção': 7,    // 7 dias para produzir
   'No Armazém': 3,     // 3 dias no armazém
-  'Desembaraço': 5     // 5 dias para desembaraçar
+  'Em Desembaraço': 5  // 5 dias para desembaraçar
 };
 
 export const useStageTimingData = () => {

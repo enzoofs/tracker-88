@@ -43,9 +43,6 @@ export const getAlertLevel = (so: SO): AlertLevel | null => {
   } else if (currentStatus.includes('desembaraço') || currentStatus.includes('desembaraco')) {
     expectedDays = 6; // Deveria ser entregue em 6 dias (1 + 5)
     stage = 'entrega';
-  } else if (currentStatus.includes('importação') || currentStatus.includes('importacao')) {
-    expectedDays = 3; // Processo de importação deveria levar 3 dias
-    stage = 'processo de importação';
   }
   
   if (expectedDays === 0) return null;
@@ -140,9 +137,6 @@ export const getCriticalSummary = (sos: SO[]) => {
     } else if (currentStatus.includes('desembaraço') || currentStatus.includes('desembaraco')) {
       stage = 'entrega';
       expectedDays = 6;
-    } else if (currentStatus.includes('importação') || currentStatus.includes('importacao')) {
-      stage = 'processo de importação';
-      expectedDays = 3;
     }
     
     const daysOverdue = daysSinceUpdate - expectedDays;

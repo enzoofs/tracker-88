@@ -81,10 +81,9 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
 
   const availableStatuses = [
     "Em Produção",
-    "Enviado",
-    "Em Importação",
     "No Armazém",
     "Em Trânsito",
+    "Em Desembaraço",
     "Entregue",
     "Atrasado",
     "Pendente"

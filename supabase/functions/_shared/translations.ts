@@ -66,7 +66,7 @@ export function mapToLogicalStage(status: string, location: string): string {
     return 'No Armazém';
   }
   
-  // GARGALO 3: Desembaraço (unificar todas as variações)
+  // GARGALO 3: Em Desembaraço (unificar todas as variações)
   if (
     statusLower.includes('desembaraço') || 
     statusLower.includes('desembaraco') || 
@@ -76,7 +76,7 @@ export function mapToLogicalStage(status: string, location: string): string {
     statusLower.includes('alfândega') ||
     statusLower.includes('alfandega')
   ) {
-    return 'Desembaraço';
+    return 'Em Desembaraço';
   }
   
   // Entregue (estágio final)

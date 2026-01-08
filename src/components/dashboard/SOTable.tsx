@@ -54,13 +54,14 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
       case 'em produção':
       case 'em producao':
         return 'production';
-      case 'em importação':
-      case 'em importacao':
       case 'enviado':
         return 'shipping';
       case 'em trânsito':
       case 'em transito':
         return 'transit';
+      case 'em desembaraço':
+      case 'em desembaraco':
+        return 'default';
       case 'entregue':
         return 'delivered';
       default:
