@@ -7,6 +7,7 @@ const corsHeaders = {
 
 interface CargoUpdate {
   numero_carga: string;
+  data_armazem?: string | null;
   data_embarque?: string | null;
   data_chegada?: string | null;
   data_desembaraco?: string | null;
@@ -35,12 +36,16 @@ function inferStatusFromDates(update: CargoUpdate): { status: string; ultima_loc
   if (update.data_embarque) {
     return { status: 'Em Trânsito', ultima_localizacao: 'Em Voo' };
   }
+  if (update.data_armazem) {
+    return { status: 'No Armazém', ultima_localizacao: 'Miami - Armazém FedEx' };
+  }
   return { status: 'Em Consolidação', ultima_localizacao: 'Fornecedor' };
 }
 
 // Get event name for history
 function getEventName(dateType: string): string {
   switch (dateType) {
+    case 'data_armazem': return 'Chegada no Armazém';
     case 'data_embarque': return 'Embarque Confirmado';
     case 'data_chegada': return 'Chegada no Brasil';
     case 'data_desembaraco': return 'Desembaraço Concluído';
@@ -52,6 +57,7 @@ function getEventName(dateType: string): string {
 // Get location for event
 function getEventLocation(dateType: string): string {
   switch (dateType) {
+    case 'data_armazem': return 'Miami - Armazém FedEx';
     case 'data_embarque': return 'Aeroporto de Origem';
     case 'data_chegada': return 'Aeroporto Brasil';
     case 'data_desembaraco': return 'Alfândega Brasil';
@@ -63,6 +69,7 @@ function getEventLocation(dateType: string): string {
 // Get shipment history status
 function getShipmentStatus(dateType: string): string {
   switch (dateType) {
+    case 'data_armazem': return 'No Armazém';
     case 'data_embarque': return 'Em Trânsito';
     case 'data_chegada': return 'Em Desembaraço';
     case 'data_desembaraco': return 'Liberado';
@@ -133,6 +140,11 @@ Deno.serve(async (req) => {
 
         // Track which dates are being updated for history
         const updatedDates: { type: string; date: string }[] = [];
+
+        if (carga.data_armazem !== undefined && carga.data_armazem !== null) {
+          updateData.data_armazem = carga.data_armazem;
+          updatedDates.push({ type: 'data_armazem', date: carga.data_armazem });
+        }
 
         if (carga.data_embarque !== undefined && carga.data_embarque !== null) {
           updateData.data_embarque = carga.data_embarque;
@@ -219,6 +231,8 @@ Deno.serve(async (req) => {
           // 6. Update envios_processados for linked SOs
           const envioUpdate: Record<string, any> = {
             status_atual: status,
+            status: status,
+            status_cliente: status,
             ultima_localizacao: ultima_localizacao,
             data_ultima_atualizacao: new Date().toISOString(),
           };

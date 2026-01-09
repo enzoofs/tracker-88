@@ -178,6 +178,7 @@ export type Database = {
       cargas: {
         Row: {
           created_at: string | null
+          data_armazem: string | null
           data_autorizacao: string | null
           data_chegada_prevista: string | null
           data_embarque: string | null
@@ -199,6 +200,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          data_armazem?: string | null
           data_autorizacao?: string | null
           data_chegada_prevista?: string | null
           data_embarque?: string | null
@@ -220,6 +222,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          data_armazem?: string | null
           data_autorizacao?: string | null
           data_chegada_prevista?: string | null
           data_embarque?: string | null

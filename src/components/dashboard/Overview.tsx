@@ -29,18 +29,14 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
   const [dialogSOs, setDialogSOs] = useState<any[]>([]);
   const [deliveryRateData, setDeliveryRateData] = useState<{ rate: number; total: number }>({ rate: 0, total: 0 });
 
-  // Buscar taxa de entrega real usando created_at → timestamp de "Entregue" no shipment_history
+  // Buscar taxa de entrega real: armazém → entrega (15 dias corridos)
   useEffect(() => {
     const fetchDeliveryRate = async () => {
       try {
-        // Buscar SOs entregues nos últimos 90 dias com timestamp real de entrega
+        // Buscar SOs entregues nos últimos 90 dias
         const { data: deliveryData, error } = await supabase
           .from('envios_processados')
-          .select(`
-            sales_order,
-            created_at,
-            is_delivered
-          `)
+          .select('sales_order')
           .eq('is_delivered', true)
           .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
 
@@ -51,36 +47,51 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
           return;
         }
 
-        // Buscar timestamps de entrega do shipment_history
         const salesOrders = deliveryData.map(d => d.sales_order);
+
+        // Buscar timestamps de armazém e entrega do shipment_history
         const { data: historyData, error: historyError } = await supabase
           .from('shipment_history')
-          .select('sales_order, timestamp')
+          .select('sales_order, status, timestamp')
           .in('sales_order', salesOrders)
-          .ilike('status', '%entregue%');
+          .or('status.ilike.%armazém%,status.ilike.%armazem%,status.ilike.%entregue%');
 
         if (historyError) throw historyError;
 
-        // Criar mapa de SO → timestamp de entrega
+        // Criar mapas de SO → timestamps
+        const warehouseTimestamps: Record<string, Date> = {};
         const deliveryTimestamps: Record<string, Date> = {};
+
         historyData?.forEach(h => {
           const ts = new Date(h.timestamp);
-          // Pegar o timestamp mais recente de entrega para cada SO
-          if (!deliveryTimestamps[h.sales_order] || ts > deliveryTimestamps[h.sales_order]) {
-            deliveryTimestamps[h.sales_order] = ts;
+          const statusLower = h.status?.toLowerCase() || '';
+
+          // Armazém: pegar o timestamp mais antigo
+          if (statusLower.includes('armazém') || statusLower.includes('armazem')) {
+            if (!warehouseTimestamps[h.sales_order] || ts < warehouseTimestamps[h.sales_order]) {
+              warehouseTimestamps[h.sales_order] = ts;
+            }
+          }
+
+          // Entrega: pegar o timestamp mais recente
+          if (statusLower.includes('entregue')) {
+            if (!deliveryTimestamps[h.sales_order] || ts > deliveryTimestamps[h.sales_order]) {
+              deliveryTimestamps[h.sales_order] = ts;
+            }
           }
         });
 
-        // Calcular taxa de entrega no prazo
+        // Calcular taxa de entrega no prazo (armazém → entrega)
         let onTimeCount = 0;
-        let totalWithDeliveryDate = 0;
+        let totalWithBothDates = 0;
 
         deliveryData.forEach(so => {
+          const warehouseTs = warehouseTimestamps[so.sales_order];
           const deliveryTs = deliveryTimestamps[so.sales_order];
-          if (deliveryTs && so.created_at) {
-            totalWithDeliveryDate++;
-            const createdAt = new Date(so.created_at);
-            const calendarDays = Math.ceil((deliveryTs.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (warehouseTs && deliveryTs) {
+            totalWithBothDates++;
+            const calendarDays = Math.ceil((deliveryTs.getTime() - warehouseTs.getTime()) / (1000 * 60 * 60 * 24));
             
             if (calendarDays <= DELIVERY_SLA_DAYS) {
               onTimeCount++;
@@ -88,11 +99,11 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
           }
         });
 
-        const rate = totalWithDeliveryDate > 0 
-          ? Math.round((onTimeCount / totalWithDeliveryDate) * 100) 
+        const rate = totalWithBothDates > 0 
+          ? Math.round((onTimeCount / totalWithBothDates) * 100) 
           : 0;
 
-        setDeliveryRateData({ rate, total: totalWithDeliveryDate });
+        setDeliveryRateData({ rate, total: totalWithBothDates });
       } catch (error) {
         console.error('Error fetching delivery rate:', error);
       }

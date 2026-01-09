@@ -41,6 +41,8 @@ const STATUS_NORMALIZATION_MAP: Record<string, string> = {
   
   // Entregue variations
   'Delivered': 'Entregue',
+  'ENTREGUE': 'Entregue',
+  'entregue': 'Entregue',
   
   // Consolidação
   'Em Consolidação': 'Em Consolidação',
@@ -154,19 +156,20 @@ export function calculateCalendarDays(startDate: Date, endDate: Date): number {
   return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-// SLA de entrega: 15 dias corridos após saída da fábrica
+// SLA de entrega: 15 dias corridos após chegada no armazém FedEx (Miami)
 export const DELIVERY_SLA_DAYS = 15;
 
 /**
  * Verifica se um pedido está atrasado baseado no SLA de 15 dias corridos
+ * A contagem começa a partir da chegada no armazém FedEx (Miami)
  */
-export function isOverdueBySLA(dataEnvio: string | null, isDelivered: boolean): boolean {
+export function isOverdueBySLA(dataArmazem: string | null, isDelivered: boolean): boolean {
   if (isDelivered) return false;
-  if (!dataEnvio) return false;
+  if (!dataArmazem) return false;
   
-  const shipDate = new Date(dataEnvio);
+  const warehouseDate = new Date(dataArmazem);
   const today = new Date();
-  const calendarDays = calculateCalendarDays(shipDate, today);
+  const calendarDays = calculateCalendarDays(warehouseDate, today);
   
   return calendarDays > DELIVERY_SLA_DAYS;
 }
