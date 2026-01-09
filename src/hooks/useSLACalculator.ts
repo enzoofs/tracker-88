@@ -2,6 +2,7 @@ interface SO {
   statusAtual: string;
   dataUltimaAtualizacao: string;
   dataOrdem?: string;
+  dataArmazem?: string;
   isDelivered: boolean;
   trackingNumbers?: string;
 }
@@ -26,11 +27,11 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   }
 
   // SLA interno - para determinar urgência (alerta visual)
-  // Prazo total: 15 dias corridos a partir da saída da fábrica
+  // Prazo total: 15 dias corridos a partir da chegada no armazém FedEx
   const slaDaysMap: Record<string, number> = {
-    'armazém': 8,
-    'armazem': 8,
-    'fedex': 15,
+    'armazém': 15,
+    'armazem': 15,
+    'fedex': 12,
     'embarque agendado': 10,
     'embarque confirmado': 7,
     'chegada': 5,
@@ -41,11 +42,11 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   };
 
   // Previsão de entrega ao cliente - para informar ETA
-  // Prazo total: 15 dias corridos a partir da saída da fábrica
+  // Prazo total: 15 dias corridos a partir da chegada no armazém FedEx
   const deliveryForecastMap: Record<string, number> = {
-    'armazém': 13,
-    'armazem': 13,
-    'fedex': 15,
+    'armazém': 15,
+    'armazem': 15,
+    'fedex': 12,
     'embarque agendado': 10,
     'embarque confirmado': 7,
     'chegada': 5,
@@ -83,8 +84,8 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
     }
   }
 
-  // Usa data_ordem quando disponível, caso contrário usa dataUltimaAtualizacao
-  const referenceDate = new Date(so.dataOrdem || so.dataUltimaAtualizacao);
+  // Usa data_armazem quando disponível (início do SLA), caso contrário usa dataUltimaAtualizacao
+  const referenceDate = new Date(so.dataArmazem || so.dataUltimaAtualizacao);
   const now = new Date();
   const daysSinceUpdate = Math.floor((now.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
 

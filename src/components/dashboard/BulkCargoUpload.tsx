@@ -22,6 +22,7 @@ import {
 
 interface CargoRow {
   numero_carga: string;
+  data_armazem?: string;
   data_embarque?: string;
   data_chegada?: string;
   data_desembaraco?: string;
@@ -112,6 +113,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
     const templateData = [
       {
         numero_carga: '892',
+        data_armazem: '10/10/2025',
         data_embarque: '15/10/2025',
         data_chegada: '16/10/2025',
         data_desembaraco: '18/10/2025',
@@ -120,6 +122,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
       },
       {
         numero_carga: '903',
+        data_armazem: '25/11/2025',
         data_embarque: '27/11/2025',
         data_chegada: '28/11/2025',
         data_desembaraco: '',
@@ -128,6 +131,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
       },
       {
         numero_carga: '911',
+        data_armazem: '',
         data_embarque: '',
         data_chegada: '',
         data_desembaraco: '',
@@ -141,6 +145,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
     // Set column widths
     ws['!cols'] = [
       { wch: 15 }, // numero_carga
+      { wch: 15 }, // data_armazem
       { wch: 15 }, // data_embarque
       { wch: 15 }, // data_chegada
       { wch: 18 }, // data_desembaraco
@@ -213,6 +218,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
 
         // Validate date formats
         const dates = [
+          { field: 'data_armazem', value: row.data_armazem },
           { field: 'data_embarque', value: row.data_embarque },
           { field: 'data_chegada', value: row.data_chegada },
           { field: 'data_desembaraco', value: row.data_desembaraco },
@@ -318,6 +324,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
           body: {
             cargas: [{
               numero_carga: String(row.numero_carga).trim(),
+              data_armazem: parseDate(row.data_armazem),
               data_embarque: parseDate(row.data_embarque),
               data_chegada: parseDate(row.data_chegada),
               data_desembaraco: parseDate(row.data_desembaraco),
@@ -460,9 +467,10 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
               {/* Instructions */}
               <Card>
                 <CardContent className="pt-6">
-                  <h4 className="font-medium mb-3">Instruções de preenchimento:</h4>
+                <h4 className="font-medium mb-3">Instruções de preenchimento:</h4>
                   <ul className="text-sm text-muted-foreground space-y-2">
                     <li>• <strong>numero_carga</strong>: Obrigatório. Deve existir no sistema.</li>
+                    <li>• <strong>data_armazem</strong>: Data de chegada no armazém FedEx - INÍCIO DO SLA (DD/MM/AAAA)</li>
                     <li>• <strong>data_embarque</strong>: Data de saída do voo (DD/MM/AAAA)</li>
                     <li>• <strong>data_chegada</strong>: Data de chegada no Brasil (DD/MM/AAAA)</li>
                     <li>• <strong>data_desembaraco</strong>: Data de liberação alfandegária (DD/MM/AAAA)</li>
@@ -470,6 +478,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
                     <li>• <strong>status</strong>: Opcional. Se não informado, será calculado pela última data.</li>
                     <li className="text-amber-600 dark:text-amber-400">⚠️ Células preenchidas sobrescrevem dados existentes!</li>
                     <li className="text-muted-foreground">Células vazias mantêm o valor atual (não apagam).</li>
+                    <li className="text-primary">ℹ️ SLA de 15 dias corridos é contado a partir da data_armazem</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -509,6 +518,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
                     <TableRow>
                       <TableHead className="w-10">Status</TableHead>
                       <TableHead>Nº Carga</TableHead>
+                      <TableHead>Armazém</TableHead>
                       <TableHead>Embarque</TableHead>
                       <TableHead>Chegada</TableHead>
                       <TableHead>Desembaraço</TableHead>
@@ -532,6 +542,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
                           )}
                         </TableCell>
                         <TableCell className="font-mono">{result.row.numero_carga}</TableCell>
+                        <TableCell>{formatDateDisplay(result.row.data_armazem)}</TableCell>
                         <TableCell>{formatDateDisplay(result.row.data_embarque)}</TableCell>
                         <TableCell>{formatDateDisplay(result.row.data_chegada)}</TableCell>
                         <TableCell>{formatDateDisplay(result.row.data_desembaraco)}</TableCell>
