@@ -50,6 +50,11 @@ interface CargoDetailsProps {
     origem?: string;
     destino?: string;
     data_chegada_prevista?: string;
+    data_armazem?: string;
+    data_embarque?: string;
+    data_embarque_prevista?: string;
+    data_entrega?: string;
+    data_autorizacao?: string;
     tipo_temperatura?: string;
     transportadora?: string;
     observacoes?: string;
@@ -65,6 +70,18 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
   const [selectedTemperatura, setSelectedTemperatura] = useState(cargo.tipo_temperatura || '');
   const [selectedDataChegada, setSelectedDataChegada] = useState(
     cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toISOString().split('T')[0] : ''
+  );
+  const [selectedDataArmazem, setSelectedDataArmazem] = useState(
+    cargo.data_armazem ? new Date(cargo.data_armazem).toISOString().split('T')[0] : ''
+  );
+  const [selectedDataEmbarque, setSelectedDataEmbarque] = useState(
+    cargo.data_embarque ? new Date(cargo.data_embarque).toISOString().split('T')[0] : ''
+  );
+  const [selectedDataEntrega, setSelectedDataEntrega] = useState(
+    cargo.data_entrega ? new Date(cargo.data_entrega).toISOString().split('T')[0] : ''
+  );
+  const [selectedDataAutorizacao, setSelectedDataAutorizacao] = useState(
+    cargo.data_autorizacao ? new Date(cargo.data_autorizacao).toISOString().split('T')[0] : ''
   );
   const [observacoes, setObservacoes] = useState(cargo.observacoes || '');
   const [isSavingObservacoes, setIsSavingObservacoes] = useState(false);
@@ -217,7 +234,7 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
         ultimaLocalizacao = 'Destino Final';
       }
 
-      // 3. Atualizar a carga
+      // 3. Atualizar a carga com todas as datas
       const cargoUpdate: any = {
         status: selectedStatus,
         ultima_localizacao: ultimaLocalizacao,
@@ -230,6 +247,35 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
 
       if (selectedDataChegada) {
         cargoUpdate.data_chegada_prevista = new Date(selectedDataChegada).toISOString();
+      }
+
+      // Datas de etapas - permitir definir ou limpar
+      if (selectedDataArmazem) {
+        cargoUpdate.data_armazem = new Date(selectedDataArmazem).toISOString();
+      } else if (cargo.data_armazem && !selectedDataArmazem) {
+        cargoUpdate.data_armazem = null;
+      }
+
+      if (selectedDataEmbarque) {
+        cargoUpdate.data_embarque = new Date(selectedDataEmbarque).toISOString();
+      } else if (cargo.data_embarque && !selectedDataEmbarque) {
+        cargoUpdate.data_embarque = null;
+      }
+
+      if (selectedDataEntrega) {
+        cargoUpdate.data_entrega = new Date(selectedDataEntrega).toISOString();
+        // Se definiu data de entrega, marcar status como Entregue
+        if (selectedStatus !== 'Entregue') {
+          cargoUpdate.status = 'Entregue';
+        }
+      } else if (cargo.data_entrega && !selectedDataEntrega) {
+        cargoUpdate.data_entrega = null;
+      }
+
+      if (selectedDataAutorizacao) {
+        cargoUpdate.data_autorizacao = new Date(selectedDataAutorizacao).toISOString();
+      } else if (cargo.data_autorizacao && !selectedDataAutorizacao) {
+        cargoUpdate.data_autorizacao = null;
       }
 
       const { error: updateCargoError } = await supabase
@@ -283,8 +329,20 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
       if (selectedTemperatura && selectedTemperatura !== cargo.tipo_temperatura) {
         descricaoPartes.push(`Temperatura: "${cargo.tipo_temperatura || 'N/A'}" → "${selectedTemperatura}"`);
       }
-      if (selectedDataChegada && selectedDataChegada !== (cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toISOString().split('T')[0] : '')) {
-        descricaoPartes.push(`Chegada prevista: "${cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toLocaleDateString('pt-BR') : 'N/A'}" → "${new Date(selectedDataChegada).toLocaleDateString('pt-BR')}"`);
+      if (selectedDataChegada !== (cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toISOString().split('T')[0] : '')) {
+        descricaoPartes.push(`Chegada prevista: "${cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toLocaleDateString('pt-BR') : 'N/A'}" → "${selectedDataChegada ? new Date(selectedDataChegada).toLocaleDateString('pt-BR') : 'N/A'}"`);
+      }
+      if (selectedDataArmazem !== (cargo.data_armazem ? new Date(cargo.data_armazem).toISOString().split('T')[0] : '')) {
+        descricaoPartes.push(`Data armazém: "${cargo.data_armazem ? new Date(cargo.data_armazem).toLocaleDateString('pt-BR') : 'N/A'}" → "${selectedDataArmazem ? new Date(selectedDataArmazem).toLocaleDateString('pt-BR') : 'N/A'}"`);
+      }
+      if (selectedDataEmbarque !== (cargo.data_embarque ? new Date(cargo.data_embarque).toISOString().split('T')[0] : '')) {
+        descricaoPartes.push(`Data embarque: "${cargo.data_embarque ? new Date(cargo.data_embarque).toLocaleDateString('pt-BR') : 'N/A'}" → "${selectedDataEmbarque ? new Date(selectedDataEmbarque).toLocaleDateString('pt-BR') : 'N/A'}"`);
+      }
+      if (selectedDataEntrega !== (cargo.data_entrega ? new Date(cargo.data_entrega).toISOString().split('T')[0] : '')) {
+        descricaoPartes.push(`Data entrega: "${cargo.data_entrega ? new Date(cargo.data_entrega).toLocaleDateString('pt-BR') : 'N/A'}" → "${selectedDataEntrega ? new Date(selectedDataEntrega).toLocaleDateString('pt-BR') : 'N/A'}"`);
+      }
+      if (selectedDataAutorizacao !== (cargo.data_autorizacao ? new Date(cargo.data_autorizacao).toISOString().split('T')[0] : '')) {
+        descricaoPartes.push(`Data autorização: "${cargo.data_autorizacao ? new Date(cargo.data_autorizacao).toLocaleDateString('pt-BR') : 'N/A'}" → "${selectedDataAutorizacao ? new Date(selectedDataAutorizacao).toLocaleDateString('pt-BR') : 'N/A'}"`);
       }
 
       const { error: cargoHistoryError } = await supabase
@@ -367,7 +425,11 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                   disabled={
                     selectedStatus === cargo.status && 
                     selectedTemperatura === (cargo.tipo_temperatura || '') &&
-                    selectedDataChegada === (cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toISOString().split('T')[0] : '')
+                    selectedDataChegada === (cargo.data_chegada_prevista ? new Date(cargo.data_chegada_prevista).toISOString().split('T')[0] : '') &&
+                    selectedDataArmazem === (cargo.data_armazem ? new Date(cargo.data_armazem).toISOString().split('T')[0] : '') &&
+                    selectedDataEmbarque === (cargo.data_embarque ? new Date(cargo.data_embarque).toISOString().split('T')[0] : '') &&
+                    selectedDataEntrega === (cargo.data_entrega ? new Date(cargo.data_entrega).toISOString().split('T')[0] : '') &&
+                    selectedDataAutorizacao === (cargo.data_autorizacao ? new Date(cargo.data_autorizacao).toISOString().split('T')[0] : '')
                   }
                   className="h-8 gap-2"
                 >
@@ -470,6 +532,121 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                       </CardContent>
                     </Card>
                   </div>
+
+                  {/* Timeline de Datas das Etapas */}
+                  <Card className="border-border/50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Calendar className="h-5 w-5 text-primary" />
+                        Datas das Etapas
+                        {(!cargo.data_armazem || !cargo.data_embarque || !cargo.data_entrega) && (
+                          <Badge variant="outline" className="ml-2 text-amber-500 border-amber-500/50">
+                            Dados Incompletos
+                          </Badge>
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {/* Data Armazém (Início SLA) */}
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                            📦 Armazém (Miami)
+                            <span className="text-[10px] text-primary">(Início SLA)</span>
+                          </Label>
+                          {isAdmin ? (
+                            <Input
+                              type="date"
+                              value={selectedDataArmazem}
+                              onChange={(e) => setSelectedDataArmazem(e.target.value)}
+                              className={`h-9 ${!selectedDataArmazem ? 'border-amber-500/50 bg-amber-500/5' : ''}`}
+                            />
+                          ) : (
+                            <div className={`text-sm font-medium p-2 rounded border ${!cargo.data_armazem ? 'border-amber-500/50 bg-amber-500/5 text-amber-600' : 'border-border'}`}>
+                              {formatDate(cargo.data_armazem)}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Data Embarque */}
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                            ✈️ Embarque
+                          </Label>
+                          {isAdmin ? (
+                            <Input
+                              type="date"
+                              value={selectedDataEmbarque}
+                              onChange={(e) => setSelectedDataEmbarque(e.target.value)}
+                              className={`h-9 ${!selectedDataEmbarque ? 'border-amber-500/50 bg-amber-500/5' : ''}`}
+                            />
+                          ) : (
+                            <div className={`text-sm font-medium p-2 rounded border ${!cargo.data_embarque ? 'border-amber-500/50 bg-amber-500/5 text-amber-600' : 'border-border'}`}>
+                              {formatDate(cargo.data_embarque)}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Data Autorização (Desembaraço) */}
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                            📋 Autorização
+                          </Label>
+                          {isAdmin ? (
+                            <Input
+                              type="date"
+                              value={selectedDataAutorizacao}
+                              onChange={(e) => setSelectedDataAutorizacao(e.target.value)}
+                              className="h-9"
+                            />
+                          ) : (
+                            <div className="text-sm font-medium p-2 rounded border border-border">
+                              {formatDate(cargo.data_autorizacao)}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Data Entrega */}
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                            ✅ Entrega
+                            <span className="text-[10px] text-primary">(Fim SLA)</span>
+                          </Label>
+                          {isAdmin ? (
+                            <Input
+                              type="date"
+                              value={selectedDataEntrega}
+                              onChange={(e) => setSelectedDataEntrega(e.target.value)}
+                              className={`h-9 ${!selectedDataEntrega && cargo.status?.toLowerCase() === 'entregue' ? 'border-amber-500/50 bg-amber-500/5' : ''}`}
+                            />
+                          ) : (
+                            <div className={`text-sm font-medium p-2 rounded border ${!cargo.data_entrega && cargo.status?.toLowerCase() === 'entregue' ? 'border-amber-500/50 bg-amber-500/5 text-amber-600' : 'border-border'}`}>
+                              {formatDate(cargo.data_entrega)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* SLA Info */}
+                      {selectedDataArmazem && selectedDataEntrega && (
+                        <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border/50">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Tempo total de entrega:</span>
+                            <span className={`text-sm font-bold ${
+                              Math.ceil((new Date(selectedDataEntrega).getTime() - new Date(selectedDataArmazem).getTime()) / (1000 * 60 * 60 * 24)) <= 15
+                                ? 'text-green-500'
+                                : 'text-red-500'
+                            }`}>
+                              {Math.ceil((new Date(selectedDataEntrega).getTime() - new Date(selectedDataArmazem).getTime()) / (1000 * 60 * 60 * 24))} dias
+                              {Math.ceil((new Date(selectedDataEntrega).getTime() - new Date(selectedDataArmazem).getTime()) / (1000 * 60 * 60 * 24)) <= 15 
+                                ? ' ✓ No prazo' 
+                                : ' ⚠️ Fora do SLA'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
                   {/* SOs Consolidadas */}
                   <Card className="border-border/50">
