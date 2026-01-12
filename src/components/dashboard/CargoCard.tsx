@@ -1,8 +1,9 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Package, Thermometer, MapPin, Truck, Calendar } from 'lucide-react';
+import { Package, Thermometer, MapPin, Truck, Calendar, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface CargoCardProps {
   carga: {
@@ -10,6 +11,8 @@ interface CargoCardProps {
     tipo_temperatura: string;
     status: string;
     data_chegada_prevista?: string;
+    data_armazem?: string;
+    data_embarque?: string;
     data_entrega?: string;
     origem?: string;
     destino?: string;
@@ -39,25 +42,53 @@ const CargoCard = ({ carga, onClick }: CargoCardProps) => {
     return temp?.toLowerCase() === 'controlada' ? '🌡️' : '🏠';
   };
 
+  // Verificar dados faltantes (para cargas não em consolidação)
+  const isNotInConsolidation = !carga.status?.toLowerCase().includes('consolidação');
+  const missingData = isNotInConsolidation ? {
+    armazem: !carga.data_armazem,
+    embarque: !carga.data_embarque,
+    entrega: carga.status?.toLowerCase() === 'entregue' && !carga.data_entrega,
+  } : { armazem: false, embarque: false, entrega: false };
+  
+  const hasMissingData = missingData.armazem || missingData.embarque || missingData.entrega;
+  const missingFields = [
+    missingData.armazem && 'Armazém',
+    missingData.embarque && 'Embarque',
+    missingData.entrega && 'Entrega',
+  ].filter(Boolean);
+
   return (
-    <Card
-      className="p-6 cursor-pointer hover:shadow-lg transition-all duration-200 border-border/50 bg-card hover:border-primary/50"
-      onClick={onClick}
-    >
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Package className="h-5 w-5 text-primary" />
+    <TooltipProvider>
+      <Card
+        className={`p-6 cursor-pointer hover:shadow-lg transition-all duration-200 border-border/50 bg-card hover:border-primary/50 ${hasMissingData ? 'ring-1 ring-amber-500/30' : ''}`}
+        onClick={onClick}
+      >
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Package className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-lg">CARGA {carga.numero_carga}</h3>
+                  {hasMissingData && (
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Dados faltantes: {missingFields.join(', ')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {carga.so_count || 0} SOs consolidadas
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-lg">CARGA {carga.numero_carga}</h3>
-              <p className="text-sm text-muted-foreground">
-                {carga.so_count || 0} SOs consolidadas
-              </p>
-            </div>
-          </div>
           <div className="flex flex-col items-end gap-1">
             <Badge className={getStatusColor(carga.status)}>
               {carga.status}
@@ -108,8 +139,9 @@ const CargoCard = ({ carga, onClick }: CargoCardProps) => {
             </span>
           </div>
         )}
-      </div>
-    </Card>
+        </div>
+      </Card>
+    </TooltipProvider>
   );
 };
 

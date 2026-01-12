@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut, User, Bell, Plane, Box, Zap, Atom, Microscope, FileSpreadsheet, Moon, Sun, Upload } from 'lucide-react';
+import { BarChart3, Package, Map, RefreshCw, Download, Globe, TrendingUp, LogOut, User, Bell, Plane, Box, Zap, Atom, Microscope, FileSpreadsheet, Moon, Sun, Upload, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -724,6 +724,57 @@ const LogisticsDashboard: React.FC = () => {
                   </Badge>
                 </div>
               </div>
+              
+              {/* Alerta de cargas com dados faltantes */}
+              {(() => {
+                const cargasComDadosFaltantes = filteredCargas.filter(carga => {
+                  const isNotInConsolidation = !carga.status?.toLowerCase().includes('consolidação');
+                  if (!isNotInConsolidation) return false;
+                  
+                  const missingArmazem = !carga.data_armazem;
+                  const missingEmbarque = !carga.data_embarque;
+                  const missingEntrega = carga.status?.toLowerCase() === 'entregue' && !carga.data_entrega;
+                  
+                  return missingArmazem || missingEmbarque || missingEntrega;
+                });
+                
+                if (cargasComDadosFaltantes.length > 0) {
+                  return (
+                    <Card className="p-4 border-amber-500/30 bg-amber-500/5">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-amber-600">
+                            {cargasComDadosFaltantes.length} carga(s) com dados incompletos
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            As seguintes cargas têm campos de data faltantes que podem afetar o cálculo de SLA:
+                          </p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {cargasComDadosFaltantes.slice(0, 10).map(carga => (
+                              <Badge 
+                                key={carga.id} 
+                                variant="outline" 
+                                className="cursor-pointer border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+                                onClick={() => handleCargoClick(carga)}
+                              >
+                                {carga.numero_carga}
+                              </Badge>
+                            ))}
+                            {cargasComDadosFaltantes.length > 10 && (
+                              <Badge variant="outline" className="border-amber-500/50 text-amber-600">
+                                +{cargasComDadosFaltantes.length - 10} mais
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                }
+                return null;
+              })()}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCargas.map((carga) => (
                   <CargoCard
