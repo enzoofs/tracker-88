@@ -1,0 +1,660 @@
+{
+  "name": "0 - Email Orchestrator (MÃE)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "output": "raw",
+        "filters": {
+          "hasAttachments": false
+        },
+        "options": {
+          "attachmentsPrefix": "attachment_",
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlookTrigger",
+      "typeVersion": 1,
+      "position": [
+        960,
+        1088
+      ],
+      "id": "e32a04f9-3e2a-4c89-88b2-16dcad8771c2",
+      "name": "TRIGGER UNICO",
+      "retryOnFail": true,
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "2dd9Gnx4S2YGSfcR",
+          "name": "Microsoft Outlook account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow_destino }}",
+                    "rightValue": "standard_daily_order",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f2e43d73-10ed-4124-9b5d-9527454767db"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "standard"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow_destino }}",
+                    "rightValue": "automated_daily_shipment",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "fb95d7c2-0a3a-458e-bcce-89e42eb0f1fd"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "shipment"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow_destino }}",
+                    "rightValue": "planilha_lotes",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "5cbaaa7e-31a5-43a5-85fd-06a5b7f2a90d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "lotes"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow_destino }}",
+                    "rightValue": "biorad_pedido",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e88eb881-7a3b-441e-846a-f56d8e1d696c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "biorad_pedido"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow_destino }}",
+                    "rightValue": "biorad_confirmacao",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "7a6ede48-70c1-4f0c-8bfc-4a0a87f6f16e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "biorad_confirm"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow_destino }}",
+                    "rightValue": "tracking_pos_armazem",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "bb5d1d00-2d17-4a17-a8cd-1b0a4c54d0a8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "tracking"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow_destino }}",
+                    "rightValue": "email_irrelevante",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0af42f07-13f6-4686-bd44-afe2e6de36db"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "irrelevante"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow_destino }}",
+                    "rightValue": "email_nao_classificado",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0db8bd05-8cfb-4e1c-bedc-e326aa35e45c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "nao_classificado"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1408,
+        976
+      ],
+      "id": "c0e7e2b5-558f-4351-b413-aa7714a08ed8",
+      "name": "Roteador",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "IHp8cdMly0eUwIBJ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/IHp8cdMly0eUwIBJ",
+          "cachedResultName": "Sintese Bot — 1 - Processar Standard Daily Order"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1632,
+        512
+      ],
+      "id": "5f8ea880-5052-4b66-913e-882d3fc27e47",
+      "name": "Exec Standard Daily Order1",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "mjjs155pSZ1dbKaE",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/mjjs155pSZ1dbKaE",
+          "cachedResultName": "Sintese Bot — 2 - Processar Automated Daily Shipment (Atualizado)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1632,
+        704
+      ],
+      "id": "a13e8cae-53b3-41e6-92ca-19888a760180",
+      "name": "Exec Automated Shipment1",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "G9ToKNnnyM4SPv3Q",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/G9ToKNnnyM4SPv3Q",
+          "cachedResultName": "Sintese Bot — 5 - Processar Planilha de Lotes OK"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1632,
+        896
+      ],
+      "id": "365b784d-0c1b-4e64-a58f-f8ad11ae7674",
+      "name": "Exec Planilha Lotes1",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "n6Cb54wYrMkyBTWa",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/n6Cb54wYrMkyBTWa",
+          "cachedResultName": "Bio-Rad Order Tracker - PEDIDO"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1632,
+        1088
+      ],
+      "id": "63862940-a944-4156-b590-3ba095659916",
+      "name": "Exec BioRad Pedido1",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "jEEaInq4vrueL4S5",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/jEEaInq4vrueL4S5",
+          "cachedResultName": "Bio-Rad Order Tracker - CONFIRMAÇÃO"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1632,
+        1280
+      ],
+      "id": "e0f7b47c-baf3-4b12-a8b1-a92f3939918d",
+      "name": "Exec BioRad Confirmacao1",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1632,
+        1664
+      ],
+      "id": "3fe20593-5a32-40b7-a866-5e9f116996d1",
+      "name": "No Operation, do nothing1",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst summary = {\n  total_processados: items.length,\n  workflows_executados: items.map(item => ({\n    workflow: item.json.workflow_destino || 'unknown',\n    tipo: item.json.tipo_email || 'unknown',\n    status: 'processado'\n  }))\n};\n\nconsole.log('=== RESUMO DO PROCESSAMENTO ===');\nconsole.log(JSON.stringify(summary, null, 2));\n\nreturn [{ json: summary }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1856,
+        1088
+      ],
+      "id": "d0df25b7-40b3-42b8-a0a7-76a25c0fca13",
+      "name": "Resumo Final1",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==========================\n// CONTEXTO & NORMALIZAÇÃO\n// ==========================\nconst item = $input.first();\n\n// Normalizados (para regras)\nconst subject = (item.json.subject || '').toLowerCase();\nconst body = (item.json.bodyPreview || '').toLowerCase();\nconst from = (item.json.from?.emailAddress?.address || item.json.from || '').toLowerCase();\nconst fromName = (item.json.from?.emailAddress?.name || '').toLowerCase();\n\nconst attachments = item.binary ? Object.keys(item.binary) : [];\nconst attachmentNames = attachments\n  .map(key => (item.binary[key].fileName || '').toLowerCase())\n  .join(' ');\n\n// Crus (para repasse aos filhos / auditoria)\nconst email = {\n  id: item.json.id ?? null,\n  conversationId: item.json.conversationId ?? null,\n  internetMessageId: item.json.internetMessageId ?? null,\n  subject: item.json.subject ?? null,\n  bodyPreview: item.json.bodyPreview ?? null,\n  body: {\n    contentType: item.json.body?.contentType ?? null,\n    content: item.json.body?.content ?? null,\n  },\n  from: {\n    address: item.json.from?.emailAddress?.address ?? item.json.from?.address ?? (typeof item.json.from === 'string' ? item.json.from : null),\n    name: item.json.from?.emailAddress?.name ?? null,\n  },\n  to: item.json.toRecipients ?? item.json.to ?? null,\n  cc: item.json.ccRecipients ?? item.json.cc ?? null,\n  receivedAt: item.json.receivedDateTime ?? item.json.dateTimeReceived ?? null,\n  headers: item.json.headers ?? null,\n  hasAttachments: (item.json.hasAttachments != null)\n    ? item.json.hasAttachments\n    : (Array.isArray(attachments) && attachments.length > 0),\n  attachmentsMeta: attachments.map(k => ({\n    key: k,\n    fileName: item.binary?.[k]?.fileName ?? null,\n    mimeType: item.binary?.[k]?.mimeType ?? null,\n    fileSize: item.binary?.[k]?.fileSize ?? null,\n  })),\n};\n\nconst email_norm = {\n  subject_lc: subject,\n  body_preview_lc: body,\n  from_lc: from,\n  from_name_lc: fromName,\n  attachment_names_lc: attachmentNames,\n};\n\nconsole.log('=== EMAIL RECEBIDO ===');\nconsole.log('From:', from);\nconsole.log('Subject:', subject);\nconsole.log('Body Preview:', body.substring(0, 100));\nconsole.log('Anexos:', attachmentNames || 'nenhum');\n\n// ====================================\n// PRIORIDADE MÁXIMA: REPORTS@IDTDNA.COM\n// ====================================\n// Estes e-mails SEMPRE devem ser processados, independente de outras regras\n\nif (from.includes('reports@idtdna.com')) {\n  console.log('🔥 REMETENTE PRIORITÁRIO: reports@idtdna.com');\n  \n  // PRIORIDADE 1A: STANDARD DAILY ORDER (do IDT)\n  if (\n    subject.includes('standard daily order') || \n    attachmentNames.includes('standard daily order') ||\n    attachmentNames.includes('standard_daily_order')\n  ) {\n    console.log('✅ ROTA: STANDARD DAILY ORDER (IDT)');\n    return [{\n      json: {\n        workflow_destino: 'standard_daily_order',\n        workflow_id: 'IHp8cdMly0eUwIBJ',\n        tipo_email: 'standard_daily_order',\n        email,\n        email_norm,\n      },\n      binary: item.binary,\n    }];\n  }\n  \n  // PRIORIDADE 1B: AUTOMATED DAILY SHIPMENT (do IDT)\n  if (\n    subject.includes('automated daily shipment') ||\n    subject.includes('daily shipment') ||\n    attachmentNames.includes('automated daily shipment') ||\n    attachmentNames.includes('automated_daily_shipment') ||\n    (subject.includes('shipment') && attachmentNames.includes('.xlsx'))\n  ) {\n    console.log('✅ ROTA: AUTOMATED DAILY SHIPMENT (IDT)');\n    return [{\n      json: {\n        workflow_destino: 'automated_daily_shipment',\n        workflow_id: 'mjjs155pSZ1dbKaE',\n        tipo_email: 'automated_daily_shipment',\n        email,\n        email_norm,\n      },\n      binary: item.binary,\n    }];\n  }\n  \n  // Se for do IDT mas não identificado, marcar para revisão\n  console.log('⚠️ E-mail do IDT não classificado - requer revisão');\n  return [{\n    json: {\n      workflow_destino: 'email_nao_classificado',\n      tipo_email: 'idt_nao_classificado',\n      razao: 'email_from_idt_not_matching_rules',\n      email,\n      email_norm,\n    },\n    binary: item.binary,\n  }];\n}\n\n// ====================================\n// FILTROS DE SPAM E EMAILS IRRELEVANTES\n// ====================================\n// Agora que já processamos os e-mails prioritários do IDT,\n// podemos aplicar os filtros de spam normalmente\n\nconst spamKeywords = [\n  'unsubscribe', 'click here', 'congratulations', 'winner', 'prize',\n  'free money', 'viagra', 'casino', 'lottery', 'urgent action required',\n  'verify your account', 'suspended account', 'reset password',\n  'singles in your area', 'weight loss', 'bitcoin', 'cryptocurrency'\n];\n\nconst suspiciousDomains = [\n  'noreply', 'no-reply', 'donotreply', 'mailer-daemon',\n  'postmaster', 'newsletter', 'marketing'\n];\n\nconst isSpamByKeywords = spamKeywords.some(keyword =>\n  subject.includes(keyword) || body.includes(keyword)\n);\n\nconst isSuspiciousDomain = suspiciousDomains.some(domain =>\n  from.includes(domain)\n);\n\nconst isAutoReply = subject.includes('auto') && (\n  subject.includes('reply') ||\n  subject.includes('response') ||\n  subject.includes('out of office')\n);\n\n// MELHORADO: System notification agora é mais restritivo\n// Só é system notification se tiver notification/alert MAS NÃO tiver:\n// - Indicadores de tracking (PO, MAWB, HAWB, processo, carga)\n// - Indicadores de shipment/envio\n// - Números relevantes\nconst hasTrackingOrShipmentIndicators = \n  subject.includes('po ') || \n  subject.includes('mawb') || \n  subject.includes('hawb') ||\n  subject.includes('processo') ||\n  subject.includes('carga') ||\n  subject.includes('shipment') ||\n  subject.includes('envio') ||\n  subject.includes('tracking') ||\n  /\\bpo\\s*\\d+/i.test(subject) ||\n  /\\d{3,}/.test(subject);\n\nconst isSystemNotification = (\n  (subject.includes('notification') || subject.includes('alert')) &&\n  !hasTrackingOrShipmentIndicators &&\n  attachments.length === 0 // System notifications geralmente não têm anexos\n);\n\nif (isSpamByKeywords || isSuspiciousDomain || isAutoReply || isSystemNotification) {\n  console.log('⚠️ ROTA: EMAIL IRRELEVANTE/SPAM');\n  console.log('Razão:', \n    isSpamByKeywords ? 'spam_keywords' :\n    isSuspiciousDomain ? 'suspicious_domain' :\n    isAutoReply ? 'auto_reply' :\n    'system_notification'\n  );\n  return [{\n    json: {\n      workflow_destino: 'email_irrelevante',\n      tipo_email: 'spam_ou_irrelevante',\n      razao: isSpamByKeywords ? 'spam_keywords' :\n            isSuspiciousDomain ? 'suspicious_domain' :\n            isAutoReply ? 'auto_reply' :\n            'system_notification',\n      email,\n      email_norm,\n    },\n    binary: item.binary,\n  }];\n}\n\n// ====================================\n// HELPERS PARA BIO-RAD\n// ====================================\n\nfunction isBioRadEmail() {\n  const fromBioRad = from.includes('biorad') || \n                     from.includes('bio-rad') ||\n                     fromName.includes('biorad') || \n                     fromName.includes('bio-rad');\n  \n  const subjectBioRad = subject.includes('biorad') ||\n                        subject.includes('bio-rad') ||\n                        subject.includes('síntese biotecnologia') ||\n                        subject.includes('sintese biotecnologia');\n  \n  const bodyBioRad = body.includes('biorad') ||\n                     body.includes('bio-rad') ||\n                     body.includes('síntese biotecnologia') ||\n                     body.includes('sintese biotecnologia');\n  \n  const attachmentBioRad = /pedido\\s+n[uú]mero\\s+\\d+\\.pdf/i.test(attachmentNames) ||\n                           attachmentNames.includes('ordervision.pdf');\n  \n  return fromBioRad || subjectBioRad || bodyBioRad || attachmentBioRad;\n}\n\nfunction hasPedidoIndicators() {\n  const hasOC = /\\boc\\s*\\d+/i.test(subject) || \n                /\\boc\\s*\\d+/i.test(attachmentNames) ||\n                subject.includes('ordem de compra');\n  \n  const hasPedidoWord = subject.includes('pedido') || \n                        subject.includes('novo pedido') ||\n                        body.includes('segue anexo novo pedido') ||\n                        body.includes('pedido da bio-rad');\n  \n  const hasPedidoPDF = /oc[\\s_-]*\\d+.*\\.pdf/i.test(attachmentNames) ||\n                       attachmentNames.includes('ordervision.pdf');\n  \n  return hasOC || hasPedidoWord || hasPedidoPDF;\n}\n\nfunction hasConfirmacaoIndicators() {\n  const explicitConfirm = subject.includes('confirmação') || \n                          subject.includes('confirmacao') ||\n                          subject.includes('confirmaçao') ||\n                          body.includes('confirmação') ||\n                          body.includes('confirmacao') ||\n                          body.includes('segue anexo confirmação') ||\n                          body.includes('segue anexo confirmacao');\n  \n  const pedidoNumeroPattern = /pedido\\s+n[uú]mero\\s+\\d+/i.test(subject) ||\n                               /pedido\\s+n[uú]mero\\s+\\d+\\.pdf/i.test(attachmentNames);\n  \n  return explicitConfirm || pedidoNumeroPattern;\n}\n\n// ====================================\n// CLASSIFICAÇÃO DE EMAILS VÁLIDOS\n// (Ordem de prioridade após IDT)\n// ====================================\n\n// PRIORIDADE 2: STANDARD DAILY ORDER (outros remetentes)\nif (subject.includes('standard daily order') || attachmentNames.includes('standard daily order')) {\n  console.log('✅ ROTA: STANDARD DAILY ORDER');\n  return [{\n    json: {\n      workflow_destino: 'standard_daily_order',\n      workflow_id: 'IHp8cdMly0eUwIBJ',\n      tipo_email: 'standard_daily_order',\n      email,\n      email_norm,\n    },\n    binary: item.binary,\n  }];\n}\n\n// PRIORIDADE 3: AUTOMATED DAILY SHIPMENT (outros remetentes)\nif (\n  subject.includes('automated daily shipment') ||\n  subject.includes('daily shipment') ||\n  attachmentNames.includes('automated daily shipment') ||\n  attachmentNames.includes('shipment')\n) {\n  console.log('✅ ROTA: AUTOMATED DAILY SHIPMENT');\n  return [{\n    json: {\n      workflow_destino: 'automated_daily_shipment',\n      workflow_id: 'mjjs155pSZ1dbKaE',\n      tipo_email: 'automated_daily_shipment',\n      email,\n      email_norm,\n    },\n    binary: item.binary,\n  }];\n}\n\n// PRIORIDADE 4: BIO-RAD CONFIRMAÇÃO (verificar ANTES do pedido)\nif (isBioRadEmail() && hasConfirmacaoIndicators()) {\n  console.log('✅ ROTA: BIO-RAD CONFIRMAÇÃO');\n  return [{\n    json: {\n      workflow_destino: 'biorad_confirmacao',\n      workflow_id: 'jEEaInq4vrueL4S5',\n      tipo_email: 'biorad_confirmacao',\n      email,\n      email_norm,\n    },\n    binary: item.binary,\n  }];\n}\n\n// PRIORIDADE 5: BIO-RAD PEDIDO (OC)\nif (isBioRadEmail() && hasPedidoIndicators()) {\n  console.log('✅ ROTA: BIO-RAD PEDIDO');\n  return [{\n    json: {\n      workflow_destino: 'biorad_pedido',\n      workflow_id: 'n6Cb54wYrMkyBTWa',\n      tipo_email: 'biorad_pedido',\n      email,\n      email_norm,\n    },\n    binary: item.binary,\n  }];\n}\n\n// PRIORIDADE 6: AUTORIZAÇÃO DE CONSOLIDAÇÃO (PO + palavras-chave)\nif (\n  subject.includes('po ') &&\n  (body.includes('ciente') || body.includes('considere') ||\n   body.includes('autoriza') || body.includes('ok'))\n) {\n  console.log('✅ ROTA: TRACKING PÓS-ARMAZÉM (Autorização)');\n  return [{\n    json: {\n      workflow_destino: 'tracking_pos_armazem',\n      workflow_id: 'jYJlVMhTKVxoNkT1',\n      tipo_email: 'autorizacao_consolidacao',\n      email,\n      email_norm,\n    },\n    binary: item.binary,\n  }];\n}\n\n// PRIORIDADE 7: PLANILHA DE LOTES (só se tiver anexo Excel)\nif (\n  (subject.includes('lote') || subject.includes('planilha')) &&\n  (attachmentNames.includes('.xlsx') || attachmentNames.includes('.xls'))\n) {\n  console.log('✅ ROTA: PLANILHA DE LOTES');\n  return [{\n    json: {\n      workflow_destino: 'planilha_lotes',\n      workflow_id: 'G9ToKNnnyM4SPv3Q',\n      tipo_email: 'planilha_lotes',\n      email,\n      email_norm,\n    },\n    binary: item.binary,\n  }];\n}\n\n// PRIORIDADE 8: TRACKING COM PO NO SUBJECT (QUALQUER EMAIL COM \"PO XXX\")\nif (/\\bpo\\s*\\d+/i.test(subject)) {\n  console.log('✅ ROTA: TRACKING PÓS-ARMAZÉM (PO detectado no subject)');\n  return [{\n    json: {\n      workflow_destino: 'tracking_pos_armazem',\n      workflow_id: 'jYJlVMhTKVxoNkT1',\n      tipo_email: 'tracking_po',\n      email,\n      email_norm,\n    },\n    binary: item.binary,\n  }];\n}\n\n// PRIORIDADE 9: TRACKING COM NÚMERO DE CARGA OU PROCESSO\nif (!isBioRadEmail() && (/\\d{3,}/.test(subject) || subject.includes('carga') || subject.includes('processo'))) {\n  console.log('✅ ROTA: TRACKING PÓS-ARMAZÉM (Carga/Processo)');\n  return [{\n    json: {\n      workflow_destino: 'tracking_pos_armazem',\n      workflow_id: 'jYJlVMhTKVxoNkT1',\n      tipo_email: 'tracking_carga',\n      email,\n      email_norm,\n    },\n    binary: item.binary,\n  }];\n}\n\n// ====================================\n// ANÁLISE FINAL\n// ====================================\n\nconst hasBusinessIndicators = (\n  from.includes('.com') || from.includes('.br') || from.includes('.net')\n) && (\n  subject.length > 5 &&\n  !subject.includes('test') &&\n  !subject.includes('teste')\n);\n\nif (hasBusinessIndicators) {\n  console.log('⚠️ ROTA: EMAIL NÃO CLASSIFICADO (requer revisão)');\n  return [{\n    json: {\n      workflow_destino: 'email_nao_classificado',\n      tipo_email: 'requer_revisao_manual',\n      razao: 'business_email_not_matching_rules',\n      email,\n      email_norm,\n    },\n    binary: item.binary,\n  }];\n}\n\nconsole.log('⚠️ ROTA: EMAIL IRRELEVANTE (descarte)');\nreturn [{\n  json: {\n    workflow_destino: 'email_irrelevante',\n    tipo_email: 'sem_classificacao',\n    razao: 'no_business_indicators',\n    email,\n    email_norm,\n  },\n  binary: item.binary,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        1088
+      ],
+      "id": "5937f2bb-e186-4330-82fc-84c249425bce",
+      "name": "Classificador de Emails",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "jYJlVMhTKVxoNkT1",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/jYJlVMhTKVxoNkT1",
+          "cachedResultName": "Sintese Bot — 4 - Acompanhamento de Tracking Pós-Armazém OK"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1632,
+        1472
+      ],
+      "id": "0013757d-5bf1-4725-8478-a7ff46c1a2df",
+      "name": "Exec Tracking Pos-Armazem",
+      "retryOnFail": true
+    }
+  ],
+  "pinData": {
+    "TRIGGER UNICO": [
+      {
+        "json": {
+          "@odata.etag": "W/\"CQAAABYAAAB5+z+ylZG/R54aMqDFRhSeAABUIMVJ\"",
+          "id": "AAMkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQBGAAAAAACJJbUa19cwTJ-q5cKIhmGZBwB5_z_ylZG-R54aMqDFRhSeAAAAAAEMAAB5_z_ylZG-R54aMqDFRhSeAABUJAVwAAA=",
+          "createdDateTime": "2025-12-04T13:38:08Z",
+          "lastModifiedDateTime": "2025-12-04T13:38:25Z",
+          "changeKey": "CQAAABYAAAB5+z+ylZG/R54aMqDFRhSeAABUIMVJ",
+          "categories": [],
+          "receivedDateTime": "2025-12-04T13:38:08Z",
+          "sentDateTime": "2025-12-04T13:37:30Z",
+          "hasAttachments": true,
+          "internetMessageId": "<CPYP284MB1288A47C049E1EE91612CD5682A6A@CPYP284MB1288.BRAP284.PROD.OUTLOOK.COM>",
+          "subject": "CARGA 904 - IDT + INVIVOGEN - AM",
+          "bodyPreview": "Prezados, boa tarde!\r\n\r\nSegue anexo planilha de lotes da carga 904.",
+          "importance": "normal",
+          "parentFolderId": "AAMkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQAuAAAAAACJJbUa19cwTJ-q5cKIhmGZAQB5_z_ylZG-R54aMqDFRhSeAAAAAAEMAAA=",
+          "conversationId": "AAQkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQAQAKxaWDs7KLNOm0Nq2C_6E8k=",
+          "conversationIndex": "AQHcZSM5rFpYOzsos06bQ2rYL7oTyQ==",
+          "isDeliveryReceiptRequested": false,
+          "isReadReceiptRequested": false,
+          "isRead": false,
+          "isDraft": false,
+          "webLink": "https://outlook.office365.com/owa/?ItemID=AAMkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQBGAAAAAACJJbUa19cwTJ%2Fq5cKIhmGZBwB5%2Bz%2BylZG%2FR54aMqDFRhSeAAAAAAEMAAB5%2Bz%2BylZG%2FR54aMqDFRhSeAABUJAVwAAA%3D&exvsurl=1&viewmodel=ReadMessageItem",
+          "inferenceClassification": "focused",
+          "body": {
+            "contentType": "html",
+            "content": "<html>\r\n<head>\r\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\r\n<meta name=\"Generator\" content=\"Microsoft Exchange Server\">\r\n<!-- converted from rtf -->\r\n<style><!-- .EmailQuote { margin-left: 1pt; padding-left: 4pt; border-left: #800000 2px solid; } --></style>\r\n</head>\r\n<body>\r\n<font face=\"Calibri\" size=\"3\"><span style=\"font-size:12pt;\">\r\n<div>Prezados, boa tarde!</div>\r\n<div>&nbsp;</div>\r\n<div>Segue anexo planilha de lotes da carga 904.</div>\r\n<div><font face=\"Aptos\">&nbsp;</font></div>\r\n<div><font face=\"Aptos\">&nbsp;</font></div>\r\n<div> <a href=\"cid:C78CB8A68B55DF55487B8AB251A7667ABB289E82@1\">Planilha Lotes - 904.xlsx</a> </div>\r\n<div><font face=\"Aptos\">&nbsp;</font></div>\r\n</span></font>\r\n</body>\r\n</html>\r\n"
+          },
+          "sender": {
+            "emailAddress": {
+              "name": "Enzo Ferraz | Sintese Biotecnologia",
+              "address": "enzo@sintesebio.com.br"
+            }
+          },
+          "from": {
+            "emailAddress": {
+              "name": "Enzo Ferraz | Sintese Biotecnologia",
+              "address": "enzo@sintesebio.com.br"
+            }
+          },
+          "toRecipients": [
+            {
+              "emailAddress": {
+                "name": "tracking",
+                "address": "tracking@sintesebio.com.br"
+              }
+            }
+          ],
+          "ccRecipients": [],
+          "bccRecipients": [],
+          "replyTo": [],
+          "flag": {
+            "flagStatus": "notFlagged"
+          }
+        },
+        "binary": {
+          "attachment_0": {
+            "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "fileExtension": "xlsx",
+            "data": "filesystem-v2",
+            "fileName": "Planilha Lotes - 904.xlsx",
+            "id": "filesystem-v2:workflows/d4ed9vH6sErTkEZN/executions/temp/binary_data/62475a41-0435-4071-8a17-d3f61f0d245c",
+            "fileSize": "1 MB"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "TRIGGER UNICO": {
+      "main": [
+        [
+          {
+            "node": "Classificador de Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Roteador": {
+      "main": [
+        [
+          {
+            "node": "Exec Standard Daily Order1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exec Automated Shipment1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exec Planilha Lotes1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exec BioRad Pedido1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exec BioRad Confirmacao1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exec Tracking Pos-Armazem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exec Standard Daily Order1": {
+      "main": [
+        [
+          {
+            "node": "Resumo Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exec Automated Shipment1": {
+      "main": [
+        [
+          {
+            "node": "Resumo Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exec Planilha Lotes1": {
+      "main": [
+        [
+          {
+            "node": "Resumo Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exec BioRad Pedido1": {
+      "main": [
+        [
+          {
+            "node": "Resumo Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exec BioRad Confirmacao1": {
+      "main": [
+        [
+          {
+            "node": "Resumo Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation, do nothing1": {
+      "main": [
+        [
+          {
+            "node": "Resumo Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classificador de Emails": {
+      "main": [
+        [
+          {
+            "node": "Roteador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exec Tracking Pos-Armazem": {
+      "main": [
+        [
+          {
+            "node": "Resumo Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "vpEAvi7gkAjmLvkl"
+  },
+  "versionId": "ebb4c428-9505-4b56-82cb-0f2000d44e26",
+  "meta": {
+    "instanceId": "dcba349999e42800a73e5235199b71095d4545b83e3b6d9b2806516e371d0786"
+  },
+  "id": "d4ed9vH6sErTkEZN",
+  "tags": []
+}
