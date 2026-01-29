@@ -1,0 +1,738 @@
+{
+  "name": "3 - FedEx Scraper (Atualizado)",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://apis.fedex.com/oauth/token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "l75df88b92df7d4a74b1ddcc4b0e6e616d"
+            },
+            {
+              "name": "client_secret",
+              "value": "729073a6a60641d081bdbbdb34845485"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "9bd12197-8b1d-4683-bcc9-5e285e6ccc67",
+      "name": "FedEx OAuth Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2176,
+        512
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse do token e distribuir para cada SO\nconst responseData = JSON.parse($input.item.json.data);\nconst allTrackingItems = $('Extrair Tracking Numbers').all();\n\nconst output = [];\nfor (const trackingItem of allTrackingItems) {\n  for (const salesOrderData of trackingItem.json.sales_orders) {\n    output.push({\n      json: {\n        access_token: responseData.access_token,\n        token_type: responseData.token_type,\n        tracking_number: trackingItem.json.tracking_number,\n        sales_order: salesOrderData.sales_order,\n        cliente: salesOrderData.cliente\n      }\n    });\n  }\n}\n\nconsole.log(`Total de itens para rastrear: ${output.length}`);\nreturn output;"
+      },
+      "id": "20ec3022-9a76-4209-84de-e14b28fd37c8",
+      "name": "Processar Token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1952,
+        512
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://apis.fedex.com/track/v1/trackingnumbers",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "x-customer-transaction-id",
+              "value": "={{ $json.tracking_number }}-{{ new Date().getTime() }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"includeDetailedScans\": true,\n  \"trackingInfo\": [\n    {\n      \"trackingNumberInfo\": {\n        \"trackingNumber\": \"{{ $json.tracking_number }}\"\n      }\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1728,
+        512
+      ],
+      "id": "66aea4df-1646-49ed-8964-6fdae4954bfb",
+      "name": "FedEx Track API",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar resposta do tracking FedEx com informações corretas\nconst output = [];\n\nfor (let i = 0; i < $input.all().length; i++) {\n  const trackingData = $input.all()[i].json;\n  const originalData = $('Processar Token').all()[i].json;\n  \n  const salesOrder = originalData.sales_order;\n  const cliente = originalData.cliente;\n  const trackingNumber = originalData.tracking_number;\n\n  console.log(`Processando tracking ${trackingNumber} para SO ${salesOrder}`);\n\n  let processedData = {\n    sales_order: salesOrder,\n    cliente: cliente,\n    tracking_number: trackingNumber,\n    needs_update: false\n  };\n\n  if (trackingData.output?.completeTrackResults?.length > 0) {\n    const result = trackingData.output.completeTrackResults[0];\n    const trackInfo = result.trackResults?.[0];\n    \n    if (trackInfo) {\n      const statusCode = trackInfo.latestStatusDetail?.code || '';\n      const statusDescription = trackInfo.latestStatusDetail?.description || '';\n      \n      // Identificar se está no armazém\n      const isAtWarehouse = statusDescription.toLowerCase().includes('delivered') ||\n                           statusCode === 'DL' ||\n                           statusDescription.toLowerCase().includes('warehouse') ||\n                           statusCode === 'AR' || \n                           statusCode === 'IT';\n      \n      // EXTRAIR DATAS IMPORTANTES dos scanEvents\n      let pickupDate = null;\n      let deliveredDate = null;\n      \n      if (trackInfo.scanEvents && Array.isArray(trackInfo.scanEvents)) {\n        // Buscar evento de pickup (coleta no fornecedor)\n        const pickupEvent = trackInfo.scanEvents.find(event => \n          event.eventDescription?.toLowerCase().includes('picked up') ||\n          event.eventDescription?.toLowerCase().includes('pickup') ||\n          event.derivedStatus === 'Picked up'\n        );\n        if (pickupEvent) {\n          pickupDate = pickupEvent.date;\n        }\n        \n        // Buscar evento de entrega\n        const deliveryEvent = trackInfo.scanEvents.find(event =>\n          event.eventDescription?.toLowerCase().includes('delivered') ||\n          event.derivedStatus === 'Delivered'\n        );\n        if (deliveryEvent) {\n          deliveredDate = deliveryEvent.date;\n        }\n      }\n      \n      // Se não encontrou nos scanEvents, usar deliveryDetails\n      if (!deliveredDate && trackInfo.deliveryDetails?.actualDeliveryTimestamp) {\n        deliveredDate = trackInfo.deliveryDetails.actualDeliveryTimestamp;\n      }\n      \n      // EXTRAIR PESO E DIMENSÕES de weightAndDimensions\n      let packageInfo = {};\n      \n      if (trackInfo.weightAndDimensions) {\n        const weightDims = trackInfo.weightAndDimensions;\n        \n        // PESO - buscar valor em KG\n        if (weightDims.weight && Array.isArray(weightDims.weight)) {\n          const kgWeight = weightDims.weight.find(w => w.unit === 'KG');\n          if (kgWeight) {\n            packageInfo.peso_kg = parseFloat(kgWeight.value);\n          }\n        }\n        \n        // DIMENSÕES - buscar valores em CM\n        if (weightDims.dimensions && Array.isArray(weightDims.dimensions)) {\n          const cmDims = weightDims.dimensions.find(d => d.units === 'CM');\n          if (cmDims) {\n            packageInfo.comprimento_cm = cmDims.length;\n            packageInfo.largura_cm = cmDims.width;\n            packageInfo.altura_cm = cmDims.height;\n            packageInfo.dimensoes_cm = `${cmDims.length}x${cmDims.width}x${cmDims.height}`;\n            \n            // Calcular volume cúbico em cm³\n            packageInfo.volume_cubico_cm = (cmDims.length * cmDims.width * cmDims.height).toFixed(2);\n          }\n        }\n      }\n      \n      processedData = {\n        ...processedData,\n        needs_update: true,\n        tracking_info: {\n          status_code: statusCode,\n          status_description: statusDescription,\n          is_at_warehouse: isAtWarehouse,\n          \n          // DATAS REAIS dos eventos\n          data_pickup: pickupDate,\n          data_delivered: deliveredDate,\n          last_event_date: trackInfo.latestStatusDetail?.date || new Date().toISOString(),\n          \n          // Localização\n          current_location: trackInfo.latestStatusDetail?.scanLocation ? \n            `${trackInfo.latestStatusDetail.scanLocation.city || ''}, ${trackInfo.latestStatusDetail.scanLocation.stateOrProvinceCode || ''}, ${trackInfo.latestStatusDetail.scanLocation.countryCode || ''}`.trim() : \n            'Localização não disponível',\n          \n          // INFORMAÇÕES DO PACOTE (apenas KG e CM)\n          ...packageInfo\n        }\n      };\n      \n      console.log(`✓ SO ${salesOrder}: ${statusDescription}`);\n      if (pickupDate) console.log(`  → Pickup: ${pickupDate}`);\n      if (deliveredDate) console.log(`  → Delivered: ${deliveredDate}`);\n      if (packageInfo.peso_kg) console.log(`  → Peso: ${packageInfo.peso_kg} kg`);\n      if (packageInfo.dimensoes_cm) console.log(`  → Dimensões: ${packageInfo.dimensoes_cm} cm`);\n      if (packageInfo.volume_cubico_cm) console.log(`  → Volume: ${packageInfo.volume_cubico_cm} cm³`);\n    }\n  } else if (trackingData.errors?.length > 0) {\n    processedData.error = true;\n    processedData.error_message = trackingData.errors[0].message;\n    console.log(`✗ SO ${salesOrder}: Erro - ${trackingData.errors[0].message}`);\n  }\n\n  output.push({ json: processedData });\n}\n\nconsole.log(`\\nTotal de registros processados: ${output.length}`);\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1504,
+        512
+      ],
+      "id": "05cf112b-4628-4735-8919-b93d719c19e4",
+      "name": "Processar Tracking",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "envios_processados",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sales_order",
+              "condition": "eq",
+              "keyValue": "={{ $('Preparar Atualizações').item.json.sales_order }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status_atual",
+              "fieldValue": "={{ $('Preparar Atualizações').item.json.status_atual }}"
+            },
+            {
+              "fieldId": "ultima_localizacao",
+              "fieldValue": "={{ $('Preparar Atualizações').item.json.ultima_localizacao }}"
+            },
+            {
+              "fieldId": "data_ultima_atualizacao",
+              "fieldValue": "={{ $('Preparar Atualizações').item.json.data_ultima_atualizacao }}"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "data_pickup",
+              "fieldValue": "={{ $('Preparar Atualizações').item.json.data_pickup }}"
+            },
+            {
+              "fieldId": "data_delivered",
+              "fieldValue": "={{ $('Preparar Atualizações').item.json.data_delivered }}"
+            }
+          ]
+        }
+      },
+      "id": "6d129d7b-611b-47bb-8f5a-b0b774200981",
+      "name": "Backup Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        512
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "oD99Qqe2sNruP4u0",
+          "name": "Supabase - tracking@"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "tableId": "shipment_history",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sales_order",
+              "fieldValue": "={{ $('Preparar Atualizações').item.json.sales_order }}"
+            },
+            {
+              "fieldId": "evento",
+              "fieldValue": "={{ $('Preparar Atualizações').item.json.evento }}"
+            },
+            {
+              "fieldId": "data_evento",
+              "fieldValue": "={{ $('Preparar Atualizações').item.json.data_evento }}"
+            },
+            {
+              "fieldId": "detalhes",
+              "fieldValue": "={{ $('Preparar Atualizações').item.json.detalhes }}"
+            },
+            {
+              "fieldId": "fonte",
+              "fieldValue": "FedEx Tracking API"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            }
+          ]
+        }
+      },
+      "id": "a537a127-3666-4d8e-925d-9fc5afc6bd0e",
+      "name": "Registrar Histórico",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        512
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "oD99Qqe2sNruP4u0",
+          "name": "Supabase - tracking@"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Preparar Atualizações').item.json.is_at_warehouse }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "id": "85309150-2e08-489a-91e3-19033380822e"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "04826a4b-45ec-4dc6-bc93-c64ac114aff7",
+      "name": "Chegou no Armazém?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        512
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "tableId": "notification_queue",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sales_order",
+              "fieldValue": "={{ $json.sales_order }}"
+            },
+            {
+              "fieldId": "cliente",
+              "fieldValue": "={{ $json.cliente }}"
+            },
+            {
+              "fieldId": "tipo_notificacao",
+              "fieldValue": "chegada_armazem_miami"
+            },
+            {
+              "fieldId": "titulo",
+              "fieldValue": "=Pedido {{ $json.sales_order }} - Chegou ao Armazém!"
+            },
+            {
+              "fieldId": "mensagem",
+              "fieldValue": "=Seu pedido {{ $json.sales_order }} chegou ao nosso armazém em Miami. Próxima etapa: consolidação e envio ao Brasil."
+            },
+            {
+              "fieldId": "detalhes",
+              "fieldValue": "={{ $json.detalhes }}"
+            },
+            {
+              "fieldId": "prioridade",
+              "fieldValue": "alta"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pendente"
+            },
+            {
+              "fieldId": "data_evento",
+              "fieldValue": "={{ $json.data_evento }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            }
+          ]
+        }
+      },
+      "id": "85512894-667b-4298-9404-1af73888a37d",
+      "name": "Criar Notificação",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        64,
+        432
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "oD99Qqe2sNruP4u0",
+          "name": "Supabase - tracking@"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar resumo do processamento\nconst totalProcessed = $('Processar Token').all().length;\nconst totalUpdated = $('Preparar Atualizações').all().length;\nconst notifications = $('Criar Notificação').all().length;\n\nconst summary = {\n  timestamp: new Date().toISOString(),\n  metrics: {\n    total_trackings_verificados: totalProcessed,\n    total_atualizados: totalUpdated,\n    notificacoes_criadas: notifications\n  },\n  status: 'completed',\n  message: `FedEx tracking completado: ${totalUpdated}/${totalProcessed} atualizados`\n};\n\nconsole.log('\\n=== RESUMO FEDEX TRACKING ===');\nconsole.log(`Trackings verificados: ${totalProcessed}`);\nconsole.log(`Atualizados: ${totalUpdated}`);\nconsole.log(`Notificações: ${notifications}`);\nconsole.log('==============================\\n');\n\nreturn [{ json: summary }];"
+      },
+      "id": "e50e1270-6079-459a-90de-d1d35f85f42e",
+      "name": "Gerar Resumo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        512
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.needs_update }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "id": "de41de59-c7be-4c50-aca7-8cb84fc7c11e"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c4fad016-3c06-423d-a853-5aa1b59bfc75",
+      "name": "Precisa Atualizar?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1280,
+        512
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar dados para atualização - TODOS OS ITENS\nconst allItems = $input.all();\nconst output = [];\n\nfor (const item of allItems) {\n  const trackingInfo = item.json.tracking_info;\n  const salesOrder = item.json.sales_order;\n  const cliente = item.json.cliente;\n  const trackingNumber = item.json.tracking_number;\n\n  let evento = 'Atualização de Status';\n  let statusAtual = trackingInfo.status_description;\n  let statusCliente = 'Em Importação'; // Padrão para notificações internas\n\n  // Determinar status baseado no tracking\n  if (trackingInfo.is_at_warehouse) {\n    evento = 'Chegada no Armazém';\n    statusAtual = 'No Armazém';\n    statusCliente = 'Em Importação'; // Cliente continua vendo \"Em Importação\"\n  }\n\n  output.push({\n    json: {\n      // Dados básicos\n      sales_order: salesOrder,\n      tracking_number: trackingNumber,\n      cliente: cliente,\n      \n      // Status\n      status_atual: statusAtual,\n      status_cliente: statusCliente,\n      ultima_localizacao: trackingInfo.current_location,\n      data_ultima_atualizacao: trackingInfo.last_event_date,\n      \n      // DATAS IMPORTANTES\n      data_pickup: trackingInfo.data_pickup,\n      data_delivered: trackingInfo.data_delivered,\n      \n      // INFORMAÇÕES DO PACOTE (apenas KG e CM)\n      peso_kg: trackingInfo.peso_kg,\n      dimensoes_cm: trackingInfo.dimensoes_cm,\n      comprimento_cm: trackingInfo.comprimento_cm,\n      largura_cm: trackingInfo.largura_cm,\n      altura_cm: trackingInfo.altura_cm,\n      volume_cubico_cm: trackingInfo.volume_cubico_cm,\n      \n      // Histórico\n      evento: evento,\n      data_evento: trackingInfo.last_event_date,\n      detalhes: JSON.stringify({\n        tracking: trackingNumber,\n        status: statusAtual,\n        localizacao: trackingInfo.current_location,\n        codigo_status: trackingInfo.status_code,\n        pickup: trackingInfo.data_pickup,\n        delivered: trackingInfo.data_delivered,\n        peso_kg: trackingInfo.peso_kg,\n        dimensoes_cm: trackingInfo.dimensoes_cm,\n        volume_cm3: trackingInfo.volume_cubico_cm\n      }),\n      \n      // Flag\n      is_at_warehouse: trackingInfo.is_at_warehouse\n    }\n  });\n  \n  console.log(`✓ Preparado: SO ${salesOrder} - ${statusAtual}`);\n}\n\nconsole.log(`\\nTotal de atualizações preparadas: ${output.length}`);\nreturn output;"
+      },
+      "id": "185b40c9-4301-4ff3-af6c-23cb9abea394",
+      "name": "Preparar Atualizações",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        512
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair tracking numbers únicos mantendo mapeamento para TODAS as SOs\nconst allItems = $input.all();\nconst trackingMap = new Map();\n\nfor (const item of allItems) {\n  const trackings = item.json.tracking_numbers;\n  if (trackings) {\n    const numbers = trackings.split(',').map(t => t.trim()).filter(t => t);\n    \n    numbers.forEach(trackingNum => {\n      if (trackingMap.has(trackingNum)) {\n        const existingData = trackingMap.get(trackingNum);\n        existingData.sales_orders.push({\n          sales_order: item.json.sales_order,\n          cliente: item.json.cliente,\n          id: item.json.id,\n          created_at: item.json.created_at\n        });\n      } else {\n        trackingMap.set(trackingNum, {\n          tracking_number: trackingNum,\n          sales_orders: [{\n            sales_order: item.json.sales_order,\n            cliente: item.json.cliente,\n            id: item.json.id,\n            created_at: item.json.created_at\n          }],\n          timestamp: new Date().toISOString()\n        });\n      }\n    });\n  }\n}\n\nconst output = Array.from(trackingMap.values()).map(data => ({ json: data }));\n\nconsole.log(`Total de tracking numbers únicos: ${output.length}`);\noutput.forEach(item => {\n  console.log(`Tracking ${item.json.tracking_number}: ${item.json.sales_orders.length} SOs`);\n});\n\nreturn output;"
+      },
+      "id": "d8dbac1b-af69-4bdc-aeaf-305aa3676374",
+      "name": "Extrair Tracking Numbers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2400,
+        512
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "v_envios_pendentes_tracking",
+        "returnAll": true
+      },
+      "id": "6e3490ee-d976-40e6-b647-902e241ce997",
+      "name": "Buscar Envios Pendentes",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2624,
+        512
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "oD99Qqe2sNruP4u0",
+          "name": "Supabase - tracking@"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aldwmdfveivkfxxvfoua.supabase.co/functions/v1/update-tracking",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer p3Rma-STS_n8n_2025"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -608,
+        512
+      ],
+      "id": "137e6359-9720-4bca-996e-e3c49de51b86",
+      "name": "HTTP Request",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4,
+              "triggerAtMinute": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2848,
+        512
+      ],
+      "id": "91f60675-895d-4908-9e78-4013b8fe9a80",
+      "name": "Schedule Trigger",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sintesebio.app.n8n.cloud/webhook/logger",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "p3Rma-STS_n8n_2025"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        736,
+        512
+      ],
+      "id": "83cffd89-30d1-4625-aede-0849ce3a26ea",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node: Preparar Dados do Log\nconst allItems = $input.all();\n\n// Extrair métricas específicas baseado no workflow\nlet workflowMetrics = {};\nlet mainMessage = 'Workflow executado';\n\n// 1 - Standard Daily Order\nif ($workflow.name.includes('Standard Daily Order')) {\n  const salesOrders = allItems.map(i => i.json.sales_order).filter(Boolean);\n  workflowMetrics = {\n    total_orders: salesOrders.length,\n    sales_orders: salesOrders.slice(0, 10), // Primeiras 10 SOs\n    total_value: allItems.reduce((sum, i) => sum + parseFloat(i.json.valor_total || 0), 0).toFixed(2)\n  };\n  mainMessage = `${salesOrders.length} pedidos processados`;\n}\n\n// 2 - Automated Daily Shipment\nelse if ($workflow.name.includes('Automated Daily Shipment')) {\n  workflowMetrics = {\n    total_shipments: allItems.length,\n    tracking_count: allItems.filter(i => i.json.tracking_numbers).length\n  };\n  mainMessage = `${allItems.length} envios processados`;\n}\n\n// 3 - FedEx Scraper\nelse if ($workflow.name.includes('FedEx Scraper')) {\n  workflowMetrics = {\n    trackings_verified: allItems.length,\n    at_warehouse: allItems.filter(i => i.json.is_at_warehouse).length\n  };\n  mainMessage = `${allItems.length} trackings verificados`;\n}\n\n// 4 - Tracking Pós-Armazém\nelse if ($workflow.name.includes('Tracking Pós-Armazém') || $workflow.name.includes('Tracking PÃ³s-ArmazÃ©m')) {\n  workflowMetrics = {\n    emails_processed: allItems.length,\n    cargas_processadas: allItems.filter(i => i.json.numero_carga).length\n  };\n  mainMessage = `${allItems.length} emails de tracking processados`;\n}\n\n// 5 - Planilha de Lotes\nelse if ($workflow.name.includes('Planilha de Lotes')) {\n  const summary = allItems[0]?.json?.summary || allItems[0]?.json;\n  workflowMetrics = {\n    numero_carga: summary?.numero_carga,\n    total_sos: summary?.total_sos,\n    total_items: summary?.total_items\n  };\n  mainMessage = `Carga ${summary?.numero_carga} processada com ${summary?.total_sos} SOs`;\n}\n\n// 6 - Bio-Rad Pedido\nelse if ($workflow.name.includes('Bio-Rad') && $workflow.name.includes('PEDIDO')) {\n  const orderData = allItems[0]?.json;\n  workflowMetrics = {\n    order_number: orderData?.orderNumber || orderData?.order_number,\n    total_items: orderData?.metrics?.totalItems || orderData?.total_items,\n    total_value: orderData?.financial?.total || orderData?.total_value\n  };\n  mainMessage = `Pedido ${orderData?.orderNumber} registrado`;\n}\n\n// 7 - Bio-Rad Confirmação\nelse if ($workflow.name.includes('Bio-Rad') && $workflow.name.includes('CONFIRMAÇÃO')) {\n  const orderData = allItems[0]?.json;\n  workflowMetrics = {\n    order_number: orderData?.orderNumber,\n    confirmation_number: orderData?.confirmationNumber,\n    status: orderData?.overallStatus,\n    confirmed_items: orderData?.metrics?.confirmedItems,\n    total_items: orderData?.metrics?.totalItems\n  };\n  mainMessage = `Confirmação ${orderData?.confirmationNumber} processada`;\n}\n\n// Fallback genérico\nelse {\n  workflowMetrics = {\n    items_count: allItems.length\n  };\n  mainMessage = `${allItems.length} items processados`;\n}\n\n// Retornar dados formatados\nreturn [{\n  json: {\n    workflow_name: $workflow.name,\n    workflow_id: $workflow.id,\n    execution_id: $execution.id,\n    level: 'info',\n    message: mainMessage,\n    data: workflowMetrics,\n    performance: {\n      duration_ms: null,\n      items_processed: allItems.length\n    },\n    context: {\n      execution_mode: $execution.mode,\n      timestamp: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        512
+      ],
+      "id": "c076352f-c750-4f93-be81-19b7f7360851",
+      "name": "Preparar Dados do Log"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FedEx OAuth Token": {
+      "main": [
+        [
+          {
+            "node": "Processar Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Token": {
+      "main": [
+        [
+          {
+            "node": "FedEx Track API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FedEx Track API": {
+      "main": [
+        [
+          {
+            "node": "Processar Tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Tracking": {
+      "main": [
+        [
+          {
+            "node": "Precisa Atualizar?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backup Supabase": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar Histórico": {
+      "main": [
+        [
+          {
+            "node": "Chegou no Armazém?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chegou no Armazém?": {
+      "main": [
+        [
+          {
+            "node": "Criar Notificação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gerar Resumo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Notificação": {
+      "main": [
+        [
+          {
+            "node": "Gerar Resumo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precisa Atualizar?1": {
+      "main": [
+        [
+          {
+            "node": "Preparar Atualizações",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Atualizações": {
+      "main": [
+        [
+          {
+            "node": "Backup Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair Tracking Numbers": {
+      "main": [
+        [
+          {
+            "node": "FedEx OAuth Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Envios Pendentes": {
+      "main": [
+        [
+          {
+            "node": "Extrair Tracking Numbers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Registrar Histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Buscar Envios Pendentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Resumo": {
+      "main": [
+        [
+          {
+            "node": "Preparar Dados do Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Dados do Log": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "vpEAvi7gkAjmLvkl"
+  },
+  "versionId": "64d72a4f-e9c4-4c0b-a79d-daf1ee096206",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dcba349999e42800a73e5235199b71095d4545b83e3b6d9b2806516e371d0786"
+  },
+  "id": "GB9FTrRX07txTRvS",
+  "tags": []
+}

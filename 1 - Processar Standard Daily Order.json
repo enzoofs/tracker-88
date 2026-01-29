@@ -1,0 +1,386 @@
+{
+  "name": "1 - Processar Standard Daily Order",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Extrair anexos Excel da planilha Standard Daily Order - ADAPTADO PARA OUTLOOK\nconst outputItems = [];\n\nfor (const item of $input.all()) {\n  // Debug para ver estrutura do Outlook\n  console.log('Estrutura do item Outlook:', Object.keys(item.json));\n  \n  // Verificar se existem anexos binários\n  if (item.binary && Object.keys(item.binary).length > 0) {\n    \n    // Procurar por arquivos Excel\n    for (const [key, attachment] of Object.entries(item.binary)) {\n      const fileName = attachment.fileName || '';\n      const mimeType = attachment.mimeType || '';\n      \n      // Verificar se é um arquivo Excel e se contém 'Standard Daily Order' no nome\n      if ((fileName.toLowerCase().includes('standard daily order') || \n           fileName.toLowerCase().includes('standarddailyorder')) && \n          (fileName.toLowerCase().endsWith('.xlsx') || \n           fileName.toLowerCase().endsWith('.xls') ||\n           mimeType.includes('spreadsheet') ||\n           mimeType.includes('excel'))) {\n        \n        outputItems.push({\n          json: {\n            // Adaptado para estrutura do Outlook\n            emailFrom: item.json.from || '',\n            emailSubject: item.json.subject || '',\n            emailDate: item.json.receivedDateTime || item.json.sentDateTime || new Date().toISOString(),\n            fileName: fileName,\n            attachmentKey: key,\n            emailId: item.json.id || '',\n            conversationId: item.json.conversationId || ''\n          },\n          binary: {\n            data: attachment\n          }\n        });\n      }\n    }\n  }\n}\n\nif (outputItems.length === 0) {\n  // Log detalhado para debug\n  console.log('Nenhuma planilha encontrada. Detalhes do email:');\n  console.log('Subject:', $input.first().json.subject);\n  console.log('Anexos encontrados:', Object.keys($input.first().binary || {}));\n  \n  throw new Error('Nenhuma planilha Standard Daily Order encontrada no email');\n}\n\nconsole.log(`Encontrada(s) ${outputItems.length} planilha(s):`);\noutputItems.forEach(item => {\n  console.log(`- ${item.json.fileName} de ${item.json.emailFrom}`);\n});\n\nreturn outputItems;"
+      },
+      "id": "a08f0995-cefd-476c-9bbd-735e7403c6ab",
+      "name": "Extrair Planilha Daily Order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -688,
+        320
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "fileFormat": "xlsx",
+        "options": {
+          "headerRow": true,
+          "readAsString": false
+        }
+      },
+      "id": "50a5d947-1392-47fe-82c8-47ebaee5a00e",
+      "name": "Ler Planilha Excel",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        320
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar dados da planilha Standard Daily Order\nconst processedOrders = [];\nconst orderMap = new Map();\n\n// Função para converter data do Excel\nfunction excelDateToJSDate(excelDate) {\n  if (!excelDate) return new Date().toISOString();\n  \n  if (typeof excelDate === 'string' && excelDate.includes('-')) {\n    return excelDate;\n  }\n  \n  if (typeof excelDate === 'string' && excelDate.includes('/')) {\n    // Formato MM/DD/YY ou DD/MM/YY\n    const parts = excelDate.split('/');\n    if (parts.length === 3) {\n      // Assumindo formato MM/DD/YY\n      const month = parts[0].padStart(2, '0');\n      const day = parts[1].padStart(2, '0');\n      let year = parts[2];\n      // Se o ano tem 2 dígitos, assumir 20XX\n      if (year.length === 2) {\n        year = '20' + year;\n      }\n      return `${year}-${month}-${day}T00:00:00Z`;\n    }\n  }\n  \n  if (typeof excelDate === 'number') {\n    const excelEpoch = new Date(1899, 11, 30);\n    const msPerDay = 86400000;\n    const date = new Date(excelEpoch.getTime() + (excelDate * msPerDay));\n    return date.toISOString();\n  }\n  \n  try {\n    const date = new Date(excelDate);\n    if (!isNaN(date.getTime())) {\n      return date.toISOString();\n    }\n  } catch (e) {\n    console.log('Erro ao converter data:', e);\n  }\n  \n  return new Date().toISOString();\n}\n\n// Log dos campos disponíveis para debug\nif ($input.all().length > 0) {\n  console.log('Campos disponíveis na planilha:', Object.keys($input.first().json));\n}\n\nfor (const item of $input.all()) {\n  const json = item.json;\n  \n  // Extrair dados com os nomes corretos dos campos\n  const salesOrder = json['Sales Order #']?.toString().trim() || '';\n  const erpOrder = json['ERP Sales Order']?.toString().trim() || '';\n  const cliente = json['Organization']?.trim() || '';\n  const produto = json['Product']?.trim() || '';\n  const orderDate = json['Order Date'] || '';\n  const valor = parseFloat(json['Order Total'] || json['Item Total'] || 0);\n  const webOrder = json['Web Order #']?.toString().trim() || '';\n  const researcher = json['Researcher']?.trim() || '';\n  const piName = json['PI']?.trim() || '';\n  const distributor = json['Distributor']?.trim() || '';\n  \n  // Skip linhas vazias\n  if (!salesOrder || salesOrder === '') {\n    console.log('Sales Order vazia, pulando linha...');\n    continue;\n  }\n  \n  console.log(`Processando SO: ${salesOrder}, Cliente: ${cliente}, Valor: ${valor}`);\n  \n  // Converter a data do pedido\n  const dataOrdemConvertida = excelDateToJSDate(orderDate);\n  \n  // Agrupar por Sales Order (caso haja múltiplas linhas)\n  if (!orderMap.has(salesOrder)) {\n    orderMap.set(salesOrder, {\n      sales_order: salesOrder,\n      erp_order: erpOrder,\n      cliente: cliente,\n      researcher: researcher,\n      pi_name: piName,\n      produtos: [],\n      valor_total: 0,\n      data_ordem: dataOrdemConvertida,\n      web_order: webOrder,\n      distributor: distributor\n    });\n  }\n  \n  const order = orderMap.get(salesOrder);\n  if (produto && produto !== '') {\n    order.produtos.push(produto);\n  }\n  order.valor_total += valor;\n}\n\n// Converter para array final\nfor (const order of orderMap.values()) {\n  processedOrders.push({\n    json: {\n      // Dados principais\n      sales_order: order.sales_order,\n      erp_order: order.erp_order || '',\n      cliente: order.cliente,\n      end_user: order.researcher || '',\n      pi_name: order.pi_name || '',\n      produtos: [...new Set(order.produtos)].join(', '),\n      valor_total: order.valor_total.toFixed(2),\n      web_order: order.web_order || '',\n      distributor: order.distributor || '',\n      \n      // Status inicial - SEMPRE Em Produção\n      status: 'Em Produção',\n      status_atual: 'Em Produção',\n      etapa_logistica: 'Em Produção',\n      \n      // Datas\n      data_ordem: order.data_ordem,\n      data_processamento: new Date().toISOString(),\n      \n      // Metadata\n      fonte: 'Standard Daily Order',\n      // Campos de envio NÃO devem ser preenchidos aqui\n      tracking_numbers: null, // Null ao invés de string vazia\n      data_envio: null,\n      ultima_localizacao: 'Fornecedor',\n      data_ultima_atualizacao: new Date().toISOString()\n    }\n  });\n}\n\nif (processedOrders.length === 0) {\n  throw new Error('Nenhum pedido válido encontrado na planilha');\n}\n\nconsole.log(`\\n=== RESUMO DO PROCESSAMENTO ===`);\nconsole.log(`Total de pedidos processados: ${processedOrders.length}`);\nconsole.log(`Primeiro pedido: SO ${processedOrders[0].json.sales_order}`);\nconsole.log(`================================\\n`);\n\nreturn processedOrders;"
+      },
+      "id": "0c886736-d3c9-4d9a-86d9-70d6ffd24b8a",
+      "name": "Processar Dados Daily Order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        320
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "tableId": "envios_processados",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sales_order",
+              "fieldValue": "={{ $('Processar Dados Daily Order').item.json.sales_order }}"
+            },
+            {
+              "fieldId": "erp_order",
+              "fieldValue": "={{ $('Processar Dados Daily Order').item.json.erp_order }}"
+            },
+            {
+              "fieldId": "cliente",
+              "fieldValue": "={{ $('Processar Dados Daily Order').item.json.cliente }}"
+            },
+            {
+              "fieldId": "produtos",
+              "fieldValue": "={{ $('Processar Dados Daily Order').item.json.produtos }}"
+            },
+            {
+              "fieldId": "valor_total",
+              "fieldValue": "={{ $('Processar Dados Daily Order').item.json.valor_total }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $('Processar Dados Daily Order').item.json.status }}"
+            },
+            {
+              "fieldId": "status_atual",
+              "fieldValue": "Em Produção"
+            },
+            {
+              "fieldId": "ultima_localizacao",
+              "fieldValue": "Fornecedor"
+            },
+            {
+              "fieldId": "data_ultima_atualizacao",
+              "fieldValue": "={{ $('Processar Dados Daily Order').item.json.data_ordem }}"
+            },
+            {
+              "fieldId": "web_order",
+              "fieldValue": "={{ $('Processar Dados Daily Order').item.json.web_order }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $('Processar Dados Daily Order').item.json.data_ultima_atualizacao }}"
+            }
+          ]
+        }
+      },
+      "id": "fe513963-329b-4d5c-aba3-4b3022076321",
+      "name": "Inserir Nova SO",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        208,
+        320
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "oD99Qqe2sNruP4u0",
+          "name": "Supabase - tracking@"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ====================================\n// CÓDIGO PARA: Registrar Histórico\n// ====================================\n// Este node deve referenciar os dados do \"Processar Dados Daily Order\"\n// em vez de usar os dados retornados pelo Supabase\n\nconst historicos = [];\n\n// Pegar os dados originais processados\nconst processedOrders = $('Processar Dados Daily Order').all();\n\nfor (const item of processedOrders) {\n  const order = item.json;\n  \n  historicos.push({\n    json: {\n      sales_order: order.sales_order,\n      evento: 'Entrada em Produção',\n      data_evento: order.data_ordem,\n      detalhes: JSON.stringify({\n        produtos: order.produtos,\n        valor: order.valor_total,\n        cliente: order.cliente,\n        distributor: order.distributor || 'N/A',\n        end_user: order.end_user || 'N/A',\n        pi_name: order.pi_name || 'N/A',\n        erp_order: order.erp_order || 'N/A',\n        web_order: order.web_order || 'N/A'\n      }),\n      fonte: 'Standard Daily Order',\n      created_at: new Date().toISOString()\n    }\n  });\n}\n\nreturn historicos;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        320
+      ],
+      "id": "0378c0c1-d899-40b6-99c1-ec2f7272911e",
+      "name": "Registrar Histórico",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://aldwmdfveivkfxxvfoua.supabase.co/functions/v1/ingest-envios",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer p3Rma-STS_n8n_2025"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "sales_order",
+              "value": "={{$json.sales_order}}"
+            },
+            {
+              "name": "erp_order",
+              "value": "={{$json.erp_order}}"
+            },
+            {
+              "name": "cliente",
+              "value": "={{$json.cliente}}"
+            },
+            {
+              "name": "produtos",
+              "value": "={{$json.produtos}}"
+            },
+            {
+              "name": "valor_total",
+              "value": "={{$json.valor_total}}"
+            },
+            {
+              "name": "status",
+              "value": "Em Produção"
+            },
+            {
+              "name": "status_atual",
+              "value": "Em Produção"
+            },
+            {
+              "name": "ultima_localizacao",
+              "value": "Fornecedor"
+            },
+            {
+              "name": "data_ultima_atualizacao",
+              "value": "={{$json.data_ultima_atualizacao}}"
+            },
+            {
+              "name": "web_order",
+              "value": "={{ $json.web_order }}"
+            },
+            {
+              "name": "data_processamento",
+              "value": "={{$json.data_processamento}}"
+            },
+            {
+              "name": "status_cliente",
+              "value": "Em Produção"
+            },
+            {
+              "name": "data_ordem",
+              "value": "=={{ $('Processar Dados Daily Order').item.json.data_ordem }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -16,
+        320
+      ],
+      "id": "4b2d5675-9146-4947-95b0-40cb525b7495",
+      "name": "HTTP Request",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -912,
+        320
+      ],
+      "id": "efcca92f-0fb7-4b2f-a4c6-4f31a3851977",
+      "name": "When Executed by Another Workflow",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sintesebio.app.n8n.cloud/webhook/logger",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "p3Rma-STS_n8n_2025"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        320
+      ],
+      "id": "4b309844-3d8b-4cfa-8fe6-1d944c50c928",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node: Preparar Dados do Log\nconst allItems = $input.all();\n\n// Extrair métricas específicas baseado no workflow\nlet workflowMetrics = {};\nlet mainMessage = 'Workflow executado';\n\n// 1 - Standard Daily Order\nif ($workflow.name.includes('Standard Daily Order')) {\n  const salesOrders = allItems.map(i => i.json.sales_order).filter(Boolean);\n  workflowMetrics = {\n    total_orders: salesOrders.length,\n    sales_orders: salesOrders.slice(0, 10), // Primeiras 10 SOs\n    total_value: allItems.reduce((sum, i) => sum + parseFloat(i.json.valor_total || 0), 0).toFixed(2)\n  };\n  mainMessage = `${salesOrders.length} pedidos processados`;\n}\n\n// 2 - Automated Daily Shipment\nelse if ($workflow.name.includes('Automated Daily Shipment')) {\n  workflowMetrics = {\n    total_shipments: allItems.length,\n    tracking_count: allItems.filter(i => i.json.tracking_numbers).length\n  };\n  mainMessage = `${allItems.length} envios processados`;\n}\n\n// 3 - FedEx Scraper\nelse if ($workflow.name.includes('FedEx Scraper')) {\n  workflowMetrics = {\n    trackings_verified: allItems.length,\n    at_warehouse: allItems.filter(i => i.json.is_at_warehouse).length\n  };\n  mainMessage = `${allItems.length} trackings verificados`;\n}\n\n// 4 - Tracking Pós-Armazém\nelse if ($workflow.name.includes('Tracking Pós-Armazém') || $workflow.name.includes('Tracking PÃ³s-ArmazÃ©m')) {\n  workflowMetrics = {\n    emails_processed: allItems.length,\n    cargas_processadas: allItems.filter(i => i.json.numero_carga).length\n  };\n  mainMessage = `${allItems.length} emails de tracking processados`;\n}\n\n// 5 - Planilha de Lotes\nelse if ($workflow.name.includes('Planilha de Lotes')) {\n  const summary = allItems[0]?.json?.summary || allItems[0]?.json;\n  workflowMetrics = {\n    numero_carga: summary?.numero_carga,\n    total_sos: summary?.total_sos,\n    total_items: summary?.total_items\n  };\n  mainMessage = `Carga ${summary?.numero_carga} processada com ${summary?.total_sos} SOs`;\n}\n\n// 6 - Bio-Rad Pedido\nelse if ($workflow.name.includes('Bio-Rad') && $workflow.name.includes('PEDIDO')) {\n  const orderData = allItems[0]?.json;\n  workflowMetrics = {\n    order_number: orderData?.orderNumber || orderData?.order_number,\n    total_items: orderData?.metrics?.totalItems || orderData?.total_items,\n    total_value: orderData?.financial?.total || orderData?.total_value\n  };\n  mainMessage = `Pedido ${orderData?.orderNumber} registrado`;\n}\n\n// 7 - Bio-Rad Confirmação\nelse if ($workflow.name.includes('Bio-Rad') && $workflow.name.includes('CONFIRMAÇÃO')) {\n  const orderData = allItems[0]?.json;\n  workflowMetrics = {\n    order_number: orderData?.orderNumber,\n    confirmation_number: orderData?.confirmationNumber,\n    status: orderData?.overallStatus,\n    confirmed_items: orderData?.metrics?.confirmedItems,\n    total_items: orderData?.metrics?.totalItems\n  };\n  mainMessage = `Confirmação ${orderData?.confirmationNumber} processada`;\n}\n\n// Fallback genérico\nelse {\n  workflowMetrics = {\n    items_count: allItems.length\n  };\n  mainMessage = `${allItems.length} items processados`;\n}\n\n// Retornar dados formatados\nreturn [{\n  json: {\n    workflow_name: $workflow.name,\n    workflow_id: $workflow.id,\n    execution_id: $execution.id,\n    level: 'info',\n    message: mainMessage,\n    data: workflowMetrics,\n    performance: {\n      duration_ms: null,\n      items_processed: allItems.length\n    },\n    context: {\n      execution_mode: $execution.mode,\n      timestamp: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        320
+      ],
+      "id": "4a804d14-e03d-4089-8760-7a4b80bf87c4",
+      "name": "Preparar Dados do Log"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Extrair Planilha Daily Order": {
+      "main": [
+        [
+          {
+            "node": "Ler Planilha Excel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ler Planilha Excel": {
+      "main": [
+        [
+          {
+            "node": "Processar Dados Daily Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Dados Daily Order": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inserir Nova SO": {
+      "main": [
+        [
+          {
+            "node": "Registrar Histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar Histórico": {
+      "main": [
+        [
+          {
+            "node": "Preparar Dados do Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Inserir Nova SO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Extrair Planilha Daily Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        []
+      ]
+    },
+    "Preparar Dados do Log": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "45bd9099-e03d-4f72-8cb5-4af0d84b4eb5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dcba349999e42800a73e5235199b71095d4545b83e3b6d9b2806516e371d0786"
+  },
+  "id": "IHp8cdMly0eUwIBJ",
+  "tags": []
+}

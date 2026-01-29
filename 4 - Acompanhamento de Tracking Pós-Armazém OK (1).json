@@ -1,0 +1,729 @@
+{
+  "name": "4 - Acompanhamento de Tracking Pós-Armazém OK",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2480,
+        720
+      ],
+      "id": "98317371-6018-4acb-9002-18a30fc0c295",
+      "name": "When Executed by Another Workflow",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filtro pré-AI: identificar emails de planilhas e fornecedores específicos\nconst email = $json;\nconst subject = (email.subject || '').toLowerCase();\nconst from = (email.from?.emailAddress?.address || '').toLowerCase();\nconst fromName = (email.from?.emailAddress?.name || '').toLowerCase();\nconst body = (email.bodyPreview || email.body?.content || '').toLowerCase();\n\n// Padrões de emails de planilhas que devem ser ignorados\nconst planilhaPatterns = [\n  'automated daily shipment',\n  'standard daily order',\n  'daily shipment report',\n  'order confirmation',\n  '.xlsx',\n  '.xls',\n  'attached spreadsheet',\n  'planilha anexa',\n  'daily order'\n];\n\n// Remetentes/fornecedores que devem ser ignorados\nconst ignoredSenders = [\n  'biorad',\n  'bio-rad',\n  'bio rad',\n  'order vision',\n  'ordervision'\n];\n\n// Verificar se é email de planilha\nconst isPlanilha = planilhaPatterns.some(pattern => \n  subject.includes(pattern) || body.includes(pattern)\n);\n\n// Verificar se é de remetente ignorado\nconst isIgnoredSender = ignoredSenders.some(sender => \n  from.includes(sender) || \n  fromName.includes(sender) || \n  subject.includes(sender) ||\n  body.includes(sender)\n);\n\n// Verificar se tem anexos (planilhas geralmente têm)\nconst hasAttachments = email.hasAttachments === true;\n\n// Ignorar emails de planilhas\nif (isPlanilha || (hasAttachments && (subject.includes('daily') || subject.includes('shipment')))) {\n  console.log('📋 Email de planilha detectado - Ignorando AI');\n  return [{\n    json: {\n      tipo_email: 'planilha_automated',\n      deve_processar: false,\n      motivo: 'Email de planilha automatizada - processado por outro workflow',\n      skip_ai: true\n    }\n  }];\n}\n\n// Ignorar emails de fornecedores específicos\nif (isIgnoredSender) {\n  console.log('🚫 Email de fornecedor ignorado detectado - Ignorando AI');\n  console.log(`Remetente: ${from} | Nome: ${fromName}`);\n  return [{\n    json: {\n      tipo_email: 'fornecedor_ignorado',\n      deve_processar: false,\n      motivo: 'Email de fornecedor na lista de ignorados (BioRad, Order Vision, etc)',\n      skip_ai: true\n    }\n  }];\n}\n\n// Email normal - pode processar com AI\nconsole.log('📧 Email de tracking detectado - Enviando para AI');\nreturn [{\n  json: {\n    ...email,\n    skip_ai: false\n  }\n}];"
+      },
+      "id": "65162948-bc28-42cd-ac20-1ff12bc8b374",
+      "name": "Filtro Pré-AI1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2256,
+        720
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skip_ai }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "id": "9dbea042-426c-43c6-a89c-2d34149e9495"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "150d8631-93e2-48c9-bd87-7227b32c4acc",
+      "name": "Processar com AI?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2032,
+        720
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um assistente especializado em classificar e-mails de tracking logístico pós-armazém. Analise o conteúdo abaixo e identifique o tipo de atualização logística.\n\nAssunto: {{ $json.email.subject }}\nRemetente: {{ $json.email.from.address }}\nCorpo (inclui histórico completo da thread): {{ $json.email.thread_completa || $json.email.bodyPreview }}\n\n⚠️ IMPORTANTE: Analise TODO o conteúdo acima, incluindo emails anteriores da thread (histórico), para extrair TODAS as informações disponíveis:\n- Números MAWB/HAWB\n- Números de invoices\n- Datas de previsão de embarque e chegada\n- Localizações\n- Qualquer outro detalhe logístico mencionado\n\n⚠️ Este workflow processa apenas atualizações de status de cargas já existentes ou recém-autorizadas (após criação da PO).\n\n⚠️ IMPORTANTE: Este workflow NÃO processa:\n- Pedidos comerciais (novos pedidos, ordens de compra, requisições)\n- Emails com \"Novo Pedido\", \"Nova Ordem\", \"OC XXX\" (Ordem de Compra)\n- Solicitações de cotação ou compra de produtos\n→ Se o email for sobre PEDIDO COMERCIAL, retorne: tipo_email: \"outro\", deve_processar: false\n\n🔍 ATENÇÃO ESPECIAL: O ASSUNTO do email é a fonte PRINCIPAL de informação. Sempre analise o subject primeiro!\n\nClassifique o e-mail em uma das categorias a seguir:\n\nautorizacao_consolidacao – Quando a criação da carga (PO) é confirmada ou autorizada pelo cliente/importador.\n\nCOMO IDENTIFICAR:\n1. **Email CURTO** com apenas a confirmação (ex: \"Ciente, Considere o PO 892\")\n2. **Corpo do email contém APENAS** confirmações como:\n   - \"Ciente, considere o PO XXX\"\n   - \"Aprovado, seguir com PO XXX\"\n   - \"Ok, autorizado consolidar como PO XXX\"\n   - \"Gentileza seguir com o embarque\"\n3. **NÃO contém** detalhes de previsões, invoices ou HAWB\n\n⚠️ IMPORTANTE: Se o email contém \"PREVISÃO DE EMBARQUE\", \"PREVISÃO DE CHEGADA\", \"HAWB\", ou \"INVOICE\", NÃO é autorização, é PRÉ-ALERTA!\n\npre_alerta – Pré-alerta ou aviso de que uma carga será consolidada/embarcada com detalhes operacionais.\n\nCOMO IDENTIFICAR:\n1. **Email LONGO** com múltiplos detalhes\n2. Contém informações como:\n   - \"PREVISÃO DE EMBARQUE PARA O DIA XX/XX\"\n   - \"PREVISÃO DE CHEGADA PARA O DIA XX/XX\"\n   - \"HAWB MIA12934 DRAFT\"\n   - \"INVOICE: 0085439357\"\n   - \"Follow-up do processo\"\n   - \"Draft para aprovação\"\n3. Pode aparecer junto com histórico de autorização anterior (emails encadeados)\n\n**REGRA CRÍTICA:** Se o email atual (não o histórico) contém detalhes de previsões/invoices/HAWB, é PRÉ-ALERTA, mesmo que mencione \"PO XXX\".\n\nconfirmacao_embarque – Confirmação de que a carga FOI embarcada (evento já ocorrido).\n\nCOMO IDENTIFICAR:\n- \"o embarque ocorreu\", \"embarque realizado\", \"embarque efetuado\"\n- \"embarcou às HH:MM\", \"voo decolou\", \"departed\", \"has departed\"\n- \"saiu da origem\", \"saiu de Miami\", \"em trânsito internacional\" (evento consumado)\n\n⚠️ IMPORTANTE: Se mencionar \"chegou\", \"recebida\", \"disponível\" → NÃO é embarque, é CHEGADA!\n\nSe existir um desses indicadores no conteúdo atual do e-mail, classifique como \"confirmacao_embarque\". Extraia:\n- data_evento = a data/hora real do embarque (se vier como 23/10 às 03:53, converta para YYYY-MM-DD e, se possível, guarde HH:MM em observações).\n- localizacao = origem citada (ex.: \"Miami\" ou \"Origem\").\n\nconfirmacao_chegada_brasil – Confirmação de chegada da carga ao Brasil (aeroporto).\n\nCOMO IDENTIFICAR:\n- \"chegou no Brasil\", \"chegou em Confins\", \"chegou em Viracopos\", \"chegou em Guarulhos\"\n- \"aterrissou\", \"voo aterrisou\", \"arrived in Brazil\"\n- \"em processo de nacionalização\", \"aguardando liberação aduaneira\"\n- **ATENÇÃO:** Foco em chegada no AEROPORTO/PAÍS, não na empresa\n\nliberacao_aduaneira – Liberação pela Receita Federal ou conclusão do desembaraço aduaneiro.\n\nCOMO IDENTIFICAR:\n- \"liberado pela alfândega\", \"desembaraço concluído\", \"documentos liberados\"\n- \"aduana concluída\", \"cleared customs\", \"customs released\"\n\nchegada_expedicao – Chegada da carga ao CD, expedição da empresa, ou armazém final.\n\n⚠️ REGRA CRÍTICA - PRIORIDADE MÁXIMA PARA DETECÇÃO:\n\nCOMO IDENTIFICAR (qualquer um destes padrões):\n1. **Chegada física na empresa/expedição:**\n   - \"chegou na expedição\", \"chegou no CD\", \"chegou na empresa\"\n   - \"recebida na expedição\", \"recebida no armazém\"\n   - \"chegada no armazém\", \"chegada em nosso CD\"\n   - \"disponível para separação\", \"disponível no estoque\"\n   - \"material recebido\", \"carga recebida\"\n\n2. **Confirmação de recebimento interno:**\n   - \"recebemos a carga XXX\"\n   - \"confirmamos o recebimento da carga XXX\"\n   - \"a carga XXX chegou aqui\"\n   - \"carga XXX foi recebida\"\n\n3. **Status no armazém da empresa:**\n   - \"em armazém [nome empresa]\", \"em nosso armazém\"\n   - \"no CD da empresa\", \"em nossa expedição\"\n\n4. **Palavras-chave específicas para detecção:**\n   - \"recebemos\" (quando referente à carga)\n   - \"chegou aqui\", \"chegou em nossa\"\n   - \"disponível para\" (retirada, separação, envio)\n   - \"em nosso\", \"em nossa\" (seguido de: armazém, CD, expedição, estoque)\n\n⚠️ DIFERENÇA CRÍTICA:\n- \"chegou em Confins\" = confirmacao_chegada_brasil (aeroporto)\n- \"chegou na expedição\", \"recebemos a carga\" = chegada_expedicao (empresa)\n\nsaida_entrega – Saída da carga da expedição para entrega ao cliente.\n\nCOMO IDENTIFICAR:\n- \"saiu para entrega\", \"em rota\", \"em transporte interno\"\n- \"motorista a caminho\", \"saiu da expedição\"\n\nentrega_concluida – Confirmação de que a entrega foi finalizada.\n\nCOMO IDENTIFICAR:\n- \"entrega realizada\", \"entregue com sucesso\"\n- \"comprovante de entrega\", \"POD anexo\"\n\noutro – Qualquer e-mail que não trate de atualização de status logístico.\n\n⚠️ PRIORIDADE DE CLASSIFICAÇÃO (do maior para o menor):\n1) entrega_concluida (se houver \"entregue\", \"entrega realizada\")\n2) saida_entrega (se houver \"saiu para entrega\", \"em rota\")\n3) chegada_expedicao (se houver \"chegou na expedição\", \"recebemos a carga\", \"disponível para\")\n4) liberacao_aduaneira (se houver \"liberado\", \"desembaraço\")\n5) confirmacao_chegada_brasil (se houver \"chegou no Brasil/aeroporto\")\n6) confirmacao_embarque (se houver \"embarque ocorreu/realizado/embarcou/departed\")\n7) pre_alerta (detalhes operacionais com previsões/HAWB/invoices)\n8) autorizacao_consolidacao (confirmação simples de PO)\n9) outro (demais casos)\n\nExtraia as seguintes informações:\n\nnumero_carga → número da carga (somente números). ORDEM DE PRIORIDADE:\n  1. **PRIMEIRO: Procure \"PO XXX\" no ASSUNTO do email** ⭐\n  2. Depois procure no corpo: \"Considere o PO XXX\", \"seguir com PO XXX\"\n  3. Procure também: \"carga XXX\" ou \"carga nº XXX\"\n\ndata_evento → data do evento (formato YYYY-MM-DD). Se não houver data explícita, use sentDateTime do email\n\nlocalizacao → local atual da carga. ATENÇÃO ESPECIAL:\n  - Para \"chegada_expedicao\": use \"Expedição\" ou \"CD [Nome Empresa]\" ou \"Armazém [Local]\"\n  - Para \"confirmacao_chegada_brasil\": use \"Confins\", \"Viracopos\", \"Guarulhos\", etc\n  - Para \"confirmacao_embarque\": use \"Miami\", \"Origem\", etc\n\nobservacoes → detalhes úteis. **OBRIGATÓRIO** incluir quando presente:\n  - Temperatura (DRY ICE, REFRIGERATED, etc)\n  - Invoices mencionadas\n  - Qualquer prioridade ou característica especial da carga\n\nawb_number → número MAWB ou HAWB master, se citado\n\n**CAMPOS OBRIGATÓRIOS - EXTRAIA DO HISTÓRICO COMPLETO:**\n\nprevisao_embarque → Data prevista de embarque na origem (formato YYYY-MM-DD)\n  - Procure por: \"PREVISÃO DE EMBARQUE\", \"EMBARQUE PREVISTO PARA\", \"ETD\", \"DIA XX/XX\"\n  - Exemplo no texto: \"PREVISÃO DE EMBARQUE NA ORIGEM PARA O DIA 11/10\" → \"2025-10-11\"\n  - **IMPORTANTE**: Procure em TODA a thread, incluindo emails anteriores\n\nprevisao_chegada → Data prevista de chegada no destino (formato YYYY-MM-DD)\n  - Procure por: \"PREVISÃO DE CHEGADA\", \"CHEGADA EM CONFINS PARA\", \"ETA\", \"DIA XX/XX\"\n  - Exemplo: \"PREVISÃO DE CHEGADA EM CONFINS PARA O DIA 12/10\" → \"2025-10-12\"\n  - **IMPORTANTE**: Procure em TODA a thread, incluindo emails anteriores\n\ninvoices → Array de números de invoices mencionados no email\n  - Procure por: \"INVOICE:\", \"INV:\", \"FATURA:\"\n  - Exemplo: [\"0085439357\", \"0085438735\", \"0085448340\"]\n  - Se não houver, retorne array vazio: []\n  - **IMPORTANTE**: Extraia TODAS as invoices mencionadas em TODA a thread\n\nhawb_number → Número do House Air Waybill, se mencionado\n  - Procure por: \"HAWB\", \"H-AWB\", \"HOUSE AWB\", \"draft HAWB\", \"MIA\"\n  - Exemplo: \"HAWB MIA12934\" → \"MIA12934\"\n\nRegras CRÍTICAS de análise:\n\n1. **SEMPRE analise TODO o histórico/thread do email** - não apenas o conteúdo mais recente\n2. **SEMPRE analise o ASSUNTO primeiro** - É onde está a informação principal\n3. **Se o assunto contém \"Novo Pedido\", \"OC XXX\", \"Nova Ordem\"** → tipo_email: \"outro\", deve_processar: false\n4. **DECISÃO AUTORIZAÇÃO vs PRÉ-ALERTA:**\n   - Se tem PREVISÕES ou INVOICES ou HAWB → PRÉ-ALERTA\n   - Se é só \"Ciente, Considere o PO\" → AUTORIZAÇÃO\n5. **DECISÃO EMBARQUE vs CHEGADA BRASIL vs CHEGADA EXPEDIÇÃO:**\n   - Se menciona \"embarcou\", \"departed\", \"saiu\" → EMBARQUE\n   - Se menciona \"chegou em [aeroporto/Brasil]\" → CHEGADA BRASIL\n   - Se menciona \"chegou na expedição\", \"recebemos\", \"disponível para\" → CHEGADA EXPEDIÇÃO\n6. Se o email for uma RESPOSTA (indicado por \"Re:\"), analise o contexto da thread MAS priorize o conteúdo mais recente\n7. Ignore e-mails sem número de carga OU sem contexto logístico → deve_processar: false\n8. **SEMPRE extraia previsao_embarque e previsao_chegada quando disponíveis EM QUALQUER PARTE DA THREAD**\n9. **SEMPRE extraia todos os números de invoices mencionados EM QUALQUER PARTE DA THREAD**\n\nRetorne apenas JSON válido, sem explicações, sem comentários.\n\nEXEMPLO 1 - AUTORIZAÇÃO (email curto):\n{\n  \"tipo_email\": \"autorizacao_consolidacao\",\n  \"deve_processar\": true,\n  \"numero_carga\": \"892\",\n  \"data_evento\": \"2025-10-08\",\n  \"localizacao\": \"Armazém Miami\",\n  \"observacoes\": null,\n  \"awb_number\": null,\n  \"hawb_number\": null,\n  \"previsao_embarque\": null,\n  \"previsao_chegada\": null,\n  \"invoices\": []\n}\n\nEXEMPLO 2 - PRÉ-ALERTA (email longo com detalhes):\n{\n  \"tipo_email\": \"pre_alerta\",\n  \"deve_processar\": true,\n  \"numero_carga\": \"892\",\n  \"data_evento\": \"2025-10-10\",\n  \"localizacao\": \"Armazém Miami\",\n  \"observacoes\": \"Draft HAWB enviado para aprovação\",\n  \"awb_number\": \"BHZFIA25100020\",\n  \"hawb_number\": \"MIA12934\",\n  \"previsao_embarque\": \"2025-10-11\",\n  \"previsao_chegada\": \"2025-10-12\",\n  \"invoices\": [\"0085439357\", \"0085438735\", \"0085448340\", \"0085451405\"]\n}\n\nEXEMPLO 3 - CHEGADA NA EXPEDIÇÃO (novo exemplo crítico):\n{\n  \"tipo_email\": \"chegada_expedicao\",\n  \"deve_processar\": true,\n  \"numero_carga\": \"892\",\n  \"data_evento\": \"2025-10-15\",\n  \"localizacao\": \"Expedição\",\n  \"observacoes\": \"Material disponível para separação\",\n  \"awb_number\": null,\n  \"hawb_number\": null,\n  \"previsao_embarque\": null,\n  \"previsao_chegada\": null,\n  \"invoices\": []\n}\n\nEXEMPLO 4 - CONFIRMAÇÃO DE CHEGADA COM DADOS DE PRÉ-ALERTA NO HISTÓRICO:\n{\n  \"tipo_email\": \"confirmacao_chegada_brasil\",\n  \"deve_processar\": true,\n  \"numero_carga\": \"894\",\n  \"data_evento\": \"2025-10-24\",\n  \"localizacao\": \"Confins\",\n  \"observacoes\": \"Chegou às 16:07hs\",\n  \"awb_number\": \"047-3241 1260\",\n  \"hawb_number\": \"MIA12961\",\n  \"previsao_embarque\": \"2025-10-23\",\n  \"previsao_chegada\": \"2025-10-24\",\n  \"invoices\": [\"0085459907\", \"0085453739\", \"0085473074\", \"0085470341\", \"0085475363\", \"0085477624\", \"0085482123\"]\n}",
+        "options": {
+          "systemMessage": "Você é um assistente de classificação de emails logísticos. Retorne APENAS JSON válido."
+        }
+      },
+      "id": "53be8f65-e3bf-4b71-995a-52dbf7268681",
+      "name": "Classificar Email1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        -1584,
+        592
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "813bf9bf-1b26-4610-8d1b-25bc7eb9e01e",
+      "name": "OpenAI Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1520,
+        816
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "pAvSFaKMS1VtWMd9",
+          "name": "Sintese Key - enzoferraz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Node: Processar Classificação\n * Suporta:\n *  A) items[0].json.output = string JSON já classificada (pass-through com normalização)\n *  B) items[0].json.email  = objeto cru de e-mail (fallback bem básico)\n */\n\nfunction safe(v, d=null){ return (v === undefined || v === null) ? d : v; }\nfunction isObj(x){ return x && typeof x === 'object' && !Array.isArray(x); }\nfunction toArr(x){ return Array.isArray(x) ? x : (x ? [x] : []); }\n\nfunction parseMaybeJSON(str){\n  if (typeof str !== 'string') return null;\n  try { return JSON.parse(str); } catch { return null; }\n}\n\nfunction normBool(x, def){\n  if (typeof x === 'boolean') return x;\n  if (x === 'true') return true;\n  if (x === 'false') return false;\n  return def;\n}\n\nfunction normalizeRecord(r){\n  // NÃO reclassifica. Só garante os campos e defaults.\n  const tipo_email = safe(r.tipo_email, 'pre_alerta');\n\n  // Regra: se já é confirmação de embarque, previsão de embarque deve ficar null\n  const previsao_embarque =\n    (tipo_email === 'confirmacao_embarque') ? null : safe(r.previsao_embarque, null);\n\n  return {\n    deve_processar: normBool(r.deve_processar, true),\n    tipo_email,\n    numero_carga: safe(r.numero_carga, null),\n    localizacao: safe(r.localizacao, null),\n    awb_number: safe(r.awb_number, null),\n    hawb_number: safe(r.hawb_number, null),\n    previsao_embarque,\n    previsao_chegada: safe(r.previsao_chegada, null),\n    data_evento: safe(r.data_evento, null),\n    invoices: toArr(r.invoices),\n    observacoes: safe(r.observacoes, null),\n    updated_at: new Date().toISOString(),\n    fonte: 'email',\n  };\n}\n\n// === Entrada ===\nconst input = items[0].json || {};\n\n// 1) Caminho principal: veio como string JSON em `output`\nlet parsed = parseMaybeJSON(input.output);\n\nif (parsed && isObj(parsed)) {\n  // Se o JSON vem embrulhado (ex.: { output: {...} } ou { data: {...} }), tenta abrir uma camada\n  if (isObj(parsed.output)) parsed = parsed.output;\n  if (isObj(parsed.data)) parsed = parsed.data;\n\n  const out = normalizeRecord(parsed);\n  return [{ json: out }];\n}\n\n// 2) Fallback (bem conservador) se não veio `output` em JSON\n//    Tenta extrair pouquíssimo do e-mail só para não quebrar fluxo.\nconst email = input.email || {};\nconst subject = email.subject || '';\nconst body = (email.bodyPreview || email.originalBody || '');\n\nfunction pickPO(s){\n  const m = s.match(/\\bPO\\s*[-:]?\\s*(\\d+)\\b/i);\n  return m ? m[1] : null;\n}\nfunction pickMAWB(s){\n  const m = s.match(/\\b(\\d{3})[-\\s]?(\\d{4})[-\\s]?(\\d{4})\\b/);\n  return m ? `${m[1]}-${m[2]} ${m[3]}` : null;\n}\nfunction pickHAWB(s){\n  const m = s.match(/\\bHAWB[:\\s-]*([A-Z]{2,}\\d{3,})\\b/i) || s.match(/\\b(MIA\\d{4,})\\b/i);\n  return m ? m[1].toUpperCase() : null;\n}\nfunction pickInvoices(s){\n  const set = new Set();\n  (s.match(/\\b\\d{7,}\\b/g) || []).forEach(n => set.add(n));\n  return Array.from(set);\n}\n\nconst fallback = {\n  deve_processar: true,\n  tipo_email: 'pre_alerta',\n  numero_carga: pickPO(subject) || null,\n  localizacao: /miami/i.test(body) ? 'Miami' : null,\n  awb_number: pickMAWB(subject + ' ' + body),\n  hawb_number: pickHAWB(subject + ' ' + body),\n  previsao_embarque: null,\n  previsao_chegada: null,\n  data_evento: null,\n  invoices: pickInvoices(subject + ' ' + body),\n  observacoes: null,\n  updated_at: new Date().toISOString(),\n  fonte: 'email',\n};\n\nreturn [{ json: fallback }];\n"
+      },
+      "id": "c5c9a723-ad28-4c25-9809-5f1968241205",
+      "name": "Processar Classificação1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1232,
+        592
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.deve_processar }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c59ee156-c65d-4bb1-877c-2e21b720999d",
+      "name": "Deve Processar?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1008,
+        592
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.deve_continuar }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cfb484ee-2484-4e3a-a0d3-6228bae4cf2e",
+      "name": "Pode Continuar?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        544
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.operacao }}",
+              "rightValue": "INSERT",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "bc462c84-58a7-408e-ac55-8c33e424b128"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "11222479-b3b2-4aff-a5af-ea0ea62f65b3",
+      "name": "Inserir ou Atualizar?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        448
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aldwmdfveivkfxxvfoua.supabase.co/functions/v1/create-carga",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer p3Rma-STS_n8n_2025"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "379cceec-5155-48a4-9802-c16a731d6903",
+      "name": "Inserir Carga via Lovable1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -112,
+        352
+      ],
+      "retryOnFail": true,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aldwmdfveivkfxxvfoua.supabase.co/functions/v1/upsert-carga",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer p3Rma-STS_n8n_2025"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"numero_carga\": \"{{ $json.numero_carga }}\",\n  \"status_atual\": \"{{ $json.status_atual }}\",\n  \"data_previsao_embarque\": \"{{ $json.data_previsao_embarque }}\",\n  \"data_previsao_chegada\": \"{{ $json.data_previsao_chegada }}\",\n  \"invoices\": {{ $json.invoices ? JSON.stringify($json.invoices) : '[]' }},\n  \"tipo_email\": \"{{ $json.tipo_email }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "913247a6-8d2c-497b-94d3-2d541361fde8",
+      "name": "Atualizar Carga via Lovable1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -112,
+        544
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log de email ignorado\nconst dados = $json;\n\nconsole.log('=== EMAIL IGNORADO ===');\nconsole.log('Tipo:', dados.tipo_email);\nconsole.log('Motivo:', dados.motivo);\nconsole.log('=====================');\n\nreturn [{\n json: {\n status: 'ignored',\n tipo: dados.tipo_email,\n motivo: dados.motivo,\n timestamp: new Date().toISOString()\n }\n}];"
+      },
+      "id": "5a9485a9-3dfa-4cae-87b8-9eea3ee9d6a4",
+      "name": "Log Email Ignorado1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -784,
+        992
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log de erro ao processar\nconst erro = $json;\n\nconsole.error('=== ERRO NO PROCESSAMENTO ===');\nconsole.error('Motivo:', erro.motivo);\nconsole.error('Carga:', erro.numero_carga || 'N/A');\nconsole.error('==============================');\n\nreturn [{\n json: {\n status: 'error',\n erro: erro.motivo,\n timestamp: new Date().toISOString()\n }\n}];"
+      },
+      "id": "1f49e05f-4ec8-44f4-8335-4c3e30b6f738",
+      "name": "Log Erro1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        736
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar resumo final do processamento\nconst allResults = $input.all();\n\nlet resultado = {\n timestamp: new Date().toISOString(),\n emails_processados: 1,\n status: 'completed'\n};\n\nif (allResults.length > 0 && allResults[0].json) {\n const data = allResults[0].json;\n \n if (data.status === 'ignored') {\n resultado.acao = 'Email ignorado';\n resultado.detalhes = data.motivo;\n } else if (data.status === 'error') {\n resultado.acao = 'Erro no processamento';\n resultado.detalhes = data.erro;\n resultado.status = 'error';\n } else if (data.sales_order || data.so_number) {\n resultado.acao = 'SOs atualizadas';\n resultado.quantidade = allResults.length;\n resultado.status = 'success';\n } else {\n resultado.acao = 'Carga processada com sucesso';\n resultado.status = 'success';\n }\n}\n\nconsole.log('=== RESUMO DO PROCESSAMENTO ===');\nconsole.log(JSON.stringify(resultado, null, 2));\nconsole.log('================================');\n\nreturn [{ json: resultado }];"
+      },
+      "id": "488a21c3-d62a-4430-95b2-4a25b6e9c002",
+      "name": "Resumo Final1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        640
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ========================================\n// NODE: Filtro Pré-AI1 (COMPLETO)\n// Filtro pré-AI + Extração de thread completa\n// ========================================\n\nconst data = $json;\nconst email = data.email || {};\n\nconst subject = (email.subject || '').toLowerCase();\nconst from = (email.from?.address || '').toLowerCase();\nconst fromName = (email.from?.name || '').toLowerCase();\nconst body = (email.bodyPreview || email.body?.content || '').toLowerCase();\n\n// ========================================\n// FILTROS PRÉ-AI (ORIGINAL)\n// ========================================\n\n// Padrões de emails de planilhas que devem ser ignorados\nconst planilhaPatterns = [\n  'automated daily shipment',\n  'standard daily order',\n  'daily shipment report',\n  'order confirmation',\n  '.xlsx',\n  '.xls',\n  'attached spreadsheet',\n  'planilha anexa',\n  'daily order'\n];\n\n// Remetentes/fornecedores que devem ser ignorados\nconst ignoredSenders = [\n  'biorad',\n  'bio-rad',\n  'bio rad',\n  'order vision',\n  'ordervision'\n];\n\n// Verificar se é email de planilha\nconst isPlanilha = planilhaPatterns.some(pattern => \n  subject.includes(pattern) || body.includes(pattern)\n);\n\n// Verificar se é de remetente ignorado\nconst isIgnoredSender = ignoredSenders.some(sender => \n  from.includes(sender) || \n  fromName.includes(sender) || \n  subject.includes(sender) ||\n  body.includes(sender)\n);\n\n// Verificar se tem anexos (planilhas geralmente têm)\nconst hasAttachments = email.hasAttachments === true;\n\n// Ignorar emails de planilhas\nif (isPlanilha || (hasAttachments && (subject.includes('daily') || subject.includes('shipment')))) {\n  console.log('📋 Email de planilha detectado - Ignorando AI');\n  return [{\n    json: {\n      tipo_email: 'planilha_automated',\n      deve_processar: false,\n      motivo: 'Email de planilha automatizada - processado por outro workflow',\n      skip_ai: true\n    }\n  }];\n}\n\n// Ignorar emails de fornecedores específicos\nif (isIgnoredSender) {\n  console.log('🚫 Email de fornecedor ignorado detectado - Ignorando AI');\n  console.log(`Remetente: ${from} | Nome: ${fromName}`);\n  return [{\n    json: {\n      tipo_email: 'fornecedor_ignorado',\n      deve_processar: false,\n      motivo: 'Email de fornecedor na lista de ignorados (BioRad, Order Vision, etc)',\n      skip_ai: true\n    }\n  }];\n}\n\n// ========================================\n// EXTRAÇÃO DE THREAD COMPLETA\n// ========================================\n\n// Função para extrair thread completa removendo HTML mas mantendo conteúdo\nfunction extractEmailThread(emailBody) {\n  if (!emailBody || typeof emailBody !== 'string') return '';\n  \n  // Remove HTML tags mas mantém conteúdo legível\n  let textOnly = emailBody\n    .replace(/<style[^>]*>.*?<\\/style>/gi, '') // Remove CSS\n    .replace(/<script[^>]*>.*?<\\/script>/gi, '') // Remove JS\n    .replace(/<[^>]+>/g, ' ') // Remove todas as tags HTML\n    .replace(/&nbsp;/g, ' ') // Converte &nbsp; em espaço\n    .replace(/&amp;/g, '&') // Converte &amp; em &\n    .replace(/&lt;/g, '<') // Converte &lt; em <\n    .replace(/&gt;/g, '>') // Converte &gt; em >\n    .replace(/&quot;/g, '\"') // Converte &quot; em \"\n    .replace(/&#39;/g, \"'\") // Converte &#39; em '\n    .replace(/\\s+/g, ' ') // Normaliza espaços múltiplos\n    .trim();\n  \n  return textOnly;\n}\n\n// Extrair thread completa\nconst threadCompleta = extractEmailThread(email.body?.content || '');\n\n// Se não conseguiu extrair do body.content, tenta do bodyPreview\nconst conteudoFinal = threadCompleta || email.bodyPreview || '';\n\nconsole.log('📧 Email de tracking detectado - Enviando para AI');\nconsole.log('Subject:', email.subject);\nconsole.log('From:', email.from?.address || email.from);\nconsole.log('Thread length:', conteudoFinal.length, 'caracteres');\n\n// Extrair informações visíveis no conteúdo\nconst info = {\n  tem_mawb: /mawb\\s*:?\\s*[\\d-]+/i.test(conteudoFinal),\n  tem_hawb: /hawb\\s*:?\\s*\\w+/i.test(conteudoFinal),\n  tem_invoice: /invoice\\s*:?\\s*[\\d,\\s]+/i.test(conteudoFinal),\n  tem_po: /po\\s*\\d+/i.test(email.subject || '') || /po\\s*\\d+/i.test(conteudoFinal),\n  tem_previsao: /previs[ãa]o\\s+(de\\s+)?(embarque|chegada)/i.test(conteudoFinal),\n};\n\nconsole.log('Informações detectadas:', info);\n\n// ========================================\n// OUTPUT FINAL\n// ========================================\n\nreturn [{\n  json: {\n    email: {\n      ...email,\n      // Adiciona thread completa para a IA analisar\n      thread_completa: conteudoFinal\n    },\n    // Mantém os outros dados do workflow\n    workflow_destino: data.workflow_destino,\n    workflow_id: data.workflow_id,\n    tipo_email: data.tipo_email,\n    email_norm: data.email_norm,\n    skip_ai: false,\n    // Metadados úteis\n    info_detectadas: info\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1808,
+        592
+      ],
+      "id": "f24878f9-bbe3-49cd-b8ca-1b254e681ba9",
+      "name": "Filtro HTML"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================\n// NODE: Preparar Insert/Update (SIMPLIFICADO)\n// =====================================================\n\nconst classificacao = $('Processar Classificação1').item.json;\n\n// Se não tem número de carga, parar aqui\nif (!classificacao.numero_carga) {\n  console.error('❌ Número da carga ausente na classificação');\n  return [{\n    json: {\n      erro: true,\n      motivo: 'Número da carga não encontrado',\n      deve_continuar: false\n    }\n  }];\n}\n\n// Determinar status baseado no tipo de email\nfunction determinarStatus(tipo, classificacao) {\n  const statusMap = {\n    'autorizacao_consolidacao': 'Aguardando Pré-Alerta',\n    'pre_alerta': classificacao.previsao_embarque ? 'Aguardando Embarque' : 'Em Consolidação',\n    'confirmacao_embarque': 'Em Trânsito Internacional',\n    'confirmacao_chegada_brasil': 'Em Liberação',\n    'liberacao_aduaneira': 'Liberada',\n    'chegada_expedicao': 'Entregue',\n    'saida_entrega': 'Em Rota de Entrega',\n    'entrega_concluida': 'Entregue'\n  };\n  return statusMap[tipo] || 'Aguardando Pré-Alerta';\n}\n\nconst novoStatus = determinarStatus(classificacao.tipo_email, classificacao);\n\nconsole.log('📊 Preparando dados para upsert:', {\n  numero_carga: classificacao.numero_carga,\n  status: novoStatus,\n  tipo_email: classificacao.tipo_email\n});\n\n// Preparar dados de atualização\nconst dadosAtualizacao = {\n  operacao: 'UPDATE',\n  numero_carga: classificacao.numero_carga,\n  status_atual: novoStatus,\n  localizacao: classificacao.localizacao,\n  awb_number: classificacao.awb_number,\n  hawb_number: classificacao.hawb_number,\n  data_previsao_embarque: classificacao.previsao_embarque,\n  data_previsao_chegada: classificacao.previsao_chegada,\n  invoices: classificacao.invoices || [],\n  updated_at: new Date().toISOString(),\n  deve_continuar: true,\n  tipo_email: classificacao.tipo_email\n};\n\n// Adicionar datas de eventos específicos\nswitch (classificacao.tipo_email) {\n  case 'confirmacao_embarque':\n    dadosAtualizacao.data_embarque_real = classificacao.data_evento || new Date().toISOString();\n    break;\n  case 'confirmacao_chegada_brasil':\n    dadosAtualizacao.data_chegada_real = classificacao.data_evento || new Date().toISOString();\n    break;\n  case 'liberacao_aduaneira':\n    dadosAtualizacao.data_liberacao = classificacao.data_evento || new Date().toISOString();\n    break;\n  case 'chegada_expedicao':\n    dadosAtualizacao.data_chegada_expedicao = classificacao.data_evento || new Date().toISOString();\n    break;\n  case 'entrega_concluida':\n    dadosAtualizacao.data_entrega = classificacao.data_evento || new Date().toISOString();\n    break;\n}\n\nreturn [{ json: dadosAtualizacao }];"
+      },
+      "id": "0bd93df1-681d-4f25-8a6d-1b64a397b0b7",
+      "name": "Preparar Insert/Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -784,
+        544
+      ],
+      "retryOnFail": true
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "workflow_destino": "tracking_pos_armazem",
+          "workflow_id": "jYJlVMhTKVxoNkT1",
+          "tipo_email": "tracking_carga",
+          "email": {
+            "id": "AAMkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQBGAAAAAACJJbUa19cwTJ-q5cKIhmGZBwB5_z_ylZG-R54aMqDFRhSeAAAAAAEMAAB5_z_ylZG-R54aMqDFRhSeAAA5BRWRAAA=",
+            "conversationId": "AAQkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQAQAO-Xzfz_S-JOtphjwX61Uto=",
+            "internetMessageId": "<SCYP152MB7277F1D973F05D7629BE864EB1F1A@SCYP152MB7277.LAMP152.PROD.OUTLOOK.COM>",
+            "subject": "RES: ADVANCED - SINTESE WR93176 WR93205 GEL PACK - PO 895 - BHZFIA25100050",
+            "bodyPreview": "Enzo, boa tarde.\r\n\r\nSegue em anexo o follow-up do processo.\r\n\r\n  *   PREVISÃO DE EMBARQUE NA ORIGEM PARA O DIA 28/10.\r\n  *   PREVISÃO DE CHEGADA EM CONFINS PARA O DIA 29/10.\r\n\r\nVoltaremos, assim que possível, com o pré-alerta.\r\n\r\nFico à disposição.\r\n\r\nAte",
+            "body": {
+              "contentType": "html",
+              "content": "<html><head>\r\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><meta name=\"Generator\" content=\"Microsoft Word 15 (filtered medium)\"><style>\r\n<!--\r\n@font-face\r\n\t{font-family:Wingdings}\r\n@font-face\r\n\t{font-family:\"Cambria Math\"}\r\n@font-face\r\n\t{font-family:Calibri}\r\n@font-face\r\n\t{font-family:Aptos}\r\n@font-face\r\n\t{font-family:Tahoma}\r\np.MsoNormal, li.MsoNormal, div.MsoNormal\r\n\t{margin:0cm;\r\n\tfont-size:11.0pt;\r\n\tfont-family:\"Calibri\",sans-serif}\r\na:link, span.MsoHyperlink\r\n\t{color:#0563C1;\r\n\ttext-decoration:underline}\r\np.MsoListParagraph, li.MsoListParagraph, div.MsoListParagraph\r\n\t{margin-top:0cm;\r\n\tmargin-right:0cm;\r\n\tmargin-bottom:0cm;\r\n\tmargin-left:36.0pt;\r\n\tfont-size:11.0pt;\r\n\tfont-family:\"Calibri\",sans-serif}\r\nspan.EstiloDeEmail21\r\n\t{font-family:\"Tahoma\",sans-serif;\r\n\tcolor:windowtext;\r\n\tfont-weight:normal;\r\n\tfont-style:normal}\r\n.MsoChpDefault\r\n\t{font-size:10.0pt}\r\n@page WordSection1\r\n\t{margin:72.0pt 72.0pt 72.0pt 72.0pt}\r\ndiv.WordSection1\r\n\t{}\r\nol\r\n\t{margin-bottom:0cm}\r\nul\r\n\t{margin-bottom:0cm}\r\n-->\r\n</style></head><body lang=\"PT-BR\" link=\"#0563C1\" vlink=\"#954F72\" style=\"word-wrap:break-word\"><div class=\"WordSection1\"><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Enzo, boa tarde.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Segue em anexo o follow-up do processo.</span></p><ul type=\"disc\" style=\"margin-top:0cm\"><li class=\"MsoNormal\" style=\"\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">PREVISÃO DE EMBARQUE NA <b>ORIGEM</b> PARA O <b>DIA 28/10</b>.</span></li><li class=\"MsoNormal\" style=\"\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">PREVISÃO DE CHEGADA EM <b>CONFINS</b> PARA O <b>DIA 29/10</b>.</span></li></ul><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Voltaremos, assim que possível, com o pré-alerta.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Fico à disposição.</span></p><p class=\"MsoNormal\" style=\"margin-left:18.0pt\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Atenciosamente/ Best regards,</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"><img width=\"491\" height=\"151\" id=\"Imagem_x0020_973802627\" src=\"cid:image001.jpg@01DC4501.901DD3F0\" style=\"width:5.1145in; height:1.5729in\"><span style=\"\"></span></span></p></div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Pedro Henrique <br><b>Enviada em:</b> sexta-feira, 24 de outubro de 2025 11:23<br><b>Para:</b> Enzo Ferraz | Sintese Biotecnologia &lt;enzo@sintesebio.com.br&gt;; Alicézio Silva &lt;alicezio@globexlogistics.com&gt;; Lucas Campolina | Sintese Biotecnologia &lt;lucas@sintesebio.com.br&gt;; import &lt;import@sintesebio.com.br&gt;<br><b>Cc:</b> Rebecca Vallias &lt;Rebecca@fastglobal.com&gt;; Adonis Vallias &lt;adonis@globexlogistics.com&gt;; Operacional_Globex &lt;operacional@globexlogistics.com&gt;<br><b>Assunto:</b> RES: ADVANCED - SINTESE WR93176 WR93205 GEL PACK - PO 895 - BHZFIA25100050</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Enzo, bom dia.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Obrigado pela aprovação.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Seguiremos.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Voltaremos, assim que possível, com a reserva de voo.</span></p><div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Atenciosamente/ Best regards,</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"><img width=\"491\" height=\"151\" id=\"Imagem_x0020_1630638085\" src=\"cid:image001.jpg@01DC4501.901DD3F0\" style=\"width:5.1145in; height:1.5729in\"></span><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"></span></p></div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Enzo Ferraz | Sintese Biotecnologia &lt;<a href=\"mailto:enzo@sintesebio.com.br\">enzo@sintesebio.com.br</a>&gt; <br><b>Enviada em:</b> sexta-feira, 24 de outubro de 2025 09:34<br><b>Para:</b> Pedro Henrique &lt;<a href=\"mailto:pedro@globexlogistics.com\">pedro@globexlogistics.com</a>&gt;; Alicézio Silva &lt;<a href=\"mailto:alicezio@globexlogistics.com\">alicezio@globexlogistics.com</a>&gt;; Lucas Campolina | Sintese Biotecnologia &lt;<a href=\"mailto:lucas@sintesebio.com.br\">lucas@sintesebio.com.br</a>&gt;; import &lt;<a href=\"mailto:import@sintesebio.com.br\">import@sintesebio.com.br</a>&gt;<br><b>Cc:</b> Rebecca Vallias &lt;<a href=\"mailto:Rebecca@fastglobal.com\">Rebecca@fastglobal.com</a>&gt;; Adonis Vallias &lt;<a href=\"mailto:adonis@globexlogistics.com\">adonis@globexlogistics.com</a>&gt;; Operacional_Globex &lt;<a href=\"mailto:operacional@globexlogistics.com\">operacional@globexlogistics.com</a>&gt;<br><b>Assunto:</b> ADVANCED - SINTESE WR93176 WR93205 GEL PACK - PO 895 - BHZFIA25100050</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Pedro, bom dia!</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Draft aprovado.</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Obrigado!</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><div><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Atenciosamente, </span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\"><img border=\"0\" width=\"589\" height=\"191\" id=\"Imagem_x0020_1234474449\" src=\"cid:image002.jpg@01DC4501.901DD3F0\" style=\"width:6.1354in; height:1.9895in\"></span><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"></span></p></div><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Pedro Henrique &lt;<a href=\"mailto:pedro@globexlogistics.com\">pedro@globexlogistics.com</a>&gt; <br><b>Enviada em:</b> quinta-feira, 23 de outubro de 2025 18:34<br><b>Para:</b> Alicézio Silva &lt;<a href=\"mailto:alicezio@globexlogistics.com\">alicezio@globexlogistics.com</a>&gt;; Enzo Ferraz | Sintese Biotecnologia &lt;<a href=\"mailto:enzo@sintesebio.com.br\">enzo@sintesebio.com.br</a>&gt;; Lucas Campolina | Sintese Biotecnologia &lt;<a href=\"mailto:lucas@sintesebio.com.br\">lucas@sintesebio.com.br</a>&gt;; import &lt;<a href=\"mailto:import@sintesebio.com.br\">import@sintesebio.com.br</a>&gt;<br><b>Cc:</b> Rebecca Vallias &lt;<a href=\"mailto:Rebecca@fastglobal.com\">Rebecca@fastglobal.com</a>&gt;; Adonis Vallias &lt;<a href=\"mailto:adonis@globexlogistics.com\">adonis@globexlogistics.com</a>&gt;; Operacional_Globex &lt;<a href=\"mailto:operacional@globexlogistics.com\">operacional@globexlogistics.com</a>&gt;<br><b>Assunto:</b> RES: ADVANCED - SINTESE WR93176 WR93205 GEL PACK - PO 895 - BHZFIA25100050</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Enzo, boa tarde.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Tudo bem?</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Segue em anexo o follow-up do processo.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><b><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Encontra-se também o anexo do draft do HAWB para aprovação.</span></b></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><ul type=\"disc\" style=\"margin-top:0cm\"><li class=\"MsoNormal\" style=\"\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">DRAFTS RECEBIDOS.</span></li><li class=\"MsoNormal\" style=\"\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">SHIPPING STRUCTIONS ENVIADA AO NOSSO AGENTE.</span></li><li class=\"MsoNormal\" style=\"\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">HAWB ENVIADO PARA APROVAÇÃO DO IMPORTADOR.</span></li><li class=\"MsoListParagraph\" style=\"margin-left:0cm\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">AGUARDANDO PREVISÃO DE EMBARQUE NA ORIGEM</span></li><li class=\"MsoListParagraph\" style=\"margin-left:0cm\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">AGUARDANDO PREVISÃO DE CHEGADA EM CONFINS.</span></li></ul><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Voltaremos, assim que possível, com as demais etapas.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><ul type=\"disc\" style=\"margin-top:0cm\"><li class=\"MsoListParagraph\" style=\"margin-left:0cm\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">INVOICE: 0085622338 – 0085467192 (WR93176)<b></b></span></li><li class=\"MsoListParagraph\" style=\"margin-left:0cm\"><span lang=\"EN-US\" style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">INVOICE: 25SB1015 (WR93205)</span></li></ul><p class=\"MsoNormal\"><span lang=\"EN-US\" style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif; color:#0A2F41\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Obrigado.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Fico à disposição.</span></p><div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Atenciosamente/ Best regards,</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"><img border=\"0\" width=\"491\" height=\"151\" id=\"Imagem_x0020_642718582\" src=\"cid:image001.jpg@01DC4501.901DD3F0\" style=\"width:5.1145in; height:1.5729in\"></span><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"></span></p></div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Alicézio Silva &lt;<a href=\"mailto:alicezio@globexlogistics.com\">alicezio@globexlogistics.com</a>&gt; <br><b>Enviada em:</b> quarta-feira, 22 de outubro de 2025 16:58<br><b>Para:</b> Enzo Ferraz | Sintese Biotecnologia &lt;<a href=\"mailto:enzo@sintesebio.com.br\">enzo@sintesebio.com.br</a>&gt;; Lucas Campolina | Sintese Biotecnologia &lt;<a href=\"mailto:lucas@sintesebio.com.br\">lucas@sintesebio.com.br</a>&gt;; import &lt;<a href=\"mailto:import@sintesebio.com.br\">import@sintesebio.com.br</a>&gt;<br><b>Cc:</b> Rebecca Vallias &lt;<a href=\"mailto:Rebecca@fastglobal.com\">Rebecca@fastglobal.com</a>&gt;; Adonis Vallias &lt;<a href=\"mailto:adonis@globexlogistics.com\">adonis@globexlogistics.com</a>&gt;; Operacional_Globex &lt;<a href=\"mailto:operacional@globexlogistics.com\">operacional@globexlogistics.com</a>&gt;<br><b>Assunto:</b> RES: ADVANCED - SINTESE WR93205 GEL PACK - PO 895</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Enzo, boa tarde.</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Ciente, considere o PO 895.</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">&nbsp;</span></p><div><div id=\"divtagdefaultwrapper\"><div><div><div><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Atenciosamente / Best Regards.</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\"><img border=\"0\" width=\"491\" height=\"151\" id=\"Imagem_x0020_1552576143\" src=\"cid:image003.jpg@01DC4501.901DD3F0\" style=\"width:5.1145in; height:1.5729in\"></span><span style=\"color:#0A2F41\"></span></p></div></div></div></div></div><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Enzo Ferraz | Sintese Biotecnologia &lt;<a href=\"mailto:enzo@sintesebio.com.br\">enzo@sintesebio.com.br</a>&gt; <br><b>Enviada em:</b> terça-feira, 21 de outubro de 2025 15:03<br><b>Para:</b> Alicézio Silva &lt;<a href=\"mailto:alicezio@globexlogistics.com\">alicezio@globexlogistics.com</a>&gt;; Lucas Campolina | Sintese Biotecnologia &lt;<a href=\"mailto:lucas@sintesebio.com.br\">lucas@sintesebio.com.br</a>&gt;; import &lt;<a href=\"mailto:import@sintesebio.com.br\">import@sintesebio.com.br</a>&gt;<br><b>Cc:</b> Rebecca Vallias &lt;<a href=\"mailto:Rebecca@fastglobal.com\">Rebecca@fastglobal.com</a>&gt;; Adonis Vallias &lt;<a href=\"mailto:adonis@globexlogistics.com\">adonis@globexlogistics.com</a>&gt;; Operacional_Globex &lt;<a href=\"mailto:operacional@globexlogistics.com\">operacional@globexlogistics.com</a>&gt;<br><b>Assunto:</b> ADVANCED - SINTESE WR93205 GEL PACK</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Alicézio, boa tarde!</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Gentileza consolidar com o WR93176 e seguir com o embarque.</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Obrigado!</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><div><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Atenciosamente, </span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\"><img border=\"0\" width=\"589\" height=\"191\" id=\"Imagem_x0020_871346594\" src=\"cid:image002.jpg@01DC4501.901DD3F0\" style=\"width:6.1354in; height:1.9895in\"></span></p></div><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Alicézio Silva &lt;<a href=\"mailto:alicezio@globexlogistics.com\">alicezio@globexlogistics.com</a>&gt; <br><b>Enviada em:</b> segunda-feira, 20 de outubro de 2025 17:43<br><b>Para:</b> Lucas Campolina | Sintese Biotecnologia &lt;<a href=\"mailto:lucas@sintesebio.com.br\">lucas@sintesebio.com.br</a>&gt;; Enzo Ferraz | Sintese Biotecnologia &lt;<a href=\"mailto:enzo@sintesebio.com.br\">enzo@sintesebio.com.br</a>&gt;; import &lt;<a href=\"mailto:import@sintesebio.com.br\">import@sintesebio.com.br</a>&gt;<br><b>Cc:</b> Rebecca Vallias &lt;<a href=\"mailto:Rebecca@fastglobal.com\">Rebecca@fastglobal.com</a>&gt;; Adonis Vallias &lt;<a href=\"mailto:adonis@globexlogistics.com\">adonis@globexlogistics.com</a>&gt;; Operacional_Globex &lt;<a href=\"mailto:operacional@globexlogistics.com\">operacional@globexlogistics.com</a>&gt;<br><b>Assunto:</b> ADVANCED - SINTESE WR93205 GEL PACK</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Lucas/Enzo, boa tarde.</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Recebemos uma nova ordem para a Síntese na Fast Global, segue em anexo cópia dos documentos.</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Podemos prosseguir com o embarque ou vamos aguardar mais mercadorias?</span></p><p class=\"MsoNormal\"><span lang=\"EN-US\" style=\"color:#0A2F41\">INVOICE: 25SB1015.</span></p><p class=\"MsoNormal\"><span lang=\"EN-US\" style=\"color:#0A2F41\">&nbsp;</span></p><div><div id=\"divtagdefaultwrapper\"><div><div><div><p class=\"MsoNormal\"><span lang=\"EN-US\" style=\"color:#0A2F41\">Atenciosamente / Best Regards.</span></p><p class=\"MsoNormal\"><span lang=\"EN-US\" style=\"color:#0A2F41\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\"><img border=\"0\" width=\"491\" height=\"151\" id=\"Imagem_x0020_244188473\" src=\"cid:image003.jpg@01DC4501.901DD3F0\" style=\"width:5.1145in; height:1.5729in\"></span></p></div></div></div></div></div></div></body></html>"
+            },
+            "from": {
+              "address": "pedro@globexlogistics.com",
+              "name": "Pedro Henrique"
+            },
+            "to": [
+              {
+                "emailAddress": {
+                  "name": "Enzo Ferraz | Sintese Biotecnologia",
+                  "address": "enzo@sintesebio.com.br"
+                }
+              },
+              {
+                "emailAddress": {
+                  "name": "Alicézio Silva",
+                  "address": "alicezio@globexlogistics.com"
+                }
+              },
+              {
+                "emailAddress": {
+                  "name": "Lucas Campolina | Sintese Biotecnologia",
+                  "address": "lucas@sintesebio.com.br"
+                }
+              },
+              {
+                "emailAddress": {
+                  "name": "import",
+                  "address": "import@sintesebio.com.br"
+                }
+              }
+            ],
+            "cc": [
+              {
+                "emailAddress": {
+                  "name": "Rebecca Vallias",
+                  "address": "Rebecca@fastglobal.com"
+                }
+              },
+              {
+                "emailAddress": {
+                  "name": "Adonis Vallias",
+                  "address": "adonis@globexlogistics.com"
+                }
+              },
+              {
+                "emailAddress": {
+                  "name": "Operacional_Globex",
+                  "address": "operacional@globexlogistics.com"
+                }
+              }
+            ],
+            "receivedAt": "2025-10-24T19:16:43Z",
+            "headers": null,
+            "hasAttachments": true,
+            "attachmentsMeta": [
+              {
+                "key": "attachment_0",
+                "fileName": "image001.jpg",
+                "mimeType": "image/jpeg",
+                "fileSize": "70 kB"
+              },
+              {
+                "key": "attachment_1",
+                "fileName": "image002.jpg",
+                "mimeType": "image/jpeg",
+                "fileSize": "785 kB"
+              },
+              {
+                "key": "attachment_2",
+                "fileName": "image003.jpg",
+                "mimeType": "image/jpeg",
+                "fileSize": "70 kB"
+              },
+              {
+                "key": "attachment_3",
+                "fileName": "FOLLOW-UP.pdf",
+                "mimeType": "application/pdf",
+                "fileSize": "275 kB"
+              }
+            ]
+          },
+          "email_norm": {
+            "subject_lc": "res: advanced - sintese wr93176 wr93205 gel pack - po 895 - bhzfia25100050",
+            "body_preview_lc": "enzo, boa tarde.\r\n\r\nsegue em anexo o follow-up do processo.\r\n\r\n  *   previsão de embarque na origem para o dia 28/10.\r\n  *   previsão de chegada em confins para o dia 29/10.\r\n\r\nvoltaremos, assim que possível, com o pré-alerta.\r\n\r\nfico à disposição.\r\n\r\nate",
+            "from_lc": "pedro@globexlogistics.com",
+            "from_name_lc": "pedro henrique",
+            "attachment_names_lc": "image001.jpg image002.jpg image003.jpg follow-up.pdf"
+          }
+        },
+        "binary": {
+          "attachment_0": {
+            "mimeType": "image/jpeg",
+            "fileType": "image",
+            "fileExtension": "jpg",
+            "data": "filesystem-v2",
+            "fileName": "image001.jpg",
+            "id": "filesystem-v2:workflows/d4ed9vH6sErTkEZN/executions/temp/binary_data/ff7ea32b-bff8-4519-9c6e-4a3d13e85d26",
+            "fileSize": "70 kB"
+          },
+          "attachment_1": {
+            "mimeType": "image/jpeg",
+            "fileType": "image",
+            "fileExtension": "jpg",
+            "data": "filesystem-v2",
+            "fileName": "image002.jpg",
+            "id": "filesystem-v2:workflows/d4ed9vH6sErTkEZN/executions/temp/binary_data/ad9c0064-c9f3-4f16-86b6-6041df5bb0c0",
+            "fileSize": "785 kB"
+          },
+          "attachment_2": {
+            "mimeType": "image/jpeg",
+            "fileType": "image",
+            "fileExtension": "jpg",
+            "data": "filesystem-v2",
+            "fileName": "image003.jpg",
+            "id": "filesystem-v2:workflows/d4ed9vH6sErTkEZN/executions/temp/binary_data/d9c703d0-a2e0-4c39-a557-8c8cfbcffc9b",
+            "fileSize": "70 kB"
+          },
+          "attachment_3": {
+            "mimeType": "application/pdf",
+            "fileType": "pdf",
+            "fileExtension": "pdf",
+            "data": "filesystem-v2",
+            "fileName": "FOLLOW-UP.pdf",
+            "id": "filesystem-v2:workflows/d4ed9vH6sErTkEZN/executions/temp/binary_data/78e2b63e-4d8e-4a84-85a7-8fd879e3d865",
+            "fileSize": "275 kB"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Filtro Pré-AI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtro Pré-AI1": {
+      "main": [
+        [
+          {
+            "node": "Processar com AI?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar com AI?1": {
+      "main": [
+        [
+          {
+            "node": "Filtro HTML",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Email Ignorado1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classificar Email1": {
+      "main": [
+        [
+          {
+            "node": "Processar Classificação1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classificar Email1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Classificação1": {
+      "main": [
+        [
+          {
+            "node": "Deve Processar?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deve Processar?1": {
+      "main": [
+        [
+          {
+            "node": "Preparar Insert/Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Email Ignorado1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pode Continuar?1": {
+      "main": [
+        [
+          {
+            "node": "Inserir ou Atualizar?1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Erro1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inserir ou Atualizar?1": {
+      "main": [
+        [
+          {
+            "node": "Inserir Carga via Lovable1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Atualizar Carga via Lovable1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inserir Carga via Lovable1": {
+      "main": [
+        [
+          {
+            "node": "Resumo Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar Carga via Lovable1": {
+      "main": [
+        [
+          {
+            "node": "Resumo Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Email Ignorado1": {
+      "main": [
+        [
+          {
+            "node": "Resumo Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Erro1": {
+      "main": [
+        [
+          {
+            "node": "Resumo Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumo Final1": {
+      "main": [
+        []
+      ]
+    },
+    "Filtro HTML": {
+      "main": [
+        [
+          {
+            "node": "Classificar Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Insert/Update": {
+      "main": [
+        [
+          {
+            "node": "Pode Continuar?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "vpEAvi7gkAjmLvkl"
+  },
+  "versionId": "4bbcfeee-01fd-4efb-98a9-6606bab57278",
+  "meta": {
+    "instanceId": "dcba349999e42800a73e5235199b71095d4545b83e3b6d9b2806516e371d0786"
+  },
+  "id": "jYJlVMhTKVxoNkT1",
+  "tags": []
+}

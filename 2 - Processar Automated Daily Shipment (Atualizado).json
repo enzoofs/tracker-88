@@ -1,0 +1,696 @@
+{
+  "name": "2 - Processar Automated Daily Shipment (Atualizado)",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Processar anexos do email - VERSÃO SIMPLIFICADA\nconst outputItems = [];\n\nfor (const item of $input.all()) {\n  console.log('=== DEBUG EMAIL ===');\n  console.log('Subject:', item.json.subject);\n  console.log('From:', item.json.from);\n  \n  // Verificar se tem anexos binários\n  if (item.binary && Object.keys(item.binary).length > 0) {\n    console.log('Anexos encontrados:', Object.keys(item.binary));\n    \n    // Processar CADA anexo\n    for (const [key, attachment] of Object.entries(item.binary)) {\n      const fileName = attachment.fileName || attachment.name || key;\n      const mimeType = attachment.mimeType || attachment.type || '';\n      \n      console.log(`Processando anexo: ${fileName}`);\n      console.log(`Tipo MIME: ${mimeType}`);\n      \n      // Aceitar QUALQUER arquivo Excel\n      if (fileName.toLowerCase().includes('.xls') || \n          mimeType.includes('sheet') ||\n          mimeType.includes('excel') ||\n          mimeType.includes('ms-excel') ||\n          mimeType.includes('openxml')) {\n        \n        outputItems.push({\n          json: {\n            emailFrom: item.json.from || '',\n            emailSubject: item.json.subject || '',\n            emailDate: item.json.receivedDateTime || new Date().toISOString(),\n            fileName: fileName,\n            emailId: item.json.id || ''\n          },\n          binary: {\n            data: attachment\n          }\n        });\n        \n        console.log(`✓ Planilha adicionada: ${fileName}`);\n      }\n    }\n  } else {\n    console.log('AVISO: Nenhum anexo binário encontrado');\n    console.log('Estrutura do item:', Object.keys(item));\n  }\n}\n\n// Se não encontrou nenhuma planilha, retornar mensagem mais útil\nif (outputItems.length === 0) {\n  console.error('=== ERRO: Nenhuma planilha Excel encontrada ===');\n  console.log('Verifique se o trigger está configurado com:');\n  console.log('- output: \"fields\"');\n  console.log('- downloadAttachments: true');\n  \n  // Tentar mostrar o que foi recebido\n  if ($input.all().length > 0) {\n    const firstItem = $input.first();\n    console.log('Primeiro item recebido:', Object.keys(firstItem));\n    if (firstItem.binary) {\n      console.log('Binary keys:', Object.keys(firstItem.binary));\n    }\n  }\n  \n  throw new Error('Nenhuma planilha Excel encontrada. Verifique os logs para mais detalhes.');\n}\n\nconsole.log(`=== SUCESSO ===`);\nconsole.log(`Total de planilhas processadas: ${outputItems.length}`);\n\nreturn outputItems;"
+      },
+      "id": "8d9d7521-ed15-4c6f-962d-4bb607b4c7f5",
+      "name": "Processar Anexos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        624
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "fileFormat": "xlsx",
+        "options": {
+          "headerRow": true,
+          "readAsString": false
+        }
+      },
+      "id": "740cf822-4e8c-4ef0-9797-cbcd03e24c3b",
+      "name": "Ler Planilha Excel",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        624
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar dados da planilha\nconst processedOrders = [];\nconst orderMap = new Map();\n\nfunction excelDateToJSDate(excelDate) {\n  if (!excelDate) return new Date().toISOString();\n  \n  if (typeof excelDate === 'string' && excelDate.includes('-')) {\n    return excelDate;\n  }\n  \n  if (typeof excelDate === 'string' && excelDate.includes('/')) {\n    const parts = excelDate.split('/');\n    if (parts.length === 3) {\n      const month = parts[0].padStart(2, '0');\n      const day = parts[1].padStart(2, '0');\n      let year = parts[2];\n      if (year.length === 2) {\n        year = '20' + year;\n      }\n      return `${year}-${month}-${day}T00:00:00Z`;\n    }\n  }\n  \n  if (typeof excelDate === 'number') {\n    const excelEpoch = new Date(1899, 11, 30);\n    const msPerDay = 86400000;\n    const date = new Date(excelEpoch.getTime() + (excelDate * msPerDay));\n    return date.toISOString();\n  }\n  \n  return new Date().toISOString();\n}\n\nfunction validateTrackingNumber(tracking) {\n  if (!tracking) return null;\n  \n  const cleaned = tracking.toString().trim();\n  \n  if (cleaned.length < 10 || cleaned.length > 30) {\n    return null;\n  }\n  \n  const onlyNumbers = cleaned.replace(/[^0-9]/g, '');\n  \n  if (onlyNumbers.length < 10) {\n    return null;\n  }\n  \n  return cleaned;\n}\n\nif ($input.all().length > 0) {\n  console.log('Campos disponíveis:', Object.keys($input.first().json));\n}\n\nfor (const item of $input.all()) {\n  const json = item.json;\n  \n  const salesOrder = (json['Sales Order Number'] || json['Sales Order #'] || json['ERP Sales Order'] || '').toString().trim();\n  const cliente = (json['Ordered by Institution'] || json['Organization'] || '').trim();\n  const produto = (json['Product'] || json['Produto'] || '').trim();\n  const trackingRaw = json['Tracking Number'] || json['Tracking'] || '';\n  const trackingNumber = validateTrackingNumber(trackingRaw);\n  const shipDate = json['Ship Date'] || json['Data Envio'] || '';\n  const valor = parseFloat(json['Subtotal (USD)'] || json['Order Total'] || 0);\n  const webOrder = (json['Web Order #'] || '').toString().trim();\n  const erpOrder = (json['ERP Sales Order'] || '').toString().trim();\n  const carrier = (json['Carrier'] || 'FedEx').trim();\n  const shipTo = (json['Ship To'] || '').trim();\n  \n  if (!salesOrder || !trackingNumber) {\n    continue;\n  }\n  \n  console.log(`SO: ${salesOrder}, Tracking: ${trackingNumber}`);\n  \n  const dataEnvioConvertida = excelDateToJSDate(shipDate);\n  \n  if (!orderMap.has(salesOrder)) {\n    orderMap.set(salesOrder, {\n      sales_order: salesOrder,\n      erp_order: erpOrder || salesOrder,\n      cliente: cliente,\n      ship_to: shipTo,\n      carrier: carrier,\n      produtos: [],\n      tracking_numbers: new Set(),\n      valor_total: 0,\n      ship_date: dataEnvioConvertida,\n      web_order: webOrder\n    });\n  }\n  \n  const order = orderMap.get(salesOrder);\n  if (produto) order.produtos.push(produto);\n  if (trackingNumber) order.tracking_numbers.add(trackingNumber);\n  order.valor_total += valor;\n}\n\nfor (const order of orderMap.values()) {\n  if (order.tracking_numbers.size === 0) continue;\n  \n  processedOrders.push({\n    json: {\n      sales_order: order.sales_order,\n      erp_order: order.erp_order,\n      cliente: order.cliente,\n      ship_to: order.ship_to || '',\n      carrier: order.carrier || 'FedEx',\n      produtos: [...new Set(order.produtos)].filter(p => p).join(', '),\n      tracking_numbers: Array.from(order.tracking_numbers).filter(t => t).join(', '),\n      data_envio: order.ship_date,\n      valor_total: order.valor_total.toFixed(2),\n      web_order: order.web_order,\n      status: 'Enviado',\n      status_atual: 'Enviado',\n      status_cliente: 'Preparando Envio',\n      ultima_localizacao: 'Em Trânsito',\n      data_processamento: new Date().toISOString(),\n      data_ultima_atualizacao: new Date().toISOString(),\n      created_at: new Date().toISOString()\n    }\n  });\n}\n\nif (processedOrders.length === 0) {\n  throw new Error('Nenhum pedido com tracking válido encontrado');\n}\n\nconsole.log(`Total processados: ${processedOrders.length}`);\n\nreturn processedOrders;"
+      },
+      "id": "badcbd89-da0a-470f-a633-2abd3657e6f4",
+      "name": "Processar Dados Shipment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        624
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aldwmdfveivkfxxvfoua.supabase.co/functions/v1/ingest-envios",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer p3Rma-STS_n8n_2025"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "b5063577-eee7-429f-888a-17af5781df8e",
+      "name": "Inserir via Lovable Cloud",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        896,
+        528
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aldwmdfveivkfxxvfoua.supabase.co/functions/v1/update-tracking",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer p3Rma-STS_n8n_2025"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "9a685716-dd6a-4888-950f-d5d0d8564c6e",
+      "name": "Atualizar via Lovable Cloud",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        896,
+        720
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "tableId": "envios_processados",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sales_order",
+              "fieldValue": "={{ $('Preparar Insert1').item.json.sales_order }}"
+            },
+            {
+              "fieldId": "erp_order",
+              "fieldValue": "={{ $('Preparar Insert1').item.json.erp_order }}"
+            },
+            {
+              "fieldId": "cliente",
+              "fieldValue": "={{ $('Preparar Insert1').item.json.cliente }}"
+            },
+            {
+              "fieldId": "produtos",
+              "fieldValue": "={{ $('Preparar Insert1').item.json.produtos }}"
+            },
+            {
+              "fieldId": "valor_total",
+              "fieldValue": "={{ $('Preparar Insert1').item.json.valor_total }}"
+            },
+            {
+              "fieldId": "tracking_numbers",
+              "fieldValue": "={{ $('Preparar Insert1').item.json.tracking_numbers }}"
+            },
+            {
+              "fieldId": "data_envio",
+              "fieldValue": "={{ $('Preparar Insert1').item.json.data_envio }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "Enviado"
+            },
+            {
+              "fieldId": "status_atual",
+              "fieldValue": "Enviado"
+            },
+            {
+              "fieldId": "ultima_localizacao",
+              "fieldValue": "Em Trânsito"
+            },
+            {
+              "fieldId": "data_ultima_atualizacao",
+              "fieldValue": "={{ $('Preparar Insert1').item.json.data_ultima_atualizacao }}"
+            },
+            {
+              "fieldId": "web_order",
+              "fieldValue": "={{ $('Preparar Insert1').item.json.web_order }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $('Preparar Insert1').item.json.created_at }}"
+            }
+          ]
+        }
+      },
+      "id": "4548b3a2-cb86-4a7d-82ea-c95dbd834fb0",
+      "name": "Backup Supabase Insert",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        528
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "oD99Qqe2sNruP4u0",
+          "name": "Supabase - tracking@"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "envios_processados",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sales_order",
+              "condition": "eq",
+              "keyValue": "={{ $('Preparar Update1').item.json.sales_order }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "tracking_numbers",
+              "fieldValue": "={{ $('Preparar Update1').item.json.tracking_numbers }}"
+            },
+            {
+              "fieldId": "data_envio",
+              "fieldValue": "={{ $('Preparar Update1').item.json.data_envio }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "Enviado"
+            },
+            {
+              "fieldId": "status_atual",
+              "fieldValue": "Enviado"
+            },
+            {
+              "fieldId": "ultima_localizacao",
+              "fieldValue": "Em Trânsito"
+            },
+            {
+              "fieldId": "data_ultima_atualizacao",
+              "fieldValue": "={{ $('Preparar Update1').item.json.data_ultima_atualizacao }}"
+            },
+            {
+              "fieldId": "tracking_numbers",
+              "fieldValue": "={{ $('Preparar Update1').item.json.tracking_numbers }}"
+            }
+          ]
+        }
+      },
+      "id": "7f81c362-f5a9-4910-a865-8c6f9633fd8d",
+      "name": "Backup Supabase Update",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        720
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "oD99Qqe2sNruP4u0",
+          "name": "Supabase - tracking@"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "tableId": "shipment_history",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sales_order",
+              "fieldValue": "={{ $json.sales_order }}"
+            },
+            {
+              "fieldId": "evento",
+              "fieldValue": "Enviado"
+            },
+            {
+              "fieldId": "data_evento",
+              "fieldValue": "={{ $json.data_envio }}"
+            },
+            {
+              "fieldId": "detalhes",
+              "fieldValue": "={{ JSON.stringify({tracking: $json.tracking_numbers, carrier: $json.carrier || 'FedEx', valor: $json.valor_total}) }}"
+            },
+            {
+              "fieldId": "fonte",
+              "fieldValue": "Automated Daily Shipment"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "tracking_number",
+              "fieldValue": "={{ $json.tracking_numbers }}"
+            }
+          ]
+        }
+      },
+      "id": "432f5dfd-9768-47b5-be35-e3743cf2392f",
+      "name": "Registrar Histórico",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        624
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "oD99Qqe2sNruP4u0",
+          "name": "Supabase - tracking@"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const splitData = $('Dividir Insert/Update1').item.json.summary;\nconst processedCount = $input.all().length;\n\nconst summary = {\n  timestamp: new Date().toISOString(),\n  metrics: {\n    total_orders_shipped: splitData.totalProcessed,\n    orders_inserted: splitData.toInsert,\n    orders_updated: splitData.toUpdate,\n    successfully_processed: processedCount\n  },\n  status: {\n    completed: true,\n    message: `Processamento concluído: ${splitData.totalProcessed} envios (${splitData.toInsert} novos, ${splitData.toUpdate} atualizados)`\n  }\n};\n\nconsole.log('Total:', summary.metrics.total_orders_shipped);\nconsole.log('Novos:', summary.metrics.orders_inserted);\nconsole.log('Atualizados:', summary.metrics.orders_updated);\n\nreturn [{ json: summary }];"
+      },
+      "id": "e6cdd446-4923-4c94-a2a8-467850d07b04",
+      "name": "Gerar Resumo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        624
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const allOrders = $input.all();\n\nif (allOrders.length === 0) {\n  throw new Error('Nenhum pedido para processar');\n}\n\nconst salesOrdersList = allOrders.map(order => order.json.sales_order);\n\nconsole.log(`Verificando ${salesOrdersList.length} pedidos`);\n\nreturn [{\n  json: {\n    salesOrdersList: salesOrdersList,\n    ordersData: allOrders\n  }\n}];"
+      },
+      "id": "03762ae1-376c-4576-ba28-1d65449f4436",
+      "name": "Preparar Verificação1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        624
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "envios_processados",
+        "returnAll": true
+      },
+      "id": "494213bd-8abd-465c-8ab7-5a4ac5633b6e",
+      "name": "Verificar Existentes1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        624
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "oD99Qqe2sNruP4u0",
+          "name": "Supabase - tracking@"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const ordersToInsert = [];\nconst ordersToUpdate = [];\n\nconst originalData = $('Preparar Verificação1').item.json.ordersData;\nconst existingOrders = $input.all();\n\nconst existingSOs = new Set();\nexistingOrders.forEach(item => {\n  if (item.json?.sales_order) {\n    existingSOs.add(item.json.sales_order);\n  }\n});\n\noriginalData.forEach(order => {\n  if (existingSOs.has(order.json.sales_order)) {\n    ordersToUpdate.push(order.json);\n  } else {\n    ordersToInsert.push(order.json);\n  }\n});\n\nconsole.log(`${ordersToInsert.length} para inserir, ${ordersToUpdate.length} para atualizar`);\n\nreturn [{\n  json: {\n    ordersToInsert: ordersToInsert,\n    ordersToUpdate: ordersToUpdate,\n    summary: {\n      totalProcessed: originalData.length,\n      toInsert: ordersToInsert.length,\n      toUpdate: ordersToUpdate.length\n    }\n  }\n}];"
+      },
+      "id": "a3c2966d-6961-411f-ab18-a92d67d380e3",
+      "name": "Dividir Insert/Update1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        624
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const ordersToInsert = $json.ordersToInsert || [];\n\nif (ordersToInsert.length === 0) {\n  return [];\n}\n\nreturn ordersToInsert.map(order => ({ json: order }));"
+      },
+      "id": "21ba1a90-3a0e-40f3-8818-502bdb412459",
+      "name": "Preparar Insert1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        528
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const ordersToUpdate = $json.ordersToUpdate || [];\n\nif (ordersToUpdate.length === 0) {\n  return [];\n}\n\nreturn ordersToUpdate.map(order => ({ json: order }));"
+      },
+      "id": "fdb92be8-b03a-4e8d-a183-6becc86b77a2",
+      "name": "Preparar Update1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        720
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const allResults = [];\n\nfor (const item of $input.all()) {\n  if (item.json && item.json.sales_order) {\n    allResults.push(item);\n  }\n}\n\nreturn allResults;"
+      },
+      "id": "782c4386-7f20-46b3-9fff-6813916d0a11",
+      "name": "Combinar Resultados1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        624
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -896,
+        624
+      ],
+      "id": "e54233ed-565b-4939-9970-8e4ea3496680",
+      "name": "When Executed by Another Workflow",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sintesebio.app.n8n.cloud/webhook/logger",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "p3Rma-STS_n8n_2025"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        624
+      ],
+      "id": "c3c1f208-4715-4728-8365-af72a939cf73",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node: Preparar Dados do Log\nconst allItems = $input.all();\n\n// Extrair métricas específicas baseado no workflow\nlet workflowMetrics = {};\nlet mainMessage = 'Workflow executado';\n\n// 1 - Standard Daily Order\nif ($workflow.name.includes('Standard Daily Order')) {\n  const salesOrders = allItems.map(i => i.json.sales_order).filter(Boolean);\n  workflowMetrics = {\n    total_orders: salesOrders.length,\n    sales_orders: salesOrders.slice(0, 10), // Primeiras 10 SOs\n    total_value: allItems.reduce((sum, i) => sum + parseFloat(i.json.valor_total || 0), 0).toFixed(2)\n  };\n  mainMessage = `${salesOrders.length} pedidos processados`;\n}\n\n// 2 - Automated Daily Shipment\nelse if ($workflow.name.includes('Automated Daily Shipment')) {\n  workflowMetrics = {\n    total_shipments: allItems.length,\n    tracking_count: allItems.filter(i => i.json.tracking_numbers).length\n  };\n  mainMessage = `${allItems.length} envios processados`;\n}\n\n// 3 - FedEx Scraper\nelse if ($workflow.name.includes('FedEx Scraper')) {\n  workflowMetrics = {\n    trackings_verified: allItems.length,\n    at_warehouse: allItems.filter(i => i.json.is_at_warehouse).length\n  };\n  mainMessage = `${allItems.length} trackings verificados`;\n}\n\n// 4 - Tracking Pós-Armazém\nelse if ($workflow.name.includes('Tracking Pós-Armazém') || $workflow.name.includes('Tracking PÃ³s-ArmazÃ©m')) {\n  workflowMetrics = {\n    emails_processed: allItems.length,\n    cargas_processadas: allItems.filter(i => i.json.numero_carga).length\n  };\n  mainMessage = `${allItems.length} emails de tracking processados`;\n}\n\n// 5 - Planilha de Lotes\nelse if ($workflow.name.includes('Planilha de Lotes')) {\n  const summary = allItems[0]?.json?.summary || allItems[0]?.json;\n  workflowMetrics = {\n    numero_carga: summary?.numero_carga,\n    total_sos: summary?.total_sos,\n    total_items: summary?.total_items\n  };\n  mainMessage = `Carga ${summary?.numero_carga} processada com ${summary?.total_sos} SOs`;\n}\n\n// 6 - Bio-Rad Pedido\nelse if ($workflow.name.includes('Bio-Rad') && $workflow.name.includes('PEDIDO')) {\n  const orderData = allItems[0]?.json;\n  workflowMetrics = {\n    order_number: orderData?.orderNumber || orderData?.order_number,\n    total_items: orderData?.metrics?.totalItems || orderData?.total_items,\n    total_value: orderData?.financial?.total || orderData?.total_value\n  };\n  mainMessage = `Pedido ${orderData?.orderNumber} registrado`;\n}\n\n// 7 - Bio-Rad Confirmação\nelse if ($workflow.name.includes('Bio-Rad') && $workflow.name.includes('CONFIRMAÇÃO')) {\n  const orderData = allItems[0]?.json;\n  workflowMetrics = {\n    order_number: orderData?.orderNumber,\n    confirmation_number: orderData?.confirmationNumber,\n    status: orderData?.overallStatus,\n    confirmed_items: orderData?.metrics?.confirmedItems,\n    total_items: orderData?.metrics?.totalItems\n  };\n  mainMessage = `Confirmação ${orderData?.confirmationNumber} processada`;\n}\n\n// Fallback genérico\nelse {\n  workflowMetrics = {\n    items_count: allItems.length\n  };\n  mainMessage = `${allItems.length} items processados`;\n}\n\n// Retornar dados formatados\nreturn [{\n  json: {\n    workflow_name: $workflow.name,\n    workflow_id: $workflow.id,\n    execution_id: $execution.id,\n    level: 'info',\n    message: mainMessage,\n    data: workflowMetrics,\n    performance: {\n      duration_ms: null,\n      items_processed: allItems.length\n    },\n    context: {\n      execution_mode: $execution.mode,\n      timestamp: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        624
+      ],
+      "id": "04e0e2d0-b665-4c60-b4f2-2729a7e0ae49",
+      "name": "Preparar Dados do Log"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Processar Anexos": {
+      "main": [
+        [
+          {
+            "node": "Ler Planilha Excel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ler Planilha Excel": {
+      "main": [
+        [
+          {
+            "node": "Processar Dados Shipment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Dados Shipment": {
+      "main": [
+        [
+          {
+            "node": "Preparar Verificação1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inserir via Lovable Cloud": {
+      "main": [
+        [
+          {
+            "node": "Backup Supabase Insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar via Lovable Cloud": {
+      "main": [
+        [
+          {
+            "node": "Backup Supabase Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backup Supabase Insert": {
+      "main": [
+        [
+          {
+            "node": "Combinar Resultados1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backup Supabase Update": {
+      "main": [
+        [
+          {
+            "node": "Combinar Resultados1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar Histórico": {
+      "main": [
+        [
+          {
+            "node": "Gerar Resumo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Verificação1": {
+      "main": [
+        [
+          {
+            "node": "Verificar Existentes1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Existentes1": {
+      "main": [
+        [
+          {
+            "node": "Dividir Insert/Update1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dividir Insert/Update1": {
+      "main": [
+        [
+          {
+            "node": "Preparar Insert1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preparar Update1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Insert1": {
+      "main": [
+        [
+          {
+            "node": "Inserir via Lovable Cloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Update1": {
+      "main": [
+        [
+          {
+            "node": "Atualizar via Lovable Cloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combinar Resultados1": {
+      "main": [
+        [
+          {
+            "node": "Registrar Histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Processar Anexos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Resumo": {
+      "main": [
+        [
+          {
+            "node": "Preparar Dados do Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Dados do Log": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "vpEAvi7gkAjmLvkl"
+  },
+  "versionId": "bcc039ce-9218-41cd-b9af-e3a2affd9ff3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dcba349999e42800a73e5235199b71095d4545b83e3b6d9b2806516e371d0786"
+  },
+  "id": "mjjs155pSZ1dbKaE",
+  "tags": []
+}
