@@ -270,7 +270,7 @@ const TrendsAnalysis: React.FC = () => {
             <Card className="shadow-card">
               <CardContent className="p-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{data.topPerformers.clientes.length}</div>
+                  <div className="text-2xl font-bold text-primary">{data.totalClientesUnicos}</div>
                   <div className="text-xs text-muted-foreground">Total de Clientes</div>
                 </div>
               </CardContent>
@@ -379,15 +379,6 @@ const TrendsAnalysis: React.FC = () => {
                     <div className="text-xs text-muted-foreground mt-1">
                       {data.insights.previsaoProximoMes.confianca}% de confiança
                     </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Taxa de Entrega no Prazo</span>
-                      <span className="text-sm font-bold text-status-delivered">
-                        {data.kpis.taxaEntrega.toFixed(1)}%
-                      </span>
-                    </div>
-                    <Progress value={data.kpis.taxaEntrega} className="h-2" />
                   </div>
                   {data.insights.atencaoNecessaria.length > 0 && (
                     <div className="mt-4 p-3 bg-status-production/10 rounded-lg border border-status-production/20">

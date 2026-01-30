@@ -5,7 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-  DollarSign, Target, Clock, TrendingUp, Trophy, Medal, Award
+  DollarSign, Target, TrendingUp, Trophy, Medal, Award
 } from 'lucide-react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
@@ -61,7 +61,7 @@ const ExecutiveDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* KPIs Principais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="shadow-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
@@ -88,21 +88,6 @@ const ExecutiveDashboard: React.FC = () => {
             </div>
             <p className="text-xs text-muted-foreground">
               Por pedido
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Entrega</CardTitle>
-            <Clock className="h-4 w-4 text-status-shipping" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-status-shipping">
-              {data.kpis.taxaEntrega.toFixed(1)}%
-            </div>
-            <p className="text-xs text-muted-foreground">
-              No prazo
             </p>
           </CardContent>
         </Card>

@@ -19,6 +19,7 @@ interface AnalyticsData {
     novosClientes: number;
     totalClientes: number;
   }>;
+  totalClientesUnicos: number;
   topPerformers: {
     clientes: Array<{ nome: string; valor: number; badge: 'ouro' | 'prata' | 'bronze' }>;
   };
@@ -50,6 +51,7 @@ export const useAnalytics = (timeRange: string = '12m') => {
     kpis: { receitaTotal: 0, ticketMedio: 0, taxaEntrega: 0, previsaoProximoMes: 0 },
     tendenciaReceita: [],
     crescimentoClientes: [],
+    totalClientesUnicos: 0,
     topPerformers: { clientes: [] },
     metricas: { entregasNoPrazo: 0, pedidosAtrasados: 0, eficienciaOperacional: 0 },
     insights: { 
@@ -115,9 +117,11 @@ export const useAnalytics = (timeRange: string = '12m') => {
         monthlyData.set(key, { receita: 0, pedidos: 0, clientes: new Set() });
       }
 
-      // Process actual data
+      // Process actual data — revenue counted at delivery date for delivered items
       enviosData?.forEach(envio => {
-        const date = parseDate(envio.created_at);
+        const date = envio.is_delivered
+          ? parseDate(envio.data_ultima_atualizacao || envio.created_at)
+          : parseDate(envio.created_at);
         const key = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
         
         if (monthlyData.has(key)) {
@@ -288,6 +292,7 @@ export const useAnalytics = (timeRange: string = '12m') => {
         kpis: { receitaTotal, ticketMedio, taxaEntrega, previsaoProximoMes },
         tendenciaReceita,
         crescimentoClientes,
+        totalClientesUnicos: clienteMap.size,
         topPerformers: { clientes: topClientes },
         metricas: { entregasNoPrazo, pedidosAtrasados, eficienciaOperacional },
         insights,
