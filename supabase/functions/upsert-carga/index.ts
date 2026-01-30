@@ -6,6 +6,7 @@
 // Resolve o problema de emails de atualização chegando antes do pré-alerta
 // ============================================
 
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { checkRateLimit, recordFailedAttempt, recordSuccessfulAttempt } from "../_shared/rate-limiter.ts";
 
@@ -14,7 +15,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
