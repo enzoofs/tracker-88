@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { FC, useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +38,7 @@ interface SOTableProps {
   isLoading?: boolean;
 }
 
-const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false }) => {
+const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [clienteFilter, setClienteFilter] = useState('all');
@@ -86,6 +86,9 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
     }
   };
 
+
+  const ariaSort = (column: keyof SO): 'ascending' | 'descending' | 'none' =>
+    sortBy === column ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none';
 
   const handleSort = (column: keyof SO) => {
     if (sortBy === column) {
@@ -276,8 +279,9 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  aria-sort={ariaSort('salesOrder')}
                   onClick={() => handleSort('salesOrder')}
                 >
                   <div className="flex items-center gap-1">
@@ -287,8 +291,9 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                     )}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  aria-sort={ariaSort('cliente')}
                   onClick={() => handleSort('cliente')}
                 >
                   <div className="flex items-center gap-1">
@@ -298,8 +303,9 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                     )}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  aria-sort={ariaSort('produtos')}
                   onClick={() => handleSort('produtos')}
                 >
                   <div className="flex items-center gap-1">
@@ -309,8 +315,9 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                     )}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  aria-sort={ariaSort('valorTotal')}
                   onClick={() => handleSort('valorTotal')}
                 >
                   <div className="flex items-center gap-1">
@@ -320,8 +327,9 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                     )}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  aria-sort={ariaSort('statusAtual')}
                   onClick={() => handleSort('statusAtual')}
                 >
                   <div className="flex items-center gap-1">
@@ -334,6 +342,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 <TableHead>Nº Carga</TableHead>
                 <TableHead
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                  aria-sort={ariaSort('dataUltimaAtualizacao')}
                   onClick={() => handleSort('dataUltimaAtualizacao')}
                 >
                   <div className="flex items-center gap-1">

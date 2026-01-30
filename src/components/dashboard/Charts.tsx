@@ -1,10 +1,10 @@
-import React from 'react';
+import { FC } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChartsData } from '@/hooks/useChartsData';
 import ExecutiveDashboard from './ExecutiveDashboard';
 import TrendsAnalysis from './TrendsAnalysis';
 
-const Charts: React.FC = () => {
+const Charts: FC = () => {
   const { data, loading } = useChartsData();
 
   return (

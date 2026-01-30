@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
   Package, 
@@ -26,7 +26,7 @@ interface TimelineProps {
   className?: string;
 }
 
-const Timeline: React.FC<TimelineProps> = ({ events, className = '' }) => {
+const Timeline: FC<TimelineProps> = ({ events, className = '' }) => {
   const getEventIcon = (tipo: string, status: string) => {
     const iconClass = status === 'completed' ? 'text-status-delivered' : 
                      status === 'current' ? 'text-primary' : 'text-muted-foreground';

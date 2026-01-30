@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +37,7 @@ interface NotificationCenterProps {
   onCountUpdate: (count: number) => void;
 }
 
-const NotificationCenter: React.FC<NotificationCenterProps> = ({ 
+const NotificationCenter: FC<NotificationCenterProps> = ({ 
   isOpen, 
   onClose, 
   unreadCount,

@@ -60,8 +60,12 @@ const CargoCard = ({ carga, onClick }: CargoCardProps) => {
   return (
     <TooltipProvider>
       <Card
-        className={`p-6 cursor-pointer hover:shadow-lg transition-all duration-200 border-border/50 bg-card hover:border-primary/50 ${hasMissingData ? 'ring-1 ring-amber-500/30' : ''}`}
+        className={`p-6 cursor-pointer hover:shadow-lg transition-all duration-200 border-border/50 bg-card hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${hasMissingData ? 'ring-1 ring-amber-500/30' : ''}`}
+        tabIndex={0}
+        role="button"
+        aria-label={`Carga ${carga.numero_carga} — ${carga.status}`}
         onClick={onClick}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
       >
         <div className="space-y-4">
           {/* Header */}

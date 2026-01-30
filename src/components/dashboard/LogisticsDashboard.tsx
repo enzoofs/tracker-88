@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { FC, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,7 @@ import Reports from './Reports';
 import CargoCard from './CargoCard';
 import BulkCargoUpload from './BulkCargoUpload';
 
-const LogisticsDashboard: React.FC = () => {
+const LogisticsDashboard: FC = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const {

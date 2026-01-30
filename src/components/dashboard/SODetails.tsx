@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,7 +70,7 @@ interface TimelineEvent {
   detalhes?: string;
 }
 
-const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
+const SODetails: FC<SODetailsProps> = ({ so, onClose }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(so.statusAtual);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);

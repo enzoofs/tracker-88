@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { FC, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { formatCurrency } from '@/lib/formatters';
 import ReportFilters from './ReportFilters';
 import * as XLSX from 'xlsx';
 
-const Reports: React.FC = () => {
+const Reports: FC = () => {
   const [timeRange, setTimeRange] = useState('30d');
   const { data, loading } = useReportsData(timeRange);
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { FC, useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Truck, Package, Clock, TrendingUp, TrendingDown, Minus, Plane, AlertCircle, CheckCircle } from 'lucide-react';
@@ -23,7 +23,7 @@ interface OverviewProps {
   allSOs?: any[];
 }
 
-const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
+const Overview: FC<OverviewProps> = ({ data, allSOs = [] }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogTitle, setDialogTitle] = useState('');
   const [dialogSOs, setDialogSOs] = useState<any[]>([]);

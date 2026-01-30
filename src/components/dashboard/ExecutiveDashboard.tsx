@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -10,7 +10,7 @@ import {
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { formatCurrency } from '@/lib/formatters';
 
-const ExecutiveDashboard: React.FC = () => {
+const ExecutiveDashboard: FC = () => {
   const { data, loading } = useAnalytics();
 
   if (loading) {

@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,7 +22,7 @@ interface StatusDetailDialogProps {
   sos: SO[];
 }
 
-export const StatusDetailDialog: React.FC<StatusDetailDialogProps> = ({
+export const StatusDetailDialog: FC<StatusDetailDialogProps> = ({
   isOpen,
   onClose,
   title,

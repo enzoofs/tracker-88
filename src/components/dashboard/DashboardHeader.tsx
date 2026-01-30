@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { Globe, Bell, User, LogOut, Sun, Moon, FileSpreadsheet, RefreshCw, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,7 @@ interface DashboardHeaderProps {
   onSignOut: () => void;
 }
 
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({
+const DashboardHeader: FC<DashboardHeaderProps> = ({
   lastUpdate,
   loading,
   userName,

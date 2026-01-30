@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import { FC, useState, useCallback, useMemo, DragEvent } from 'react';
 import * as XLSX from 'xlsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,7 @@ interface BulkCargoUploadProps {
   onSuccess?: () => void;
 }
 
-const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSuccess }) => {
+const BulkCargoUpload: FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSuccess }) => {
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<CargoRow[]>([]);
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
@@ -275,7 +275,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
   }, [toast]);
 
   // Handle drag and drop
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -291,7 +291,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
     }
   }, [handleFileUpload, toast]);
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
   };
@@ -470,7 +470,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
                 <h4 className="font-medium mb-3">Instruções de preenchimento:</h4>
                   <ul className="text-sm text-muted-foreground space-y-2">
                     <li>• <strong>numero_carga</strong>: Obrigatório. Deve existir no sistema.</li>
-                    <li>• <strong>data_armazem</strong>: Data de chegada no armazém FedEx - INÍCIO DO SLA (DD/MM/AAAA)</li>
+                    <li>• <strong>data_armazem</strong>: Data de chegada no armazém FedEx (DD/MM/AAAA)</li>
                     <li>• <strong>data_embarque</strong>: Data de saída do voo (DD/MM/AAAA)</li>
                     <li>• <strong>data_chegada</strong>: Data de chegada no Brasil (DD/MM/AAAA)</li>
                     <li>• <strong>data_desembaraco</strong>: Data de liberação alfandegária (DD/MM/AAAA)</li>
@@ -478,7 +478,7 @@ const BulkCargoUpload: React.FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSu
                     <li>• <strong>status</strong>: Opcional. Se não informado, será calculado pela última data.</li>
                     <li className="text-amber-600 dark:text-amber-400">⚠️ Células preenchidas sobrescrevem dados existentes!</li>
                     <li className="text-muted-foreground">Células vazias mantêm o valor atual (não apagam).</li>
-                    <li className="text-primary">ℹ️ SLA de 15 dias corridos é contado a partir da data_armazem</li>
+                    <li className="text-red-600 dark:text-red-400">⚠️ IMPORTANTE: SLA de 15 dias ÚTEIS é contado a partir da data_envio (envio FedEx)</li>
                   </ul>
                 </CardContent>
               </Card>

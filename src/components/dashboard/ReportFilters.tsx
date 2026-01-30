@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { Badge } from '@/components/ui/badge';
 
 interface ReportFiltersProps {
@@ -6,7 +6,7 @@ interface ReportFiltersProps {
   onPeriodChange: (period: string) => void;
 }
 
-const ReportFilters: React.FC<ReportFiltersProps> = ({ selectedPeriod, onPeriodChange }) => {
+const ReportFilters: FC<ReportFiltersProps> = ({ selectedPeriod, onPeriodChange }) => {
   const periods = [
     { key: '30d', label: '30 dias' },
     { key: '3m', label: '3 meses' },

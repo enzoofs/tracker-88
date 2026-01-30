@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { FC, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
@@ -13,7 +13,7 @@ import {
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { formatCurrency } from '@/lib/formatters';
 
-const TrendsAnalysis: React.FC = () => {
+const TrendsAnalysis: FC = () => {
   const { data, loading } = useAnalytics();
   const [atencaoDialogOpen, setAtencaoDialogOpen] = useState(false);
 

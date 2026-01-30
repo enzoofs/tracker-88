@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { FC, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +20,7 @@ interface AuthPageProps {
   onSuccess?: () => void;
 }
 
-const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
+const AuthPage: FC<AuthPageProps> = ({ onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   

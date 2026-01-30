@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -34,7 +34,7 @@ interface AnalyticsData {
   };
 }
 
-const Analytics: React.FC = () => {
+const Analytics: FC = () => {
   const [data, setData] = useState<AnalyticsData>({
     deliveryTrend: [],
     averageDeliveryTime: [],

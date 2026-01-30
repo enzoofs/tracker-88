@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -62,7 +62,7 @@ interface CargoDetailsProps {
   onClose: () => void;
 }
 
-const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
+const CargoDetails: FC<CargoDetailsProps> = ({ cargo, onClose }) => {
   const [sosVinculadas, setSosVinculadas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);

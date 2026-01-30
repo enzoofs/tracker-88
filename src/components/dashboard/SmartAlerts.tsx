@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,7 @@ interface ActiveAlert {
   timestamp: string;
 }
 
-const SmartAlerts: React.FC = () => {
+const SmartAlerts: FC = () => {
   const [alertRules, setAlertRules] = useState<AlertRule[]>([]);
   const [activeAlerts, setActiveAlerts] = useState<ActiveAlert[]>([]);
   const [loading, setLoading] = useState(true);
