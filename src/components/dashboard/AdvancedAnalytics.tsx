@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatters';
+import { calculateBusinessDays, DELIVERY_SLA_BUSINESS_DAYS } from '@/lib/statusNormalizer';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
@@ -26,6 +27,8 @@ interface AdvancedAnalyticsData {
     totalOrders: number;
     activeClients: number;
     deliveryEfficiency: number;
+    sampleSize: number;
+    totalDelivered: number;
   };
   trendAnalysis: Array<{
     date: string;
@@ -53,7 +56,9 @@ const AdvancedAnalytics: FC = () => {
       totalRevenue: 0,
       totalOrders: 0,
       activeClients: 0,
-      deliveryEfficiency: 0
+      deliveryEfficiency: 0,
+      sampleSize: 0,
+      totalDelivered: 0
     },
     trendAnalysis: [],
     clientPerformance: [],
@@ -82,21 +87,53 @@ const AdvancedAnalytics: FC = () => {
 
       if (error) throw error;
 
+      // Fetch real delivery dates from cargas.data_entrega via carga_sales_orders
+      const deliveryDatesMap: Record<string, Date> = {};
+      const { data: cargoSOLinks } = await supabase
+        .from('carga_sales_orders')
+        .select('so_number, numero_carga');
+
+      if (cargoSOLinks && cargoSOLinks.length > 0) {
+        const cargoNumbers = [...new Set(cargoSOLinks.map(l => l.numero_carga))];
+        const { data: cargasDelivery } = await supabase
+          .from('cargas')
+          .select('numero_carga, data_entrega')
+          .in('numero_carga', cargoNumbers)
+          .not('data_entrega', 'is', null);
+
+        const cargoDeliveryMap: Record<string, string> = {};
+        cargasDelivery?.forEach(c => {
+          if (c.data_entrega) cargoDeliveryMap[c.numero_carga] = c.data_entrega;
+        });
+        cargoSOLinks.forEach(link => {
+          const dd = cargoDeliveryMap[link.numero_carga];
+          if (dd) deliveryDatesMap[link.so_number] = new Date(dd);
+        });
+      }
+
       // Calculate Performance KPIs
       const totalOrders = enviosData?.length || 0;
       const deliveredOrders = enviosData?.filter(e => e.is_delivered) || [];
-      const onTimeDeliveries = deliveredOrders.length;
-      const onTimeDeliveryRate = totalOrders > 0 ? (onTimeDeliveries / totalOrders) * 100 : 0;
-      
-      // Calculate real average delivery time
-      const ordersWithDates = deliveredOrders.filter(e => e.data_envio && e.created_at);
-      const avgDeliveryTime = ordersWithDates.length > 0
-        ? ordersWithDates.reduce((sum, e) => {
-            const created = new Date(e.created_at);
-            const delivered = new Date(e.data_envio!);
-            return sum + Math.floor((delivered.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
-          }, 0) / ordersWithDates.length
-        : 0;
+
+      // On-time rate: data_envio → cargas.data_entrega, 15 dias úteis
+      let onTimeCount = 0;
+      let sampleSize = 0;
+      let totalBizDays = 0;
+
+      deliveredOrders.forEach(e => {
+        const realDeliveryDate = deliveryDatesMap[e.sales_order];
+        if (e.data_envio && realDeliveryDate) {
+          sampleSize++;
+          const bizDays = calculateBusinessDays(new Date(e.data_envio), realDeliveryDate);
+          totalBizDays += bizDays;
+          if (bizDays <= DELIVERY_SLA_BUSINESS_DAYS) {
+            onTimeCount++;
+          }
+        }
+      });
+
+      const onTimeDeliveryRate = sampleSize > 0 ? (onTimeCount / sampleSize) * 100 : 0;
+      const avgDeliveryTime = sampleSize > 0 ? Math.round(totalBizDays / sampleSize) : 0;
 
       const totalRevenue = enviosData?.reduce((sum, e) => sum + (Number(e.valor_total) || 0), 0) || 0;
       const activeClients = new Set(enviosData?.map(e => e.cliente)).size;
@@ -196,7 +233,9 @@ const AdvancedAnalytics: FC = () => {
           totalRevenue,
           totalOrders,
           activeClients,
-          deliveryEfficiency: Math.round(deliveryEfficiency)
+          deliveryEfficiency: Math.round(deliveryEfficiency),
+          sampleSize,
+          totalDelivered: deliveredOrders.length
         },
         trendAnalysis,
         clientPerformance,
@@ -338,6 +377,9 @@ const AdvancedAnalytics: FC = () => {
                 <div className="text-2xl font-bold text-status-delivered">
                   {data.performanceKpis.onTimeDeliveryRate}%
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Baseado em {data.performanceKpis.sampleSize} de {data.performanceKpis.totalDelivered} entregues
+                </p>
               </CardContent>
             </Card>
 
@@ -350,6 +392,9 @@ const AdvancedAnalytics: FC = () => {
                 <div className="text-2xl font-bold">
                   {data.performanceKpis.avgDeliveryTime} dias
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Dias úteis (envio → entrega)
+                </p>
               </CardContent>
             </Card>
 

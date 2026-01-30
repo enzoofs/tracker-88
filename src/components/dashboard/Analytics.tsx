@@ -25,6 +25,8 @@ interface AnalyticsData {
     averageDeliveryDays: number;
     totalDeliveries: number;
     criticalDelays: number;
+    sampleSize: number;
+    totalDelivered: number;
   };
   topClients: Array<{ cliente: string; volume: number; value: number; }>;
   monthComparison: {
@@ -42,7 +44,9 @@ const Analytics: FC = () => {
       onTimeRate: 0,
       averageDeliveryDays: 0,
       totalDeliveries: 0,
-      criticalDelays: 0
+      criticalDelays: 0,
+      sampleSize: 0,
+      totalDelivered: 0
     },
     topClients: [],
     monthComparison: { currentMonth: 0, previousMonth: 0, percentChange: 0 }
@@ -277,7 +281,9 @@ const Analytics: FC = () => {
           onTimeRate,
           averageDeliveryDays,
           totalDeliveries,
-          criticalDelays
+          criticalDelays,
+          sampleSize: totalDelivered,
+          totalDelivered: deliveredOrders.length
         },
         topClients,
         monthComparison: {
@@ -342,7 +348,7 @@ const Analytics: FC = () => {
               {data.performanceMetrics.onTimeRate}%
             </div>
             <p className="text-xs text-muted-foreground">
-              Baseado no SLA de 15 dias úteis
+              {data.performanceMetrics.sampleSize} de {data.performanceMetrics.totalDelivered} pedidos (SLA 15 dias úteis)
             </p>
           </CardContent>
         </Card>

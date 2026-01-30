@@ -1,8 +1,11 @@
+import { differenceInBusinessDays } from 'date-fns';
+
 interface SO {
   statusAtual: string;
   dataUltimaAtualizacao: string;
   dataOrdem?: string;
   dataArmazem?: string;
+  dataEnvio?: string;  // Data de envio FedEx (saída da fábrica)
   isDelivered: boolean;
   trackingNumbers?: string;
 }
@@ -27,7 +30,7 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   }
 
   // SLA interno - para determinar urgência (alerta visual)
-  // Prazo total: 15 dias corridos a partir da chegada no armazém FedEx
+  // Prazo total: 15 dias ÚTEIS a partir do ENVIO FedEx (data_envio)
   const slaDaysMap: Record<string, number> = {
     'armazém': 15,
     'armazem': 15,
@@ -42,7 +45,7 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   };
 
   // Previsão de entrega ao cliente - para informar ETA
-  // Prazo total: 15 dias corridos a partir da chegada no armazém FedEx
+  // Prazo total: 15 dias ÚTEIS a partir do ENVIO FedEx (data_envio)
   const deliveryForecastMap: Record<string, number> = {
     'armazém': 15,
     'armazem': 15,
@@ -71,8 +74,8 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
   };
 
   // Encontrar o status correspondente
-  let slaDays = 15;           // Default: 15 dias corridos a partir da saída da fábrica
-  let forecastDays = 15;      // Default: 15 dias corridos a partir da saída da fábrica
+  let slaDays = 15;           // Default: 15 dias ÚTEIS a partir do envio FedEx
+  let forecastDays = 15;      // Default: 15 dias ÚTEIS a partir do envio FedEx
   let stage = 'FedEx';
   
   for (const key of Object.keys(slaDaysMap)) {
@@ -84,12 +87,19 @@ export const useSLACalculator = (so: SO): SLAResult | null => {
     }
   }
 
-  // Usa data_armazem quando disponível (início do SLA), caso contrário usa dataUltimaAtualizacao
-  const referenceDate = new Date(so.dataArmazem || so.dataUltimaAtualizacao);
-  const now = new Date();
-  const daysSinceUpdate = Math.floor((now.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
+  // CRÍTICO: Usa data_envio (envio FedEx) como início do SLA
+  // Se data_envio não existir, não é possível calcular SLA confiável
+  if (!so.dataEnvio) {
+    return null;  // Sem data de envio, não há como calcular SLA
+  }
 
-  // Urgência baseada no SLA interno (5 dias para armazém)
+  const referenceDate = new Date(so.dataEnvio);
+  const now = new Date();
+
+  // Calcula dias ÚTEIS decorridos desde o envio FedEx
+  const daysSinceUpdate = differenceInBusinessDays(now, referenceDate);
+
+  // Urgência baseada no SLA interno (15 dias úteis)
   const slaRemaining = slaDays - daysSinceUpdate;
   let urgency: 'ok' | 'warning' | 'critical' | 'overdue';
   if (slaRemaining < 0) {

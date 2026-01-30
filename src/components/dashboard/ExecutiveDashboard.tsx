@@ -201,6 +201,9 @@ const ExecutiveDashboard: FC = () => {
                 <span className="text-sm text-muted-foreground">Meta: 85%</span>
               </div>
               <Progress value={data.metricas.entregasNoPrazo} className="h-2" />
+              <p className="text-xs text-muted-foreground mt-1">
+                Baseado em {data.metricas.slaSampleSize} de {data.metricas.slaTotalDelivered} entregues
+              </p>
             </div>
           </CardContent>
         </Card>

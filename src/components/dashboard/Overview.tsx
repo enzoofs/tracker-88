@@ -215,7 +215,7 @@ const Overview: FC<OverviewProps> = ({ data, allSOs = [] }) => {
       value: `${metrics.taxaEntregaNoPrazo}%`,
       icon: CheckCircle,
       variant: "delivered" as const,
-      trend: "dos pedidos entregues"
+      trend: `Baseado em ${deliveryRateData.total} pedidos com datas completas`
     },
     {
       title: "Valor em Movimento",

@@ -28,6 +28,8 @@ interface AnalyticsData {
     entregasNoPrazo: number;
     pedidosAtrasados: number;
     eficienciaOperacional: number;
+    slaSampleSize: number;
+    slaTotalDelivered: number;
   };
   insights: {
     tendenciaCrescimento: { tipo: 'positiva' | 'negativa' | 'estavel'; percentual: number };
@@ -55,7 +57,7 @@ export const useAnalytics = (timeRange: string = '12m') => {
     crescimentoClientes: [],
     totalClientesUnicos: 0,
     topPerformers: { clientes: [] },
-    metricas: { entregasNoPrazo: 0, pedidosAtrasados: 0, eficienciaOperacional: 0 },
+    metricas: { entregasNoPrazo: 0, pedidosAtrasados: 0, eficienciaOperacional: 0, slaSampleSize: 0, slaTotalDelivered: 0 },
     insights: { 
       tendenciaCrescimento: { tipo: 'estavel', percentual: 0 }, 
       previsaoProximoMes: { valor: 0, confianca: 0 }, 
@@ -323,7 +325,7 @@ export const useAnalytics = (timeRange: string = '12m') => {
         crescimentoClientes,
         totalClientesUnicos: clienteMap.size,
         topPerformers: { clientes: topClientes },
-        metricas: { entregasNoPrazo, pedidosAtrasados, eficienciaOperacional },
+        metricas: { entregasNoPrazo, pedidosAtrasados, eficienciaOperacional, slaSampleSize: totalWithDates, slaTotalDelivered: entregues.length },
         insights,
         variacoesResumo: tendenciaReceita.slice(-6).map(item => ({ 
           mes: item.mes, 
