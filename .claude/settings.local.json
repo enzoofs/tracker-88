@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run preview:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(pip show:*)",
+      "Bash(PYTHONIOENCODING=utf-8 python:*)",
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(gh:*)",
+      "mcp__linear-server__list_teams",
+      "mcp__linear-server__list_issue_labels",
+      "mcp__linear-server__create_issue",
+      "mcp__linear-server__update_issue",
+      "Bash(del \"c:\\\\sintese-tracker\\\\tracker-88\\\\src\\\\components\\\\ui\\\\ParticleBackground.tsx\")"
+    ]
+  }
+}

@@ -4,15 +4,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  Plane, 
-  Package, 
-  Calendar, 
-  MapPin, 
+import {
+  Plane,
+  Package,
+  Calendar,
+  MapPin,
   Thermometer,
   Truck,
   CheckCircle,
-  X,
   Loader2,
   Edit
 } from 'lucide-react';
@@ -37,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { translateFedExStatus } from '@/lib/utils';
 
@@ -389,22 +389,23 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden border border-border">
+    <Dialog open={true} onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-primary/10 to-primary/5">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Plane className="h-6 w-6 text-primary" />
+        <DialogHeader className="p-6 border-b bg-gradient-to-r from-primary/10 to-primary/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Plane className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold">Carga {cargo.numero_carga}</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  {cargo.mawb && `MAWB: ${cargo.mawb}`} {cargo.hawb && cargo.mawb && '|'} {cargo.hawb && `HAWB: ${cargo.hawb}`}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold">Carga {cargo.numero_carga}</h2>
-              <p className="text-sm text-muted-foreground">
-                {cargo.mawb && `MAWB: ${cargo.mawb}`} {cargo.hawb && cargo.mawb && '|'} {cargo.hawb && `HAWB: ${cargo.hawb}`}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
             {isAdmin && (
               <div className="flex items-center gap-2 border-r pr-3 mr-3">
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
@@ -438,13 +439,11 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                 </Button>
               </div>
             )}
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
+            </div>
           </div>
-        </div>
+        </DialogHeader>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
           <div className="p-6">
             {loading ? (
               <div className="flex items-center justify-center py-12">
@@ -755,38 +754,38 @@ const CargoDetails: React.FC<CargoDetailsProps> = ({ cargo, onClose }) => {
             )}
           </div>
         </div>
+      </DialogContent>
 
-        {/* Dialog de Confirmação */}
-        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Atualizar informações da carga</AlertDialogTitle>
-              <AlertDialogDescription className="space-y-4">
-                <div>
-                  Você está atualizando as informações da carga <strong>{cargo.numero_carga}</strong>.
-                  {sosVinculadas.length > 0 && (
-                    <>
-                      <br />
-                      Todas as {sosVinculadas.length} SOs consolidadas nesta carga também serão atualizadas com o novo status.
-                    </>
-                  )}
-                </div>
+      {/* Dialog de Confirmação */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Atualizar informações da carga</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <div>
+                Você está atualizando as informações da carga <strong>{cargo.numero_carga}</strong>.
+                {sosVinculadas.length > 0 && (
+                  <>
+                    <br />
+                    Todas as {sosVinculadas.length} SOs consolidadas nesta carga também serão atualizadas com o novo status.
+                  </>
+                )}
+              </div>
 
-                <div className="text-xs text-muted-foreground pt-2">
-                  Esta ação será registrada no histórico.
-                </div>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleManualStatusUpdate}>
-                Confirmar Alteração
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </div>
+              <div className="text-xs text-muted-foreground pt-2">
+                Esta ação será registrada no histórico.
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleManualStatusUpdate}>
+              Confirmar Alteração
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Dialog>
   );
 };
 

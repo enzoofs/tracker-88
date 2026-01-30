@@ -177,4 +177,51 @@ All colors MUST be HSL.
     font-family: 'Source Code Pro', 'Monaco', monospace;
     font-variant-numeric: tabular-nums;
   }
+
+  /* Glass Effect */
+  .glass {
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  /* Tech Font */
+  .font-tech {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  /* Background Variants */
+  .bg-gradient-dark {
+    background: hsl(var(--background));
+  }
+
+  .bg-gradient-tech {
+    background: var(--gradient-corporate);
+  }
+
+  .bg-gradient-logistics {
+    background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--muted)));
+  }
+
+  /* Shadow Tech */
+  .shadow-tech {
+    box-shadow: 0 4px 12px hsl(198 77% 56% / 0.25);
+  }
+
+  /* Glow Accent */
+  .glow-accent {
+    box-shadow: 0 0 12px hsl(0 84% 60% / 0.4);
+  }
+
+  /* Glow Pulse Animation */
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
 }

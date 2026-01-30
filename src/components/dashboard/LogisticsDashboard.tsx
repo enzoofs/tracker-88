@@ -19,7 +19,6 @@ import SODetails from './SODetails';
 import Charts from './Charts';
 import Reports from './Reports';
 import CargoCard from './CargoCard';
-import ParticleBackground from '../ui/ParticleBackground';
 import BulkCargoUpload from './BulkCargoUpload';
 interface DashboardData {
   overview: {
@@ -239,22 +238,8 @@ const LogisticsDashboard: React.FC = () => {
         atrasadas
       };
 
-      // Generate trend data
-      const deliveryTrend = Array.from({
-        length: 30
-      }, (_, i) => ({
-        date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR', {
-          month: 'short',
-          day: 'numeric'
-        }),
-        deliveries: Math.floor(Math.random() * 20) + 5
-      }));
-
-      console.log('✅ Dados carregados do Supabase:', {
-        enviosCount: enviosData?.length || 0,
-        transformedSOsCount: transformedSOs.length,
-        primeiraSO: transformedSOs[0]
-      });
+      // Trend data placeholder (to be replaced with real analytics)
+      const deliveryTrend: Array<{ date: string; deliveries: number }> = [];
 
       setData({
         overview: {
@@ -279,8 +264,6 @@ const LogisticsDashboard: React.FC = () => {
         : transformedCargas.filter(carga => carga.status?.toLowerCase() !== 'entregue');
       setFilteredCargas(filteredCargasList);
       
-      console.log('📤 setFilteredSOs chamado com:', filteredSOsList.length, 'SOs');
-      console.log('📦 setFilteredCargas chamado com:', filteredCargasList.length, 'Cargas');
       
       setLastUpdate(new Date());
     } catch (error) {
@@ -314,7 +297,6 @@ const LogisticsDashboard: React.FC = () => {
 
     // Auto-refresh a cada 30 minutos
     const refreshInterval = setInterval(() => {
-      console.log('🔄 Auto-refresh: Atualizando dados...');
       loadDashboardData();
     }, 30 * 60 * 1000);
 
@@ -329,7 +311,6 @@ const LogisticsDashboard: React.FC = () => {
           table: 'envios_processados'
         },
         (payload) => {
-          console.log('📨 Novo evento em envios_processados:', payload);
           toast({
             title: "Dados Atualizados",
             description: "Novos dados recebidos do N8N!",
@@ -349,7 +330,6 @@ const LogisticsDashboard: React.FC = () => {
           table: 'cargas'
         },
         (payload) => {
-          console.log('📨 Novo evento em cargas:', payload);
           loadDashboardData();
         }
       )
@@ -365,7 +345,6 @@ const LogisticsDashboard: React.FC = () => {
           table: 'notification_queue'
         },
         (payload) => {
-          console.log('🔔 Nova notificação:', payload);
           const notif = payload.new as any;
           toast({
             title: notif.titulo || 'Nova notificação',
@@ -408,14 +387,6 @@ const LogisticsDashboard: React.FC = () => {
   useEffect(() => {
     loadNotificationCount();
   }, []);
-  
-  // Debug: Log filteredSOs changes
-  useEffect(() => {
-    console.log('🎯 filteredSOs mudou:', filteredSOs.length, 'SOs');
-    if (filteredSOs.length > 0) {
-      console.log('📋 Primeira SO:', filteredSOs[0]);
-    }
-  }, [filteredSOs]);
   
   const handleExportToXLSX = () => {
     try {
@@ -463,29 +434,22 @@ const LogisticsDashboard: React.FC = () => {
 
   const handleCargoClick = async (cargo: any) => {
     try {
-      console.log(`🔍 Carregando detalhes da carga ${cargo.numero}...`);
-
-      // Load cargo-SO relationships - SEM LIMIT para pegar todas as SOs
+      // Load cargo-SO relationships
       const {
         data: cargoSORelations,
         error: cargoSOError
       } = await supabase.from('carga_sales_orders').select('so_number').eq('numero_carga', cargo.numero);
       if (cargoSOError) throw cargoSOError;
-      console.log(`📦 Encontradas ${cargoSORelations?.length || 0} SOs vinculadas à carga ${cargo.numero}`);
 
       // Get SO numbers for this cargo
       const soNumbers = cargoSORelations?.map(rel => rel.so_number) || [];
-      if (soNumbers.length === 0) {
-        console.warn(`⚠️ Nenhuma SO encontrada para a carga ${cargo.numero}`);
-      }
 
-      // Load SO data - SEM LIMIT para pegar todas as SOs vinculadas
+      // Load SO data
       const {
         data: enviosData,
         error: enviosError
       } = await supabase.from('envios_processados').select('*').in('sales_order', soNumbers);
       if (enviosError) throw enviosError;
-      console.log(`✅ Carregados dados de ${enviosData?.length || 0} SOs da tabela envios_processados`);
       const linkedSOs = enviosData?.map(envio => ({
         id: envio.id.toString(),
         salesOrder: envio.sales_order,
@@ -493,7 +457,7 @@ const LogisticsDashboard: React.FC = () => {
         produtos: envio.produtos || '',
         statusAtual: envio.status_atual,
         trackingNumbers: envio.tracking_numbers,
-        prioridade: (Math.random() > 0.8 ? 'high' : Math.random() > 0.6 ? 'normal' : 'low') as 'high' | 'normal' | 'low'
+        prioridade: 'normal' as 'high' | 'normal' | 'low'
       })) || [];
 
       // Load detailed cargo data with SOs and history
@@ -535,7 +499,6 @@ const LogisticsDashboard: React.FC = () => {
     }
   };
   return <div className="min-h-screen bg-gradient-dark relative">
-      <ParticleBackground />
       {/* Modern Tech Header */}
       <div className="border-b border-border/50 bg-gradient-tech/5 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-8">

@@ -20,9 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  X, 
-  Package, 
+import {
+  Package,
   Calendar,
   MapPin,
   FileText,
@@ -31,6 +30,7 @@ import {
   Edit,
   Loader2
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Timeline from './Timeline';
@@ -188,73 +188,68 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+    <Dialog open={true} onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-logistics">
-          <div className="flex items-center gap-3">
-            <Package className="h-6 w-6 text-primary" />
-            <div>
-              <h2 className="text-xl font-bold">SO {so.salesOrder}</h2>
-              <p className="text-sm text-muted-foreground">{so.cliente}</p>
+        <DialogHeader className="p-6 border-b bg-gradient-logistics">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Package className="h-6 w-6 text-primary" />
+              <div>
+                <DialogTitle className="text-xl font-bold">SO {so.salesOrder}</DialogTitle>
+                <p className="text-sm text-muted-foreground">{so.cliente}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {isAdmin && (
+                <div className="flex items-center gap-2 border-r pr-3">
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger className="w-[180px] h-8 text-xs">
+                      <SelectValue placeholder="Alterar status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableStatuses.map((status) => (
+                        <SelectItem key={status} value={status} className="text-xs">
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowConfirmDialog(true)}
+                    disabled={selectedStatus === so.statusAtual}
+                    className="h-8 gap-2"
+                  >
+                    <Edit className="h-3 w-3" />
+                    Atualizar
+                  </Button>
+                </div>
+              )}
+
+              {alertLevel && (
+                <Badge variant={alertLevel.color as any}>
+                  {alertLevel.message}
+                </Badge>
+              )}
+
+              {isArrivingToday() && (
+                <Badge className="bg-status-production text-status-production-foreground">
+                  CHEGADA HOJE
+                </Badge>
+              )}
+
+              {so.isDelivered && (
+                <Badge className="bg-status-delivered text-status-delivered-foreground">
+                  ENTREGUE
+                </Badge>
+              )}
             </div>
           </div>
-          
-          <div className="flex items-center gap-3">
-            {isAdmin && (
-              <div className="flex items-center gap-2 border-r pr-3">
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="w-[180px] h-8 text-xs">
-                    <SelectValue placeholder="Alterar status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableStatuses.map((status) => (
-                      <SelectItem key={status} value={status} className="text-xs">
-                        {status}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  size="sm" 
-                  onClick={() => setShowConfirmDialog(true)}
-                  disabled={selectedStatus === so.statusAtual}
-                  className="h-8 gap-2"
-                >
-                  <Edit className="h-3 w-3" />
-                  Atualizar
-                </Button>
-              </div>
-            )}
+        </DialogHeader>
 
-            {alertLevel && (
-              <Badge 
-                variant={alertLevel.color as any}
-                className={alertLevel.level === 3 ? 'animate-pulse' : ''}
-              >
-                {alertLevel.message}
-              </Badge>
-            )}
-            
-            {isArrivingToday() && (
-              <Badge className="bg-status-production text-status-production-foreground animate-bounce">
-                CHEGADA HOJE
-              </Badge>
-            )}
-            
-            {so.isDelivered && (
-              <Badge className="bg-status-delivered text-status-delivered-foreground">
-                ENTREGUE
-              </Badge>
-            )}
-            
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
           <div className="p-6 space-y-6">
             {/* SO Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -378,7 +373,7 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
             </Card>
           </div>
         </div>
-      </div>
+      </DialogContent>
 
       {/* Confirmation Dialog for Manual Status Update */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
@@ -386,7 +381,7 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar alteração de status</AlertDialogTitle>
             <AlertDialogDescription>
-              Você está prestes a alterar manualmente o status da SO <strong>{so.salesOrder}</strong> de 
+              Você está prestes a alterar manualmente o status da SO <strong>{so.salesOrder}</strong> de
               <strong> "{so.statusAtual}"</strong> para <strong>"{selectedStatus}"</strong>.
               <br /><br />
               Esta ação será registrada no histórico. Deseja continuar?
@@ -400,7 +395,7 @@ const SODetails: React.FC<SODetailsProps> = ({ so, onClose }) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Dialog>
   );
 };
 

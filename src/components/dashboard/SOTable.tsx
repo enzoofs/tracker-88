@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +46,8 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   const [cargoFilter, setCargoFilter] = useState('all');
   const [sortBy, setSortBy] = useState<keyof SO | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
 
   const getStatusVariant = (status: string | null) => {
     if (!status) return 'default';
@@ -94,10 +96,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
     }
   };
 
-  // Debug logs
-  console.log('📊 SOTable recebeu:', data.length, 'registros');
-  console.log('📋 Dados brutos:', data);
-  
   const filteredData = data.filter(so => {
     const matchesSearch = 
       so.salesOrder.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -134,6 +132,15 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
     return 0;
   });
 
+  // Pagination
+  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
+  const paginatedData = filteredData.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [searchTerm, statusFilter, clienteFilter, productFilter, cargoFilter]);
+
   const isDelayed = (so: SO) => {
     // Nunca mostrar como atrasado se já foi entregue
     if (so.isDelivered) return false;
@@ -166,9 +173,6 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   ).sort();
   const uniqueCargas = [...new Set(data.map(so => so.cargoNumber).filter(c => c))].sort();
   
-  console.log('🔍 Status únicos encontrados:', uniqueStatuses);
-  console.log('✅ Dados após filtragem:', filteredData.length);
-
   return (
     <Card className="shadow-card">
       <CardHeader>
@@ -333,7 +337,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((so) => {
+              {paginatedData.map((so) => {
                 const delayed = isDelayed(so);
                 const arrivingToday = isArrivingToday(so);
                 const isNew = isNewSO(so);
@@ -343,8 +347,8 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                  return (
                    <TableRow 
                      key={so.id}
-                     className={`hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-[1.01] hover:shadow-sm ${
-                       delayed ? 'bg-destructive/10 border-l-4 border-l-destructive animate-pulse' : ''
+                     className={`hover:bg-muted/50 cursor-pointer transition-colors ${
+                       delayed ? 'bg-destructive/10 border-l-4 border-l-destructive' : ''
                      } ${arrivingToday ? 'bg-status-production/10 border-l-4 border-l-status-production' : ''} ${
                        isNew ? 'bg-primary/5 border-l-4 border-l-primary' : ''
                      }`}
@@ -354,17 +358,17 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                     <div className="flex items-center gap-2">
                       {so.salesOrder}
                       {isNew && (
-                        <Badge className="bg-primary text-primary-foreground text-xs animate-pulse">
+                        <Badge className="bg-primary text-primary-foreground text-xs">
                           NOVO
                         </Badge>
                       )}
                       {delayed && (
-                        <Badge variant="destructive" className="text-xs animate-pulse">
+                        <Badge variant="destructive" className="text-xs">
                           ATRASADO
                         </Badge>
                       )}
                       {arrivingToday && (
-                        <Badge className="bg-status-production text-status-production-foreground text-xs animate-bounce">
+                        <Badge className="bg-status-production text-status-production-foreground text-xs">
                           HOJE
                         </Badge>
                       )}
@@ -425,6 +429,52 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
               <Search className="h-12 w-12 text-muted-foreground/50" />
               <p className="text-lg font-medium">Nenhuma SO encontrada</p>
               <p className="text-sm">Tente ajustar os filtros para encontrar resultados.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!isLoading && filteredData.length > PAGE_SIZE && (
+          <div className="flex items-center justify-between px-6 py-4 border-t">
+            <span className="text-sm text-muted-foreground">
+              Exibindo {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, filteredData.length)} de {filteredData.length} resultados
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(0)}
+                disabled={page === 0}
+              >
+                Primeira
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+              >
+                Anterior
+              </Button>
+              <span className="text-sm px-3">
+                {page + 1} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+              >
+                Próxima
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(totalPages - 1)}
+                disabled={page >= totalPages - 1}
+              >
+                Última
+              </Button>
             </div>
           </div>
         )}
