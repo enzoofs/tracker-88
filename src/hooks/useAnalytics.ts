@@ -81,23 +81,29 @@ export const useAnalytics = (timeRange: string = '12m') => {
 
       if (error) throw error;
 
-      // Fetch real delivery timestamps from shipment_history
-      const deliveredSOs = enviosData?.filter(e => e.is_delivered).map(e => e.sales_order) || [];
-      const deliveryTimestamps: Record<string, string> = {};
+      // Fetch real delivery dates from cargas table via carga_sales_orders link
+      const deliveryDates: Record<string, string> = {};
 
-      if (deliveredSOs.length > 0) {
-        const { data: historyData } = await supabase
-          .from('shipment_history')
-          .select('sales_order, status, timestamp')
-          .in('sales_order', deliveredSOs)
-          .ilike('status', '%entregue%');
+      const { data: cargoSOLinks } = await supabase
+        .from('carga_sales_orders')
+        .select('so_number, numero_carga');
 
-        historyData?.forEach(h => {
-          const existing = deliveryTimestamps[h.sales_order];
-          // Keep the most recent "entregue" timestamp
-          if (!existing || h.timestamp > existing) {
-            deliveryTimestamps[h.sales_order] = h.timestamp;
-          }
+      if (cargoSOLinks && cargoSOLinks.length > 0) {
+        const cargoNumbers = [...new Set(cargoSOLinks.map(l => l.numero_carga))];
+        const { data: cargasData } = await supabase
+          .from('cargas')
+          .select('numero_carga, data_entrega')
+          .in('numero_carga', cargoNumbers)
+          .not('data_entrega', 'is', null);
+
+        const cargoDeliveryMap: Record<string, string> = {};
+        cargasData?.forEach(c => {
+          if (c.data_entrega) cargoDeliveryMap[c.numero_carga] = c.data_entrega;
+        });
+
+        cargoSOLinks.forEach(link => {
+          const deliveryDate = cargoDeliveryMap[link.numero_carga];
+          if (deliveryDate) deliveryDates[link.so_number] = deliveryDate;
         });
       }
 
@@ -112,7 +118,7 @@ export const useAnalytics = (timeRange: string = '12m') => {
       let totalWithDates = 0;
 
       entregues.forEach(envio => {
-        const realDeliveryDate = deliveryTimestamps[envio.sales_order];
+        const realDeliveryDate = deliveryDates[envio.sales_order];
         if (envio.data_envio && realDeliveryDate) {
           totalWithDates++;
           const shipDate = parseDate(envio.data_envio);
@@ -140,8 +146,8 @@ export const useAnalytics = (timeRange: string = '12m') => {
 
       // Process actual data — revenue counted at real delivery date from shipment_history
       enviosData?.forEach(envio => {
-        const date = envio.is_delivered && deliveryTimestamps[envio.sales_order]
-          ? parseDate(deliveryTimestamps[envio.sales_order])
+        const date = envio.is_delivered && deliveryDates[envio.sales_order]
+          ? parseDate(deliveryDates[envio.sales_order])
           : parseDate(envio.created_at);
         const key = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
         
