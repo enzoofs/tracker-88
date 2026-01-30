@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   CheckCircle
 } from 'lucide-react';
+import { formatCurrency } from '@/lib/formatters';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeStatus, calculateBusinessDays, STAGE_SLAS, DELIVERY_SLA_BUSINESS_DAYS } from '@/lib/statusNormalizer';
 
@@ -68,6 +69,31 @@ const Analytics: React.FC = () => {
         .order('timestamp', { ascending: true });
 
       if (historyError) throw historyError;
+
+      // Fetch real delivery dates from cargas.data_entrega via carga_sales_orders
+      const deliveryDates: Record<string, Date> = {};
+      const { data: cargoSOLinks } = await supabase
+        .from('carga_sales_orders')
+        .select('so_number, numero_carga');
+
+      if (cargoSOLinks && cargoSOLinks.length > 0) {
+        const cargoNumbers = [...new Set(cargoSOLinks.map(l => l.numero_carga))];
+        const { data: cargasData } = await supabase
+          .from('cargas')
+          .select('numero_carga, data_entrega')
+          .in('numero_carga', cargoNumbers)
+          .not('data_entrega', 'is', null);
+
+        const cargoDeliveryMap: Record<string, string> = {};
+        cargasData?.forEach(c => {
+          if (c.data_entrega) cargoDeliveryMap[c.numero_carga] = c.data_entrega;
+        });
+
+        cargoSOLinks.forEach(link => {
+          const dd = cargoDeliveryMap[link.numero_carga];
+          if (dd) deliveryDates[link.so_number] = new Date(dd);
+        });
+      }
 
       // Calculate time range filter
       const rangeMap: Record<string, number> = {
@@ -143,12 +169,12 @@ const Analytics: React.FC = () => {
         data.volume++;
         data.value += Number(envio.valor_total) || 0;
         
-        // Calculate actual delivery time if delivered
-        if (envio.is_delivered && envio.data_envio) {
+        // Calculate actual delivery time if delivered (data_envio → cargas.data_entrega)
+        const realDeliveryDate = deliveryDates[envio.sales_order];
+        if (envio.is_delivered && envio.data_envio && realDeliveryDate) {
           const shipDate = new Date(envio.data_envio);
-          const deliveryDate = new Date(envio.data_ultima_atualizacao || Date.now());
-          const days = Math.ceil((deliveryDate.getTime() - shipDate.getTime()) / (1000 * 60 * 60 * 24));
-          if (days > 0 && days < 100) { // Sanity check
+          const days = calculateBusinessDays(shipDate, realDeliveryDate);
+          if (days > 0 && days < 100) {
             data.totalDays += days;
             data.count++;
           }
@@ -175,11 +201,11 @@ const Analytics: React.FC = () => {
       let totalDeliveryDays = 0;
       
       deliveredOrders.forEach(envio => {
-        if (envio.data_envio) {
+        const realDeliveryDate = deliveryDates[envio.sales_order];
+        if (envio.data_envio && realDeliveryDate) {
           totalDelivered++;
           const shipDate = new Date(envio.data_envio);
-          const deliveryDate = new Date(envio.data_ultima_atualizacao || Date.now());
-          const bizDays = calculateBusinessDays(shipDate, deliveryDate);
+          const bizDays = calculateBusinessDays(shipDate, realDeliveryDate);
 
           if (bizDays <= DELIVERY_SLA_BUSINESS_DAYS) {
             onTimeCount++;
@@ -272,13 +298,6 @@ const Analytics: React.FC = () => {
     loadAnalyticsData();
   }, [timeRange]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -323,7 +342,7 @@ const Analytics: React.FC = () => {
               {data.performanceMetrics.onTimeRate}%
             </div>
             <p className="text-xs text-muted-foreground">
-              Baseado no SLA de 15 dias corridos
+              Baseado no SLA de 15 dias úteis
             </p>
           </CardContent>
         </Card>
@@ -338,7 +357,7 @@ const Analytics: React.FC = () => {
               {data.performanceMetrics.averageDeliveryDays || '—'} dias
             </div>
             <p className="text-xs text-muted-foreground">
-              Dias corridos após envio
+              Dias úteis (envio → entrega)
             </p>
           </CardContent>
         </Card>

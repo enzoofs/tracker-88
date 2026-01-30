@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { calculateBusinessDays } from '@/lib/statusNormalizer';
 
 interface ReportData {
   summary: {
@@ -119,14 +120,38 @@ export const useReportsData = (timeRange: string = '30d') => {
         }))
         .sort((a, b) => b.valorTotal - a.valorTotal);
 
-      // Calculate real average delivery time based on delivered orders
-      const deliveredOrders = enviosData?.filter(e => e.is_delivered && e.data_envio && e.created_at) || [];
+      // Fetch real delivery dates from cargas.data_entrega via carga_sales_orders
+      const deliveryDatesMap: Record<string, Date> = {};
+      const { data: cargoSOLinks } = await supabase
+        .from('carga_sales_orders')
+        .select('so_number, numero_carga');
+
+      if (cargoSOLinks && cargoSOLinks.length > 0) {
+        const cargoNumbers = [...new Set(cargoSOLinks.map(l => l.numero_carga))];
+        const { data: cargasDelivery } = await supabase
+          .from('cargas')
+          .select('numero_carga, data_entrega')
+          .in('numero_carga', cargoNumbers)
+          .not('data_entrega', 'is', null);
+
+        const cargoDeliveryMap: Record<string, string> = {};
+        cargasDelivery?.forEach(c => {
+          if (c.data_entrega) cargoDeliveryMap[c.numero_carga] = c.data_entrega;
+        });
+
+        cargoSOLinks.forEach(link => {
+          const dd = cargoDeliveryMap[link.numero_carga];
+          if (dd) deliveryDatesMap[link.so_number] = new Date(dd);
+        });
+      }
+
+      // Calculate real average delivery time: data_envio → cargas.data_entrega (dias úteis)
+      const deliveredOrders = enviosData?.filter(e => e.is_delivered && e.data_envio && deliveryDatesMap[e.sales_order]) || [];
       const avgDeliveryTime = deliveredOrders.length > 0
         ? deliveredOrders.reduce((sum, envio) => {
-            const created = new Date(envio.created_at);
-            const delivered = new Date(envio.data_envio!);
-            const diffDays = Math.floor((delivered.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
-            return sum + diffDays;
+            const shipDate = new Date(envio.data_envio!);
+            const deliveryDate = deliveryDatesMap[envio.sales_order];
+            return sum + calculateBusinessDays(shipDate, deliveryDate);
           }, 0) / deliveredOrders.length
         : 0;
 
@@ -137,11 +162,11 @@ export const useReportsData = (timeRange: string = '30d') => {
         if (!fornecedorMap.has(fornecedor)) {
           fornecedorMap.set(fornecedor, { count: 0, deliveryTimes: [] });
         }
-        const created = new Date(envio.created_at);
-        const delivered = new Date(envio.data_envio!);
-        const diffDays = Math.floor((delivered.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+        const shipDate = new Date(envio.data_envio!);
+        const deliveryDate = deliveryDatesMap[envio.sales_order];
+        const bizDays = calculateBusinessDays(shipDate, deliveryDate);
         fornecedorMap.get(fornecedor)!.count += 1;
-        fornecedorMap.get(fornecedor)!.deliveryTimes.push(diffDays);
+        fornecedorMap.get(fornecedor)!.deliveryTimes.push(bizDays);
       });
 
       const fornecedores = Array.from(fornecedorMap.entries())

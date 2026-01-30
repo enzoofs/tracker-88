@@ -13,6 +13,7 @@ import {
   Target, Zap, Activity
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/lib/formatters';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
@@ -261,13 +262,6 @@ const AdvancedAnalytics: React.FC = () => {
     XLSX.utils.book_append_sheet(workbook, trendSheet, 'Tendências');
 
     XLSX.writeFile(workbook, 'analytics-data.xlsx');
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
   };
 
   if (loading) {

@@ -9,6 +9,7 @@ import {
   Download, Users, Building, UserCheck, Truck, Package, DollarSign, Target, BarChart3
 } from 'lucide-react';
 import { useReportsData } from '@/hooks/useReportsData';
+import { formatCurrency } from '@/lib/formatters';
 import ReportFilters from './ReportFilters';
 import * as XLSX from 'xlsx';
 
@@ -16,12 +17,6 @@ const Reports: React.FC = () => {
   const [timeRange, setTimeRange] = useState('30d');
   const { data, loading } = useReportsData(timeRange);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   const exportToExcel = (reportType: string, reportData: any[]) => {
     const workbook = XLSX.utils.book_new();

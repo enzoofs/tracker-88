@@ -98,22 +98,22 @@ export function useDashboardData() {
         .limit(20);
       if (cargasError) throw cargasError;
 
-      // Count SOs for each carga
-      const cargasWithCount = await Promise.all(
-        (cargasData || []).map(async (carga) => {
-          const { count } = await supabase
-            .from('carga_sales_orders')
-            .select('*', { count: 'exact', head: true })
-            .eq('numero_carga', carga.numero_carga);
-          return { ...carga, so_count: count || 0 };
-        })
-      );
-
-      // Load cargo-SO relationships
+      // Load cargo-SO relationships (single query instead of N+1)
       const { data: cargoSOsData, error: cargoSOsError } = await supabase
         .from('carga_sales_orders')
         .select('numero_carga, so_number');
       if (cargoSOsError) throw cargoSOsError;
+
+      // Count SOs per carga from the relationship data
+      const soCountByCarga = new Map<string, number>();
+      cargoSOsData?.forEach(link => {
+        soCountByCarga.set(link.numero_carga, (soCountByCarga.get(link.numero_carga) || 0) + 1);
+      });
+
+      const cargasWithCount = (cargasData || []).map(carga => ({
+        ...carga,
+        so_count: soCountByCarga.get(carga.numero_carga) || 0
+      }));
 
       const soToCargo: Record<string, string> = {};
       cargoSOsData?.forEach((link) => {

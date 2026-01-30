@@ -11,17 +11,12 @@ import {
   TrendingUp, TrendingDown, Info, AlertTriangle, DollarSign, Users, Activity
 } from 'lucide-react';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { formatCurrency } from '@/lib/formatters';
 
 const TrendsAnalysis: React.FC = () => {
   const { data, loading } = useAnalytics();
   const [atencaoDialogOpen, setAtencaoDialogOpen] = useState(false);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   if (loading) {
     return (

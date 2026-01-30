@@ -8,16 +8,10 @@ import {
   DollarSign, Target, TrendingUp, Trophy, Medal, Award
 } from 'lucide-react';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { formatCurrency } from '@/lib/formatters';
 
 const ExecutiveDashboard: React.FC = () => {
   const { data, loading } = useAnalytics();
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   if (loading) {
     return (
