@@ -81,6 +81,26 @@ export const useAnalytics = (timeRange: string = '12m') => {
 
       if (error) throw error;
 
+      // Fetch real delivery timestamps from shipment_history
+      const deliveredSOs = enviosData?.filter(e => e.is_delivered).map(e => e.sales_order) || [];
+      const deliveryTimestamps: Record<string, string> = {};
+
+      if (deliveredSOs.length > 0) {
+        const { data: historyData } = await supabase
+          .from('shipment_history')
+          .select('sales_order, status, timestamp')
+          .in('sales_order', deliveredSOs)
+          .ilike('status', '%entregue%');
+
+        historyData?.forEach(h => {
+          const existing = deliveryTimestamps[h.sales_order];
+          // Keep the most recent "entregue" timestamp
+          if (!existing || h.timestamp > existing) {
+            deliveryTimestamps[h.sales_order] = h.timestamp;
+          }
+        });
+      }
+
       // Calculate main KPIs
       const receitaTotal = enviosData?.reduce((sum, item) => sum + (Number(item.valor_total) || 0), 0) || 0;
       const ticketMedio = enviosData?.length ? receitaTotal / enviosData.length : 0;
@@ -92,16 +112,17 @@ export const useAnalytics = (timeRange: string = '12m') => {
       let totalWithDates = 0;
 
       entregues.forEach(envio => {
-        if (envio.data_envio) {
+        const realDeliveryDate = deliveryTimestamps[envio.sales_order];
+        if (envio.data_envio && realDeliveryDate) {
           totalWithDates++;
           const shipDate = parseDate(envio.data_envio);
-          const deliveryDate = parseDate(envio.data_ultima_atualizacao);
+          const deliveryDate = parseDate(realDeliveryDate);
           const calendarDays = Math.ceil((deliveryDate.getTime() - shipDate.getTime()) / (1000 * 60 * 60 * 24));
           if (calendarDays <= DELIVERY_SLA_DAYS) {
             onTimeCount++;
           }
         }
-        // Skip SOs without data_envio — don't assume on-time
+        // Skip SOs without data_envio or delivery timestamp
       });
 
       const taxaEntrega = totalWithDates > 0 ? (onTimeCount / totalWithDates) * 100 : 0;
@@ -117,10 +138,10 @@ export const useAnalytics = (timeRange: string = '12m') => {
         monthlyData.set(key, { receita: 0, pedidos: 0, clientes: new Set() });
       }
 
-      // Process actual data — revenue counted at delivery date for delivered items
+      // Process actual data — revenue counted at real delivery date from shipment_history
       enviosData?.forEach(envio => {
-        const date = envio.is_delivered
-          ? parseDate(envio.data_ultima_atualizacao || envio.created_at)
+        const date = envio.is_delivered && deliveryTimestamps[envio.sales_order]
+          ? parseDate(deliveryTimestamps[envio.sales_order])
           : parseDate(envio.created_at);
         const key = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
         
