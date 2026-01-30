@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface StageTime {
   stage: string;
@@ -33,6 +34,7 @@ const STAGE_SLAS: Record<string, number> = {
 };
 
 export const useStageTimingData = () => {
+  const { toast } = useToast();
   const [data, setData] = useState<StageTimingData>({
     stages: [],
     totalAverageDays: 0,
@@ -185,6 +187,7 @@ export const useStageTimingData = () => {
 
     } catch (error) {
       console.error('Error loading stage timing data:', error);
+      toast({ title: 'Erro ao carregar tempos por estágio', description: 'Não foi possível carregar os dados.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

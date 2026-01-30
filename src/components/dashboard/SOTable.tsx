@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -135,6 +135,15 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
   // Pagination
   const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
   const paginatedData = filteredData.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  // Precompute SLA for visible rows only (avoid calling per-render per-row)
+  const slaMap = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof useSLACalculator>>();
+    paginatedData.forEach(so => {
+      map.set(so.id, useSLACalculator(so));
+    });
+    return map;
+  }, [paginatedData]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -341,7 +350,7 @@ const SOTable: React.FC<SOTableProps> = ({ data, onSOClick, isLoading = false })
                 const delayed = isDelayed(so);
                 const arrivingToday = isArrivingToday(so);
                 const isNew = isNewSO(so);
-                const slaInfo = useSLACalculator(so);
+                const slaInfo = slaMap.get(so.id);
                 const hasCargoStatus = so.cargoNumber && so.statusOriginal;
                 
                  return (

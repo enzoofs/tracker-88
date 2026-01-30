@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Truck, Package, Clock, TrendingUp, TrendingDown, Minus, Plane, AlertCircle, CheckCircle } from 'lucide-react';
 import { StatusDetailDialog } from './StatusDetailDialog';
 import { useSLACalculator } from '@/hooks/useSLACalculator';
-import { DELIVERY_SLA_DAYS } from '@/lib/statusNormalizer';
+import { DELIVERY_SLA_BUSINESS_DAYS, calculateBusinessDays } from '@/lib/statusNormalizer';
 import { supabase } from '@/integrations/supabase/client';
 
 interface OverviewProps {
@@ -91,9 +91,9 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
           
           if (warehouseTs && deliveryTs) {
             totalWithBothDates++;
-            const calendarDays = Math.ceil((deliveryTs.getTime() - warehouseTs.getTime()) / (1000 * 60 * 60 * 24));
-            
-            if (calendarDays <= DELIVERY_SLA_DAYS) {
+            const businessDays = calculateBusinessDays(warehouseTs, deliveryTs);
+
+            if (businessDays <= DELIVERY_SLA_BUSINESS_DAYS) {
               onTimeCount++;
             }
           }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface ReportData {
   summary: {
@@ -41,6 +42,7 @@ interface ReportData {
 }
 
 export const useReportsData = (timeRange: string = '30d') => {
+  const { toast } = useToast();
   const [data, setData] = useState<ReportData>({
     summary: { totalPedidos: 0, valorTotal: 0, ticketMedio: 0, statusUnicos: 0 },
     clientes: [],
@@ -189,6 +191,7 @@ export const useReportsData = (timeRange: string = '30d') => {
 
     } catch (error) {
       console.error('Error loading reports data:', error);
+      toast({ title: 'Erro ao carregar relatórios', description: 'Não foi possível carregar os dados.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

@@ -14,7 +14,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeStatus, calculateBusinessDays, STAGE_SLAS, DELIVERY_SLA_DAYS } from '@/lib/statusNormalizer';
+import { normalizeStatus, calculateBusinessDays, STAGE_SLAS, DELIVERY_SLA_BUSINESS_DAYS } from '@/lib/statusNormalizer';
 
 interface AnalyticsData {
   deliveryTrend: Array<{ date: string; deliveries: number; onTime: number; delayed: number; }>;
@@ -107,11 +107,11 @@ const Analytics: React.FC = () => {
               const current = deliveryByDate.get(key)!;
               current.total++;
               
-              // Check if delivered on time (within 15 calendar days of ship date)
+              // Check if delivered on time (within 15 business days of ship date)
               const envio = enviosData?.find(e => e.sales_order === h.sales_order);
               if (envio?.data_envio) {
-                const calendarDays = Math.ceil((date.getTime() - new Date(envio.data_envio).getTime()) / (1000 * 60 * 60 * 24));
-                if (calendarDays <= DELIVERY_SLA_DAYS) {
+                const bizDays = calculateBusinessDays(new Date(envio.data_envio), date);
+                if (bizDays <= DELIVERY_SLA_BUSINESS_DAYS) {
                   current.onTime++;
                 } else {
                   current.delayed++;
@@ -179,14 +179,14 @@ const Analytics: React.FC = () => {
           totalDelivered++;
           const shipDate = new Date(envio.data_envio);
           const deliveryDate = new Date(envio.data_ultima_atualizacao || Date.now());
-          const calendarDays = Math.ceil((deliveryDate.getTime() - shipDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (calendarDays <= DELIVERY_SLA_DAYS) {
+          const bizDays = calculateBusinessDays(shipDate, deliveryDate);
+
+          if (bizDays <= DELIVERY_SLA_BUSINESS_DAYS) {
             onTimeCount++;
           }
-          
-          if (calendarDays > 0 && calendarDays < 100) {
-            totalDeliveryDays += calendarDays;
+
+          if (bizDays > 0 && bizDays < 100) {
+            totalDeliveryDays += bizDays;
           }
         }
       });

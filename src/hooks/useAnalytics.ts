@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeStatus, calculateBusinessDays, STAGE_SLAS, DELIVERY_SLA_DAYS } from '@/lib/statusNormalizer';
+import { useToast } from '@/hooks/use-toast';
+import { normalizeStatus, calculateBusinessDays, STAGE_SLAS, DELIVERY_SLA_BUSINESS_DAYS } from '@/lib/statusNormalizer';
 
 interface AnalyticsData {
   kpis: {
@@ -47,6 +48,7 @@ interface AnalyticsData {
 }
 
 export const useAnalytics = (timeRange: string = '12m') => {
+  const { toast } = useToast();
   const [data, setData] = useState<AnalyticsData>({
     kpis: { receitaTotal: 0, ticketMedio: 0, taxaEntrega: 0, previsaoProximoMes: 0 },
     tendenciaReceita: [],
@@ -123,8 +125,8 @@ export const useAnalytics = (timeRange: string = '12m') => {
           totalWithDates++;
           const shipDate = parseDate(envio.data_envio);
           const deliveryDate = parseDate(realDeliveryDate);
-          const calendarDays = Math.ceil((deliveryDate.getTime() - shipDate.getTime()) / (1000 * 60 * 60 * 24));
-          if (calendarDays <= DELIVERY_SLA_DAYS) {
+          const businessDays = calculateBusinessDays(shipDate, deliveryDate);
+          if (businessDays <= DELIVERY_SLA_BUSINESS_DAYS) {
             onTimeCount++;
           }
         }
@@ -333,6 +335,7 @@ export const useAnalytics = (timeRange: string = '12m') => {
 
     } catch (error) {
       console.error('Error loading analytics:', error);
+      toast({ title: 'Erro ao carregar analytics', description: 'Não foi possível carregar os dados de análise.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

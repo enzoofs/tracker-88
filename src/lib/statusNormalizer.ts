@@ -65,7 +65,7 @@ export const VALID_STAGES = [
   'Aguardando Embarque',
 ];
 
-// SLAs por estágio em dias úteis (baseado na regra de 10 dias úteis total)
+// SLAs por estágio em dias úteis (gargalos internos, soma = 12 dias úteis)
 export const STAGE_SLAS: Record<string, number> = {
   'Em Produção': 5,      // Máximo 5 dias úteis em produção
   'No Armazém': 2,       // Máximo 2 dias úteis no armazém
@@ -156,20 +156,20 @@ export function calculateCalendarDays(startDate: Date, endDate: Date): number {
   return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-// SLA de entrega: 15 dias corridos após chegada no armazém FedEx (Miami)
-export const DELIVERY_SLA_DAYS = 15;
+// SLA de entrega: 15 dias ÚTEIS a partir do envio FedEx (data_envio)
+export const DELIVERY_SLA_BUSINESS_DAYS = 15;
 
 /**
- * Verifica se um pedido está atrasado baseado no SLA de 15 dias corridos
- * A contagem começa a partir da chegada no armazém FedEx (Miami)
+ * Verifica se um pedido está atrasado baseado no SLA de 15 dias úteis
+ * A contagem começa a partir do envio FedEx (data_envio)
  */
-export function isOverdueBySLA(dataArmazem: string | null, isDelivered: boolean): boolean {
+export function isOverdueBySLA(dataEnvio: string | null, isDelivered: boolean): boolean {
   if (isDelivered) return false;
-  if (!dataArmazem) return false;
-  
-  const warehouseDate = new Date(dataArmazem);
+  if (!dataEnvio) return false;
+
+  const shipDate = new Date(dataEnvio);
   const today = new Date();
-  const calendarDays = calculateCalendarDays(warehouseDate, today);
-  
-  return calendarDays > DELIVERY_SLA_DAYS;
+  const businessDays = calculateBusinessDays(shipDate, today);
+
+  return businessDays > DELIVERY_SLA_BUSINESS_DAYS;
 }
