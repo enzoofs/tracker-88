@@ -56,7 +56,7 @@ serve(async (req) => {
     let salesOrders = [];
 
     if (payload.sales_orders && Array.isArray(payload.sales_orders)) {
-      salesOrders = payload.sales_orders.map(so => String(so).trim());
+      salesOrders = payload.sales_orders.map((so: unknown) => String(so).trim());
       console.log('Array format:', salesOrders.length, 'SOs');
     } else if (payload.so_number) {
       salesOrders = [String(payload.so_number).trim()];
@@ -169,10 +169,11 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
-    console.error('Error:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error:', errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
