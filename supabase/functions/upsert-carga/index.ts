@@ -33,7 +33,7 @@ serve(async (req) => {
 
     const rateLimitCheck = await checkRateLimit(req, supabase, '/functions/upsert-carga');
     if (rateLimitCheck.blocked) {
-      return rateLimitCheck.response;
+      return rateLimitCheck.response!;
     }
 
     // ============================================

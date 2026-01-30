@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.bulk-update-cargas]
 verify_jwt = false
+
+[functions.query-envios]
+verify_jwt = false
+
+[functions.update-envio-data]
+verify_jwt = false
