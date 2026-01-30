@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeStatus, calculateBusinessDays, STAGE_SLAS } from '@/lib/statusNormalizer';
+import { normalizeStatus, calculateBusinessDays, STAGE_SLAS, DELIVERY_SLA_DAYS } from '@/lib/statusNormalizer';
 
 interface AnalyticsData {
   kpis: {
@@ -83,25 +83,26 @@ export const useAnalytics = (timeRange: string = '12m') => {
       const receitaTotal = enviosData?.reduce((sum, item) => sum + (Number(item.valor_total) || 0), 0) || 0;
       const ticketMedio = enviosData?.length ? receitaTotal / enviosData.length : 0;
       
-      // Calculate real delivery rate based on SLA (10 business days)
+      // Calculate real delivery rate based on SLA (15 calendar days, same as Overview)
+      // Only count SOs that have both data_envio and delivery date
       const entregues = enviosData?.filter(e => e.is_delivered) || [];
       let onTimeCount = 0;
-      
+      let totalWithDates = 0;
+
       entregues.forEach(envio => {
         if (envio.data_envio) {
+          totalWithDates++;
           const shipDate = parseDate(envio.data_envio);
           const deliveryDate = parseDate(envio.data_ultima_atualizacao);
-          const businessDays = calculateBusinessDays(shipDate, deliveryDate);
-          if (businessDays <= 10) {
+          const calendarDays = Math.ceil((deliveryDate.getTime() - shipDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (calendarDays <= DELIVERY_SLA_DAYS) {
             onTimeCount++;
           }
-        } else {
-          // If no ship date, assume on time
-          onTimeCount++;
         }
+        // Skip SOs without data_envio — don't assume on-time
       });
-      
-      const taxaEntrega = entregues.length > 0 ? (onTimeCount / entregues.length) * 100 : 0;
+
+      const taxaEntrega = totalWithDates > 0 ? (onTimeCount / totalWithDates) * 100 : 0;
       
       // Generate monthly revenue trend (last 12 months)
       const monthlyData = new Map<string, { receita: number; pedidos: number; clientes: Set<string> }>();

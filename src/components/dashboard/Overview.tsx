@@ -110,7 +110,7 @@ const Overview: React.FC<OverviewProps> = ({ data, allSOs = [] }) => {
     };
 
     fetchDeliveryRate();
-  }, [allSOs]);
+  }, [allSOs.length]);
 
   // Calculate real metrics from allSOs data
   const metrics = useMemo(() => {

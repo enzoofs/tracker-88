@@ -279,7 +279,9 @@ const TrendsAnalysis: React.FC = () => {
               <CardContent className="p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-status-delivered">
-                    {Math.floor(data.topPerformers.clientes.length * 0.15)}
+                    {data.crescimentoClientes.length > 0
+                      ? data.crescimentoClientes[data.crescimentoClientes.length - 1].novosClientes
+                      : 0}
                   </div>
                   <div className="text-xs text-muted-foreground">Novos este Mês</div>
                 </div>
@@ -289,7 +291,12 @@ const TrendsAnalysis: React.FC = () => {
               <CardContent className="p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-status-shipping">
-                    {(data.topPerformers.clientes.length / 12).toFixed(0)}
+                    {(() => {
+                      const mesesComNovos = data.crescimentoClientes.filter(m => m.novosClientes > 0);
+                      return mesesComNovos.length > 0
+                        ? Math.round(mesesComNovos.reduce((sum, m) => sum + m.novosClientes, 0) / mesesComNovos.length)
+                        : 0;
+                    })()}
                   </div>
                   <div className="text-xs text-muted-foreground">Média Mensal</div>
                 </div>
@@ -345,7 +352,7 @@ const TrendsAnalysis: React.FC = () => {
                         {formatCurrency(data.kpis.ticketMedio)}
                       </span>
                     </div>
-                    <Progress value={75} className="h-2" />
+                    <Progress value={Math.min(100, (data.kpis.ticketMedio / (data.estatisticas.mediaMensal || 1)) * 100)} className="h-2" />
                   </div>
                 </div>
               </CardContent>
