@@ -60,10 +60,15 @@ Gere um relatório estruturado em markdown com:
 
 1. **Resumo Executivo** (3-4 frases objetivas sobre a situação geral)
 2. **Análise por Indicador** (para cada indicador: interpretação do valor, qualidade da amostra, possíveis vieses)
-3. **Alertas de Qualidade de Dados** (campos faltantes, cobertura insuficiente, dados que podem distorcer métricas)
-4. **Recomendações** (máximo 5, práticas e priorizadas)
+3. **Contradições e Inconsistências** (compare indicadores entre si — ex: se a taxa de entrega no prazo é alta mas há muitos pedidos atrasados, isso é uma contradição que DEVE ser reportada. Se a amostra de um indicador é muito menor que o total, o valor não é representativo.)
+4. **Alertas de Qualidade de Dados** (campos faltantes, cobertura insuficiente, dados que podem distorcer métricas)
+5. **Recomendações** (máximo 5, práticas e priorizadas)
 
-Seja direto, técnico e objetivo. Não invente dados. Se a cobertura for baixa, destaque que o indicador não é confiável.`;
+REGRAS CRÍTICAS:
+- Se a amostra (campo "amostra") for menor que 50% do total elegível, marque o indicador como **NÃO CONFIÁVEL** em negrito.
+- Se dois indicadores se contradizem (ex: alta taxa on-time + muitos atrasados), SEMPRE reporte isso como alerta vermelho.
+- Nunca ignore inconsistências nos dados. Questione os números em vez de aceitá-los.
+- Seja direto, técnico e objetivo. Não invente dados.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

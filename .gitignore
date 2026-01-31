@@ -22,3 +22,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Python scripts data
+scripts/.env
+scripts/migration_data/
+scripts/full_schema.sql
+scripts/audit_report.csv
+supabase/.temp/

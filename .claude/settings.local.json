@@ -24,7 +24,16 @@
       "mcp__linear-server__list_issue_labels",
       "mcp__linear-server__create_issue",
       "mcp__linear-server__update_issue",
-      "Bash(del \"c:\\\\sintese-tracker\\\\tracker-88\\\\src\\\\components\\\\ui\\\\ParticleBackground.tsx\")"
+      "Bash(del \"c:\\\\sintese-tracker\\\\tracker-88\\\\src\\\\components\\\\ui\\\\ParticleBackground.tsx\")",
+      "Bash(grep:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl:*)",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_cf2a7e3979fff2fe95a20fc9ee49cbd797d8f0a1 npx supabase:*)",
+      "Bash(npx supabase secrets set:*)",
+      "Bash(set SUPABASE_ACCESS_TOKEN=sbp_cf2a7e3979fff2fe95a20fc9ee49cbd797d8f0a1:*)",
+      "Bash(npx supabase:*)",
+      "Bash(cmd /c \"set SUPABASE_ACCESS_TOKEN=sbp_cf2a7e3979fff2fe95a20fc9ee49cbd797d8f0a1&& npx supabase secrets list --project-ref stkwoqcrrecwzeajhhxi\")",
+      "Bash($env:SUPABASE_ACCESS_TOKEN=\"sbp_cf2a7e3979fff2fe95a20fc9ee49cbd797d8f0a1\")"
     ]
   }
 }
