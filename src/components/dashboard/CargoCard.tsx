@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Package, Thermometer, MapPin, Truck, Calendar, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -20,9 +21,12 @@ interface CargoCardProps {
     so_count?: number;
   };
   onClick: () => void;
+  isAdmin?: boolean;
+  isSelected?: boolean;
+  onSelect?: (cargoNumber: string) => void;
 }
 
-const CargoCard = ({ carga, onClick }: CargoCardProps) => {
+const CargoCard = ({ carga, onClick, isAdmin = false, isSelected = false, onSelect }: CargoCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'no armazém':
@@ -60,7 +64,7 @@ const CargoCard = ({ carga, onClick }: CargoCardProps) => {
   return (
     <TooltipProvider>
       <Card
-        className={`p-6 cursor-pointer hover:shadow-lg transition-all duration-200 border-border/50 bg-card hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${hasMissingData ? 'ring-1 ring-amber-500/30' : ''}`}
+        className={`p-6 cursor-pointer hover:shadow-lg transition-all duration-200 border-border/50 bg-card hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${hasMissingData ? 'ring-1 ring-amber-500/30' : ''} ${isSelected ? 'ring-2 ring-primary bg-primary/5' : ''}`}
         tabIndex={0}
         role="button"
         aria-label={`Carga ${carga.numero_carga} — ${carga.status}`}
@@ -71,6 +75,14 @@ const CargoCard = ({ carga, onClick }: CargoCardProps) => {
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
+              {isAdmin && onSelect && (
+                <div onClick={(e) => { e.stopPropagation(); onSelect(carga.numero_carga); }}>
+                  <Checkbox
+                    checked={isSelected}
+                    aria-label={`Selecionar carga ${carga.numero_carga}`}
+                  />
+                </div>
+              )}
               <div className="p-2 rounded-lg bg-primary/10">
                 <Package className="h-5 w-5 text-primary" />
               </div>

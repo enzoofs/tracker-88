@@ -3,7 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Package, RefreshCw, Upload, AlertCircle } from 'lucide-react';
+import { Package, RefreshCw, Upload, AlertCircle, Trash2, X } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +38,7 @@ const LogisticsDashboard: FC = () => {
     setUnreadNotifications,
     loadDashboardData,
     deleteSOs,
+    deleteCargas,
   } = useDashboardData();
 
   const [selectedCargo, setSelectedCargo] = useState<any>(null);
@@ -45,6 +47,40 @@ const LogisticsDashboard: FC = () => {
   const [activeTab, setActiveTab] = useState('sos');
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // Cargo selection state (admin only)
+  const [selectedCargas, setSelectedCargas] = useState<Set<string>>(new Set());
+  const [showDeleteCargasDialog, setShowDeleteCargasDialog] = useState(false);
+  const [isDeletingCargas, setIsDeletingCargas] = useState(false);
+
+  const toggleCargo = (cargoNumber: string) => {
+    setSelectedCargas(prev => {
+      const next = new Set(prev);
+      if (next.has(cargoNumber)) {
+        next.delete(cargoNumber);
+      } else {
+        next.add(cargoNumber);
+      }
+      return next;
+    });
+  };
+
+  const clearCargoSelection = () => {
+    setSelectedCargas(new Set());
+  };
+
+  const handleDeleteCargas = async () => {
+    if (selectedCargas.size === 0) return;
+
+    setIsDeletingCargas(true);
+    try {
+      await deleteCargas(Array.from(selectedCargas));
+      clearCargoSelection();
+    } finally {
+      setIsDeletingCargas(false);
+      setShowDeleteCargasDialog(false);
+    }
+  };
 
   // Check if user is admin
   useEffect(() => {
@@ -316,6 +352,9 @@ const LogisticsDashboard: FC = () => {
                     key={carga.id}
                     carga={carga}
                     onClick={() => handleCargoClick(carga)}
+                    isAdmin={isAdmin}
+                    isSelected={selectedCargas.has(carga.numero_carga)}
+                    onSelect={toggleCargo}
                   />
                 ))}
               </div>
@@ -342,6 +381,58 @@ const LogisticsDashboard: FC = () => {
       {selectedCargo && <CargoDetails cargo={selectedCargo} onClose={() => setSelectedCargo(null)} />}
       <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} unreadCount={unreadNotifications} onCountUpdate={setUnreadNotifications} />
       <BulkCargoUpload isOpen={showBulkUpload} onClose={() => setShowBulkUpload(false)} onSuccess={loadDashboardData} />
+
+      {/* Cargo Selection Action Bar (Admin only) */}
+      {isAdmin && selectedCargas.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4">
+          <div className="flex items-center gap-4 bg-background border rounded-lg shadow-lg px-6 py-3">
+            <span className="text-sm font-medium">
+              {selectedCargas.size} carga{selectedCargas.size > 1 ? 's' : ''} selecionada{selectedCargas.size > 1 ? 's' : ''}
+            </span>
+            <div className="h-4 w-px bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearCargoSelection}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteCargasDialog(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Deletar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Cargas Confirmation Dialog */}
+      <AlertDialog open={showDeleteCargasDialog} onOpenChange={setShowDeleteCargasDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Deleção de Cargas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a deletar <strong>{selectedCargas.size}</strong> carga{selectedCargas.size > 1 ? 's' : ''}.
+              <br /><br />
+              Esta ação é <strong>irreversível</strong>. As cargas serão removidas permanentemente, incluindo todos os vínculos com Sales Orders.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingCargas}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCargas}
+              disabled={isDeletingCargas}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingCargas ? 'Deletando...' : 'Deletar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {loading && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-lg z-40 flex items-center justify-center">

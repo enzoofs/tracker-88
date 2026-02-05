@@ -349,6 +349,43 @@ export function useDashboardData() {
     loadNotificationCount();
   }, []);
 
+  const deleteCargas = async (cargoNumbers: string[]): Promise<{ success: boolean; deleted: number; errors: number }> => {
+    try {
+      const { data: result, error } = await supabase
+        .rpc('delete_cargas', { cargo_numbers: cargoNumbers });
+
+      if (error) {
+        throw new Error(error.message || 'Erro ao deletar cargas');
+      }
+
+      if (result.deleted > 0) {
+        toast({
+          title: 'Cargas Deletadas',
+          description: `${result.deleted} carga(s) deletada(s) com sucesso.`,
+        });
+        await loadDashboardData();
+      }
+
+      if (result.errors > 0) {
+        toast({
+          title: 'Algumas cargas não foram deletadas',
+          description: `${result.errors} erro(s) durante a deleção.`,
+          variant: 'destructive',
+        });
+      }
+
+      return { success: true, deleted: result.deleted, errors: result.errors };
+    } catch (error: any) {
+      console.error('Error deleting cargas:', error);
+      toast({
+        title: 'Erro ao deletar cargas',
+        description: error.message || 'Não foi possível deletar as cargas selecionadas.',
+        variant: 'destructive',
+      });
+      return { success: false, deleted: 0, errors: cargoNumbers.length };
+    }
+  };
+
   const deleteSOs = async (salesOrders: string[]): Promise<{ success: boolean; deleted: number; errors: number }> => {
     try {
       const { data: result, error } = await supabase
@@ -400,5 +437,6 @@ export function useDashboardData() {
     setUnreadNotifications,
     loadDashboardData,
     deleteSOs,
+    deleteCargas,
   };
 }
