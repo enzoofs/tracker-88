@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { Search, Filter, ChevronUp, ChevronDown, Plane, Calendar } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Search, Filter, ChevronUp, ChevronDown, Plane, Trash2, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getAlertLevel } from '@/hooks/useAlertLevel';
 import { useSLACalculator } from '@/hooks/useSLACalculator';
@@ -36,9 +38,11 @@ interface SOTableProps {
   data: SO[];
   onSOClick: (so: SO) => void;
   isLoading?: boolean;
+  isAdmin?: boolean;
+  onDeleteSOs?: (salesOrders: string[]) => Promise<{ success: boolean; deleted: number; errors: number }>;
 }
 
-const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false }) => {
+const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false, isAdmin = false, onDeleteSOs }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [clienteFilter, setClienteFilter] = useState('all');
@@ -48,6 +52,55 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false }) => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 50;
+
+  // Selection state (admin only)
+  const [selectedSOs, setSelectedSOs] = useState<Set<string>>(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const toggleSO = (salesOrder: string) => {
+    setSelectedSOs(prev => {
+      const next = new Set(prev);
+      if (next.has(salesOrder)) {
+        next.delete(salesOrder);
+      } else {
+        next.add(salesOrder);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllVisible = () => {
+    const visibleSOs = paginatedData.map(so => so.salesOrder);
+    const allSelected = visibleSOs.every(so => selectedSOs.has(so));
+
+    setSelectedSOs(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        visibleSOs.forEach(so => next.delete(so));
+      } else {
+        visibleSOs.forEach(so => next.add(so));
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedSOs(new Set());
+  };
+
+  const handleDelete = async () => {
+    if (!onDeleteSOs || selectedSOs.size === 0) return;
+
+    setIsDeleting(true);
+    try {
+      await onDeleteSOs(Array.from(selectedSOs));
+      clearSelection();
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
 
   const getStatusVariant = (status: string | null) => {
     if (!status) return 'default';
@@ -279,6 +332,15 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false }) => {
           <Table>
             <TableHeader>
               <TableRow>
+                {isAdmin && onDeleteSOs && (
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={paginatedData.length > 0 && paginatedData.every(so => selectedSOs.has(so.salesOrder))}
+                      onCheckedChange={toggleAllVisible}
+                      aria-label="Selecionar todas as SOs visíveis"
+                    />
+                  </TableHead>
+                )}
                 <TableHead
                   className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
                   aria-sort={ariaSort('salesOrder')}
@@ -363,15 +425,24 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false }) => {
                 const hasCargoStatus = so.cargoNumber && so.statusOriginal;
                 
                  return (
-                   <TableRow 
+                   <TableRow
                      key={so.id}
                      className={`hover:bg-muted/50 cursor-pointer transition-colors ${
                        delayed ? 'bg-destructive/10 border-l-4 border-l-destructive' : ''
                      } ${arrivingToday ? 'bg-status-production/10 border-l-4 border-l-status-production' : ''} ${
                        isNew ? 'bg-primary/5 border-l-4 border-l-primary' : ''
-                     }`}
+                     } ${selectedSOs.has(so.salesOrder) ? 'bg-primary/10' : ''}`}
                      onClick={() => onSOClick(so)}
                    >
+                  {isAdmin && onDeleteSOs && (
+                    <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedSOs.has(so.salesOrder)}
+                        onCheckedChange={() => toggleSO(so.salesOrder)}
+                        aria-label={`Selecionar SO ${so.salesOrder}`}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       {so.salesOrder}
@@ -496,6 +567,58 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false }) => {
             </div>
           </div>
         )}
+
+        {/* Selection Action Bar (Admin only) */}
+        {isAdmin && onDeleteSOs && selectedSOs.size > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4">
+            <div className="flex items-center gap-4 bg-background border rounded-lg shadow-lg px-6 py-3">
+              <span className="text-sm font-medium">
+                {selectedSOs.size} SO{selectedSOs.size > 1 ? 's' : ''} selecionada{selectedSOs.size > 1 ? 's' : ''}
+              </span>
+              <div className="h-4 w-px bg-border" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearSelection}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Deletar
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Deleção</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você está prestes a deletar <strong>{selectedSOs.size}</strong> SO{selectedSOs.size > 1 ? 's' : ''}.
+                <br /><br />
+                Esta ação é <strong>irreversível</strong>. Os registros serão removidos permanentemente do banco de dados, incluindo histórico de tracking e vínculos com cargas.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? 'Deletando...' : 'Deletar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );

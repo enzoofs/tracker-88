@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +36,7 @@ const LogisticsDashboard: FC = () => {
     unreadNotifications,
     setUnreadNotifications,
     loadDashboardData,
+    deleteSOs,
   } = useDashboardData();
 
   const [selectedCargo, setSelectedCargo] = useState<any>(null);
@@ -43,6 +44,27 @@ const LogisticsDashboard: FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [activeTab, setActiveTab] = useState('sos');
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) return;
+
+        const { data: hasRole, error } = await supabase
+          .rpc('has_role', { _user_id: authUser.id, _role: 'admin' });
+
+        if (error) throw error;
+        setIsAdmin(hasRole === true);
+      } catch (error) {
+        console.error('Error checking admin role:', error);
+      }
+    };
+
+    checkAdminRole();
+  }, []);
 
   const handleSOClick = (so: any) => {
     setSelectedSO(so);
@@ -202,7 +224,13 @@ const LogisticsDashboard: FC = () => {
                 </Button>
               </div>
               <Overview data={data.overview} allSOs={data.sos} />
-              <SOTable data={filteredSOs} onSOClick={handleSOClick} isLoading={loading} />
+              <SOTable
+                data={filteredSOs}
+                onSOClick={handleSOClick}
+                isLoading={loading}
+                isAdmin={isAdmin}
+                onDeleteSOs={deleteSOs}
+              />
             </div>
           </TabsContent>
 

@@ -349,6 +349,43 @@ export function useDashboardData() {
     loadNotificationCount();
   }, []);
 
+  const deleteSOs = async (salesOrders: string[]): Promise<{ success: boolean; deleted: number; errors: number }> => {
+    try {
+      const { data: result, error } = await supabase
+        .rpc('delete_sales_orders', { so_numbers: salesOrders });
+
+      if (error) {
+        throw new Error(error.message || 'Erro ao deletar SOs');
+      }
+
+      if (result.deleted > 0) {
+        toast({
+          title: 'SOs Deletadas',
+          description: `${result.deleted} SO(s) deletada(s) com sucesso.`,
+        });
+        await loadDashboardData();
+      }
+
+      if (result.errors > 0) {
+        toast({
+          title: 'Algumas SOs não foram deletadas',
+          description: `${result.errors} erro(s) durante a deleção.`,
+          variant: 'destructive',
+        });
+      }
+
+      return { success: true, deleted: result.deleted, errors: result.errors };
+    } catch (error: any) {
+      console.error('Error deleting SOs:', error);
+      toast({
+        title: 'Erro ao deletar SOs',
+        description: error.message || 'Não foi possível deletar as SOs selecionadas.',
+        variant: 'destructive',
+      });
+      return { success: false, deleted: 0, errors: salesOrders.length };
+    }
+  };
+
   return {
     data,
     loading,
@@ -362,5 +399,6 @@ export function useDashboardData() {
     unreadNotifications,
     setUnreadNotifications,
     loadDashboardData,
+    deleteSOs,
   };
 }
