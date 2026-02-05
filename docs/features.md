@@ -116,7 +116,7 @@
 ---
 
 ### 4. Cálculo Automático de SLA
-**Status**: ⚠️ Implementado (precisa ajuste)
+**Status**: ✅ Implementado
 **Hook**: [useSLACalculator.ts](../src/hooks/useSLACalculator.ts)
 
 **Descrição**: Calcula automaticamente o SLA (15 dias úteis) de cada SO e identifica atrasos.
@@ -126,31 +126,33 @@
 - Priorizar ações com base na urgência (critical, warning, ok)
 - Calcular dias restantes até vencimento do SLA
 
-**Lógica Atual** (⚠️ precisa ajuste):
-```
-SLA = 15 dias CORRIDOS a partir de data_armazem
-```
-
-**Lógica Desejada**:
+**Lógica Implementada** (✅ Corrigido):
 ```
 SLA = 15 dias ÚTEIS a partir de data_envio (envio para FedEx)
+Usa: differenceInBusinessDays da date-fns
 ```
 
 **Níveis de Urgência**:
 - 🔴 **Overdue**: SLA vencido (daysLeft < 0)
-- 🟡 **Critical**: ≤ 1 dia restante
-- 🟠 **Warning**: ≤ 3 dias restantes
-- 🟢 **Ok**: > 3 dias restantes
+- 🟡 **Critical**: ≤ 1 dia útil restante
+- 🟠 **Warning**: ≤ 3 dias úteis restantes
+- 🟢 **Ok**: > 3 dias úteis restantes
 
 **Componentes que Usam**:
 - `SOTable`: Badge de urgência em cada linha
 - `Overview`: Contagem de SOs atrasadas
 - `CargoCard`: Indicador visual de urgência
 
-**Cálculo**:
+**Retorno do Hook**:
 ```tsx
-const sla = useSLACalculator(salesOrder);
-// Retorna: { daysLeft, urgency, slaDate }
+interface SLAResult {
+  daysRemaining: number;           // Dias restantes para entrega
+  urgency: 'ok' | 'warning' | 'critical' | 'overdue';
+  expectedDays: number;            // SLA interno (15 dias)
+  deliveryForecastDays: number;    // Previsão ao cliente
+  daysSinceUpdate: number;         // Dias úteis desde envio
+  stage: string;                   // Estágio atual
+}
 ```
 
 ---

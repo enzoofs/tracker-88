@@ -27,7 +27,7 @@ Sistema de rastreamento logístico para importação de produtos biotecnológico
 ## Convenções de Código
 
 ### React/TypeScript
-- Componentes em `src/components/dashboard/` (19 componentes)
+- Componentes em `src/components/dashboard/` (21 componentes)
 - Custom hooks em `src/hooks/` (ex: `useSLACalculator`)
 - shadcn/ui components em `src/components/ui/`
 - State: TanStack Query (server), Context API (global), useState (local)
@@ -97,7 +97,7 @@ python scripts/audit_cargo_data.py --auto-fill   # corrigir
 
 ## Alertas Conhecidos
 
-- ⚠️ SLA calculation em `useSLACalculator.ts` foi corrigido parcialmente — validar
+- ✅ SLA calculation em `useSLACalculator.ts` corrigido (15 dias úteis a partir de `data_envio`)
 - ⚠️ Analytics/AdvancedAnalytics: componentes UI prontos, lógica incompleta
 - ⚠️ Notificações: botão existe, backend incompleto
 - ⚠️ Zero testes automatizados — prioridade para implementar

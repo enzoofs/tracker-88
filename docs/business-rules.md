@@ -10,26 +10,29 @@
 - Em licitações, atrasos podem resultar em multas
 - Clientes insatisfeitos podem encerrar parceria
 
-**Implementação Atual** (⚠️ INCORRETA):
+**Implementação** (✅ CORRIGIDO):
 - **Arquivo**: [useSLACalculator.ts](../src/hooks/useSLACalculator.ts)
-- **Lógica atual**: Calcula 15 dias CORRIDOS a partir de `data_armazem`
+- **Lógica**: Calcula 15 dias ÚTEIS a partir de `data_envio` (envio FedEx)
+- **Função**: Usa `differenceInBusinessDays` da biblioteca `date-fns`
+
 ```tsx
-const slaDeadline = addDays(new Date(so.dataArmazem), 15);
+import { differenceInBusinessDays } from 'date-fns';
+
+// Data de referência: envio para FedEx (data_envio)
+const referenceDate = new Date(so.dataEnvio);
+const now = new Date();
+
+// Calcula dias ÚTEIS decorridos desde o envio FedEx
+const daysSinceUpdate = differenceInBusinessDays(now, referenceDate);
+
+// Urgência baseada no SLA (15 dias úteis)
+const slaRemaining = 15 - daysSinceUpdate;
 ```
 
-**Implementação Esperada** (🔧 PRECISA CORREÇÃO):
-- **Lógica correta**: Calcular 15 dias ÚTEIS a partir de `data_envio` (data_envio para FedEx)
-- **Função**: Usar `addBusinessDays` da biblioteca `date-fns`
-```tsx
-// Exemplo de correção necessária
-import { addBusinessDays } from 'date-fns';
-const slaDeadline = addBusinessDays(new Date(so.dataEnvio), 15);
-```
-
-**Validações**:
-- Se `data_envio` não existir, não calcular SLA (marcar como "Dados Insuficientes")
-- Considerar apenas dias úteis (segunda a sexta)
-- Não considerar feriados nacionais brasileiros (implementação futura)
+**Validações Implementadas**:
+- ✅ Se `data_envio` não existir, retorna `null` (SLA não calculável)
+- ✅ Considera apenas dias úteis (segunda a sexta)
+- ⚠️ Feriados nacionais brasileiros ainda não implementados (melhoria futura)
 
 **Exceções**:
 - Produtos controlados pela ANVISA podem ter prazos diferenciados (futuro)

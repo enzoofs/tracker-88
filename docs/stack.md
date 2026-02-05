@@ -23,7 +23,7 @@ Framework principal para construção da interface do usuário.
 - Suspense e lazy loading (futuro)
 - Context API para state management global
 
-### Vite 5.4.1
+### Vite 7.3.1
 Build tool e dev server ultra-rápido.
 
 **Plugins**:
@@ -136,6 +136,26 @@ Schema validation e type inference.
 - Type-safe parsing de dados da API
 - Runtime validation de configs
 
+## Custom Hooks (~2240 linhas)
+
+O sistema utiliza 11 custom hooks que encapsulam toda a lógica de negócio:
+
+| Hook | Propósito | Linhas |
+|---|---|---|
+| `useSLACalculator` | Cálculo de SLA (15 dias úteis) com `differenceInBusinessDays` | ~150 |
+| `useDashboardData` | Carregamento de dados do dashboard com cache TanStack Query | ~400 |
+| `useAnalytics` | Processamento de dados analíticos e métricas | ~350 |
+| `useAuditData` | Auditoria de cargas e identificação de dados faltantes | ~250 |
+| `useReportsData` | Geração de dados para relatórios PDF/Excel | ~250 |
+| `useStageTimingData` | Análise de tempo por estágio do fluxo | ~200 |
+| `useAlertLevel` | Cálculo de nível de alerta baseado em urgência | ~150 |
+| `useChartsData` | Preparação de dados para gráficos Recharts | ~100 |
+| `useSOTimeline` | Timeline de eventos de uma SO | ~300 |
+| `use-toast` | Sistema de notificações toast (Sonner) | ~100 |
+| `use-mobile` | Detecção de dispositivo mobile | ~50 |
+
+**Localização**: [src/hooks/](../src/hooks/)
+
 ## Bibliotecas de Visualização
 
 ### Recharts 2.15.4
@@ -165,7 +185,7 @@ Leitura e escrita de planilhas Excel.
 - Import de cargas via bulk upload
 - Parsing de planilhas de fornecedores
 
-### jsPDF 3.0.1
+### jsPDF 4.0.0
 Geração de PDFs no client-side.
 
 **Uso**:
@@ -249,9 +269,10 @@ Ferramenta de desenvolvimento para ambiente Lovable.
 ### Hospedagem
 
 **Frontend**:
-- **Plataforma**: Lovable (https://lovable.dev)
+- **Plataforma principal**: Lovable (https://lovable.dev)
+- **Alternativa**: Vercel (configurado em `vercel.json`)
 - **Build**: Vite production build
-- **CDN**: Automático via Lovable
+- **CDN**: Automático via Lovable/Vercel
 - **Domínio**: Pode ser customizado
 
 **Backend**:

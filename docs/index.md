@@ -68,9 +68,9 @@ Consolidação de múltiplas SOs em um embarque aéreo ou marítimo. Uma carga c
 8. **Envio ao Cliente Final** *(não rastreado ainda)*
 
 ### SLA (Service Level Agreement)
-- **Regra**: 15 dias úteis após envio para FedEx
-- **Status atual do código**: Calcula como 15 dias corridos (precisa ajuste)
-- **Urgência**: Crítico quando faltam ≤1 dia, Warning quando ≤3 dias
+- **Regra**: 15 dias úteis após envio para FedEx (`data_envio`)
+- **Implementação**: ✅ Corrigido - usa `differenceInBusinessDays` da `date-fns`
+- **Urgência**: Crítico quando faltam ≤1 dia útil, Warning quando ≤3 dias úteis
 - **Impacto**: Clientes insatisfeitos, perda de parcerias, multas em licitações
 
 ## Links Rápidos
@@ -113,45 +113,49 @@ Configure `.env` com:
 ## Roadmap
 
 ### Funcionalidades em Desenvolvimento
-⚠️ Sistema de notificações (botão existe, lógica incompleta)
-⚠️ Analytics avançados (componentes criados, algoritmos em desenvolvimento)
-⚠️ Previsão de atrasos usando ML
+- ⚠️ Sistema de notificações (botão existe, lógica de disparo incompleta)
+- ⚠️ Analytics avançados (componentes UI prontos, algoritmos de análise em desenvolvimento)
+- ⚠️ SmartAlerts (alertas inteligentes baseados em padrões)
 
 ### Planejado para Futuro
-- Rastreamento até entrega ao cliente final
-- Portal self-service para clientes consultarem suas cargas
-- Integração com mais transportadoras (além da FedEx)
-- Automação de desembaraço aduaneiro
-- Mobile app para notificações push
+- **Q1-Q2 2026**: Portal self-service para clientes consultarem suas cargas
+- **Q2 2026**: Integração com mais transportadoras (DHL, UPS)
+- **Q3 2026**: Integração SAP (sincronização bidirecional)
+- **Q3-Q4 2026**: Previsão de atrasos com Machine Learning
+- **Q4 2026**: Automação de desembaraço aduaneiro (Siscomex)
+- **2027**: Mobile app (React Native)
 
 ## Estrutura do Repositório
 
 ```
 tracker-88/
 ├── .claude/                # Configuração Claude Code
-│   ├── agents/            # 11 agentes especializados
+│   ├── agents/            # 10+ agentes especializados
 │   ├── commands/          # Skills (engineer, product, metaspecs, repodocs)
 │   └── settings.local.json
+├── .linear/               # Sincronização com Linear (issues)
 ├── src/
 │   ├── components/
 │   │   ├── auth/          # Autenticação e controle de acesso
-│   │   ├── dashboard/     # 19 componentes do dashboard
-│   │   └── ui/            # 30+ componentes shadcn/ui
-│   ├── hooks/             # Custom hooks (useSLACalculator)
-│   ├── integrations/      # Cliente Supabase
-│   ├── lib/               # Utilitários e validações Zod
-│   └── pages/             # Rotas (Index, Login, NotFound)
+│   │   ├── dashboard/     # 21 componentes do dashboard
+│   │   └── ui/            # 40+ componentes shadcn/ui
+│   ├── hooks/             # 11 custom hooks (~2240 linhas)
+│   ├── integrations/      # Cliente Supabase + tipos
+│   ├── lib/               # Utilitários, formatters, security
+│   └── pages/             # Rotas (Index, NotFound)
 ├── supabase/
 │   ├── functions/         # 9 Edge Functions (Deno/TypeScript)
+│   │   └── _shared/       # Código compartilhado (rate-limiter, translations)
 │   └── migrations/        # 39 migrações SQL
-├── scripts/               # Scripts Python (auditoria de cargas)
+├── scripts/               # 12+ scripts Python (auditoria, migração)
 ├── docs/                  # Documentação técnica (esta pasta)
 ├── technical/             # Metaspec resumo do projeto
-├── *.json                 # Workflows n8n (0 a 5)
+├── n8n workflows/         # 5 workflows JSON
+├── vercel.json            # Configuração de deploy Vercel
 └── CLAUDE.md              # Diretrizes Claude Code
 ```
 
 ---
 
 *Documentação gerada automaticamente pelo comando `/repodocs:generate-docs`*
-*Última atualização: Janeiro 2026*
+*Última atualização: Fevereiro 2026*

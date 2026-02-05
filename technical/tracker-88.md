@@ -20,7 +20,7 @@ Tabela completa com busca, filtros e ordenação de todas as SOs. Permite consul
 Sistema de consolidação onde 1 carga = N Sales Orders. Visualização em cards de cargas ativas com tipo de temperatura (Ambiente/Controlada), status, data de chegada prevista, MAWB/HAWB, e lista de SOs vinculadas. Inclui alerta visual para cargas com dados faltantes (data de armazém, embarque ou entrega).
 
 ### Cálculo Automático de SLA
-Hook React que calcula automaticamente o SLA de 15 dias úteis para cada SO e classifica urgência (🔴 Overdue, 🟡 Critical ≤1 dia, 🟠 Warning ≤3 dias, 🟢 Ok >3 dias). **IMPORTANTE**: Implementação atual está incorreta (calcula 15 dias corridos a partir de data_armazem), deve ser corrigida para 15 dias úteis a partir de data_envio.
+Hook React (`useSLACalculator`) que calcula automaticamente o SLA de 15 dias úteis para cada SO usando `differenceInBusinessDays` da `date-fns`. Classifica urgência: 🔴 Overdue (vencido), 🟡 Critical (≤1 dia útil), 🟠 Warning (≤3 dias úteis), 🟢 Ok (>3 dias úteis). ✅ Implementação corrigida - agora calcula corretamente 15 dias **úteis** a partir de `data_envio` (envio FedEx).
 
 ### Upload em Massa de Cargas
 Funcionalidade de bulk upload via planilhas Excel (.xlsx/.xls) para atualizar múltiplas cargas simultaneamente. Inclui validação de dados, preview antes de confirmar, e tratamento de erros por linha. Criado para atualizações massivas após períodos offline.
@@ -34,18 +34,20 @@ Gráficos interativos (Line, Bar, Area, Pie) para análise de tendências de ent
 ## Stack Básica
 
 **Linguagem**: TypeScript 5.5.3
-**Framework Principal**: React 18.3.1 com Vite 5.4.1
+**Framework Principal**: React 18.3.1 com Vite 7.3.1
 **Banco de Dados**: PostgreSQL 15 (via Supabase Cloud)
-**Infraestrutura**: Frontend hospedado no Lovable, Backend no Supabase Cloud, Automação via n8n
+**Infraestrutura**: Frontend hospedado no Lovable (alt: Vercel), Backend no Supabase Cloud, Automação via n8n
 
 ### Tecnologias Chave
-- **shadcn/ui + Radix UI**: Sistema de componentes acessíveis com 30+ componentes (Dialog, Tabs, Card, etc.)
+- **shadcn/ui + Radix UI**: Sistema de componentes acessíveis com 40+ componentes (Dialog, Tabs, Card, etc.)
 - **TailwindCSS 3.4.11**: Framework CSS utility-first com dark/light mode
 - **@supabase/supabase-js 2.58.0**: Cliente oficial para PostgreSQL + Realtime + Auth
 - **TanStack Query 5.56.2**: Cache e sincronização de estado do servidor
+- **11 Custom Hooks (~2240 linhas)**: useSLACalculator, useDashboardData, useAnalytics, useAuditData, useReportsData, useStageTimingData, useAlertLevel, useChartsData, useSOTimeline, use-toast, use-mobile
 - **Recharts 2.15.4**: Biblioteca de gráficos para visualizações de dados
 - **xlsx 0.18.5**: Leitura/escrita de arquivos Excel
-- **date-fns 3.6.0**: Manipulação de datas (cálculo de SLA)
+- **date-fns 3.6.0**: Manipulação de datas e cálculo de SLA (differenceInBusinessDays)
+- **jsPDF 4.0.0 + html2canvas**: Geração de relatórios PDF
 - **React Hook Form 7.53.0 + Zod 3.23.8**: Formulários com validação type-safe
 
 ## Integrações e Dependências
@@ -97,7 +99,7 @@ O Síntese Tracker é responsável pela **visibilidade e gestão do ciclo de vid
 
 ## Regras de Negócio Críticas
 
-- **RN001 - SLA de 15 Dias Úteis**: Todas as SOs devem ser entregues em 15 dias úteis após envio para FedEx. Violação resulta em clientes insatisfeitos, perda de parcerias e multas em licitações. **⚠️ IMPLEMENTAÇÃO INCORRETA**: Código atual calcula 15 dias corridos a partir de data_armazem, deve ser corrigido para dias úteis a partir de data_envio.
+- **RN001 - SLA de 15 Dias Úteis**: Todas as SOs devem ser entregues em 15 dias úteis após envio para FedEx. Violação resulta em clientes insatisfeitos, perda de parcerias e multas em licitações. ✅ **Implementação corrigida**: Código agora usa `differenceInBusinessDays` a partir de `data_envio`. Se `data_envio` não existir, retorna `null` (SLA não calculável).
 
 - **RN002 - Consolidação por Temperatura**: Múltiplas SOs são consolidadas em 1 carga (1:N). Cargas de temperatura ambiente NÃO podem misturar com cargas controladas. Frequência típica: 1 embarque ambiente + 1 controlado por semana. Status da carga prevalece sobre status individual da SO.
 
@@ -112,7 +114,7 @@ O Síntese Tracker é responsável pela **visibilidade e gestão do ciclo de vid
 **Padrão Arquitetural**: Component-Based Architecture (React) com separação Container/Presentational
 
 **Principais Padrões**:
-- **Custom Hooks Pattern**: Lógica de negócio extraída em hooks reutilizáveis (useSLACalculator, useAuth, useToast)
+- **Custom Hooks Pattern**: Lógica de negócio extraída em 11 hooks reutilizáveis (~2240 linhas)
 - **Provider Pattern**: Contextos React para estado global (AuthProvider, ThemeProvider, QueryClientProvider)
 - **Compound Components**: Componentes complexos compostos via shadcn/ui
 - **State Management**: Local state (useState), Server state (TanStack Query), Global state (Context API)
@@ -122,13 +124,13 @@ O Síntese Tracker é responsável pela **visibilidade e gestão do ciclo de vid
 ```
 src/
 ├── components/
-│   ├── auth/           # Autenticação (AuthProvider, ProtectedRoute)
-│   ├── dashboard/      # Dashboard principal (19 componentes)
-│   └── ui/             # shadcn/ui components (30+ componentes)
-├── hooks/              # Custom hooks (useSLACalculator)
-├── integrations/       # Cliente Supabase
-├── lib/                # Utilitários
-└── pages/              # Rotas (Index, Login)
+│   ├── auth/           # Autenticação (AuthProvider, AuthPage, ThemeProvider)
+│   ├── dashboard/      # Dashboard principal (21 componentes)
+│   └── ui/             # shadcn/ui components (40+ componentes)
+├── hooks/              # 11 custom hooks (~2240 linhas)
+├── integrations/       # Cliente Supabase + tipos
+├── lib/                # Utilitários, formatters, statusNormalizer, security
+└── pages/              # Rotas (Index, NotFound)
 ```
 
 ## Informações de Referência
@@ -137,8 +139,9 @@ src/
 **Caminho Local**: `c:\sintese-tracker\tracker-88`
 **Documentação Completa**: [docs/](../docs/) na raiz do repositório
 **Tipo**: Frontend (SPA) + Automação Backend
-**Deploy**: [Lovable Production](https://lovable.dev/projects/8fd524cc-6a33-4a16-acee-60ff60b6e6e8)
+**Deploy**: [Lovable Production](https://lovable.dev/projects/8fd524cc-6a33-4a16-acee-60ff60b6e6e8) | Vercel (configurado)
 **Status**: Em produção desde 2024
+**Última Atualização**: Fevereiro 2026
 
 ---
 

@@ -1,73 +1,110 @@
-# Welcome to your Lovable project
+# Síntese Tracker
 
-## Project info
+Sistema de rastreamento logístico interno para a Síntese, empresa de biotecnologia brasileira. Gerencia 200+ Sales Orders por mês, fornecendo visibilidade completa do fluxo logístico desde a produção internacional até a entrega final.
 
-**URL**: https://lovable.dev/projects/8fd524cc-6a33-4a16-acee-60ff60b6e6e8
+## Funcionalidades Principais
 
-## How can I edit this code?
+- **Dashboard Executivo**: Métricas em tempo real (SOs ativas, em trânsito, chegadas esperadas)
+- **Rastreamento de Sales Orders**: Tabela com busca, filtros, ordenação e exportação Excel
+- **Gestão de Cargas Consolidadas**: 1 carga = N Sales Orders (ambiente vs. controlada)
+- **Cálculo Automático de SLA**: 15 dias úteis a partir do envio FedEx
+- **Upload em Massa**: Importação de planilhas Excel para atualização de cargas
+- **Analytics e Relatórios**: Gráficos interativos e exportação PDF
 
-There are several ways of editing your application.
+## Stack
 
-**Use Lovable**
+| Camada | Tecnologia |
+|--------|------------|
+| **Frontend** | React 18.3 + TypeScript 5.5 + Vite 7.3 |
+| **UI** | TailwindCSS + shadcn/ui (40+ componentes) |
+| **Estado** | TanStack Query + Context API |
+| **Backend** | Supabase (PostgreSQL + Realtime + Auth) |
+| **Automação** | n8n (email parsing, FedEx scraping) |
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8fd524cc-6a33-4a16-acee-60ff60b6e6e8) and start prompting.
+## Estrutura do Projeto
 
-Changes made via Lovable will be committed automatically to this repo.
+```
+src/
+├── components/
+│   ├── auth/          # Autenticação e controle de acesso
+│   ├── dashboard/     # 21 componentes do dashboard
+│   └── ui/            # Componentes shadcn/ui
+├── hooks/             # 11 custom hooks (~2240 linhas)
+├── integrations/      # Cliente Supabase + tipos
+├── lib/               # Utilitários, formatters, security
+└── pages/             # Rotas (Index, NotFound)
 
-**Use your preferred IDE**
+supabase/
+├── functions/         # 9 Edge Functions (Deno/TypeScript)
+└── migrations/        # Migrações SQL
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+scripts/               # Scripts Python (auditoria, migração)
+docs/                  # Documentação técnica completa
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Desenvolvimento Local
 
-Follow these steps:
+### Pré-requisitos
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- Node.js 18+
+- npm ou pnpm
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Setup
 
-# Step 3: Install the necessary dependencies.
-npm i
+```bash
+# Clone o repositório
+git clone <URL_DO_REPOSITORIO>
+cd tracker-88
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Instale as dependências
+npm install
+
+# Configure as variáveis de ambiente
+cp .env.example .env
+# Edite .env com suas credenciais Supabase
+
+# Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Scripts Disponíveis
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| Comando | Descrição |
+|---------|-----------|
+| `npm run dev` | Servidor de desenvolvimento com HMR |
+| `npm run build` | Build de produção |
+| `npm run preview` | Preview do build de produção |
+| `npm run lint` | Verificação de lint |
 
-**Use GitHub Codespaces**
+## Deploy
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- **Frontend**: [Lovable](https://lovable.dev/projects/8fd524cc-6a33-4a16-acee-60ff60b6e6e8) (CI/CD automático)
+- **Alternativo**: Vercel (configurado em `vercel.json`)
+- **Backend**: Supabase Cloud
 
-## What technologies are used for this project?
+## Documentação
 
-This project is built with:
+- **Documentação Técnica**: [docs/](docs/)
+- **Metaspec Resumo**: [technical/tracker-88.md](technical/tracker-88.md)
+- **Diretrizes Claude Code**: [CLAUDE.md](CLAUDE.md)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Principais Documentos
 
-## How can I deploy this project?
+| Arquivo | Conteúdo |
+|---------|----------|
+| [docs/index.md](docs/index.md) | Índice e visão geral |
+| [docs/stack.md](docs/stack.md) | Stack tecnológica detalhada |
+| [docs/features.md](docs/features.md) | Funcionalidades implementadas |
+| [docs/business-rules.md](docs/business-rules.md) | Regras de negócio |
+| [docs/integrations.md](docs/integrations.md) | Integrações (Supabase, n8n, FedEx) |
+| [docs/patterns.md](docs/patterns.md) | Padrões de design |
 
-Simply open [Lovable](https://lovable.dev/projects/8fd524cc-6a33-4a16-acee-60ff60b6e6e8) and click on Share -> Publish.
+## Regras de Negócio Críticas
 
-## Can I connect a custom domain to my Lovable project?
+1. **SLA de 15 Dias Úteis**: Todas as SOs devem ser entregues em 15 dias úteis após envio para FedEx
+2. **Consolidação por Temperatura**: Cargas ambiente não podem misturar com controladas
+3. **Controle de Temperatura**: Ambiente (15°C-25°C) ou Controlada (2°C-8°C / -20°C)
 
-Yes, you can!
+## Licença
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Proprietário - Síntese Biotecnologia

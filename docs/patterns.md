@@ -14,13 +14,24 @@ src/components/
 ```
 
 ### Custom Hooks Pattern
-Lógica de negócio e side effects são extraídos em custom hooks para reusabilidade e testabilidade.
+Lógica de negócio e side effects são extraídos em 11 custom hooks (~2240 linhas) para reusabilidade e testabilidade.
 
-**Exemplos**:
-- `useSLACalculator`: Cálculo de SLA e urgência ([src/hooks/useSLACalculator.ts](../src/hooks/useSLACalculator.ts))
-- `useAuth`: Gerenciamento de autenticação ([src/components/auth/AuthProvider.tsx](../src/components/auth/AuthProvider.tsx))
-- `useTheme`: Controle de dark/light mode
-- `useToast`: Sistema de notificações toast
+**Hooks de Negócio**:
+- `useSLACalculator`: Cálculo de SLA (15 dias úteis) com `differenceInBusinessDays`
+- `useDashboardData`: Carregamento e cache de dados do dashboard
+- `useAnalytics`: Processamento de dados analíticos
+- `useAuditData`: Auditoria de cargas e dados faltantes
+- `useReportsData`: Geração de dados para relatórios
+- `useStageTimingData`: Análise de tempo por estágio
+- `useAlertLevel`: Cálculo de nível de alerta
+- `useChartsData`: Preparação de dados para gráficos
+- `useSOTimeline`: Timeline de eventos de SO
+
+**Hooks de UI**:
+- `use-toast`: Sistema de notificações toast (Sonner)
+- `use-mobile`: Detecção de dispositivo mobile
+
+**Localização**: [src/hooks/](../src/hooks/)
 
 ### Provider Pattern
 Contextos React para compartilhar estado global sem prop drilling.
@@ -107,36 +118,58 @@ src/
 ├── components/
 │   ├── auth/                  # Autenticação
 │   │   ├── AuthProvider.tsx   # Context de auth
-│   │   ├── ProtectedRoute.tsx # Route guard
+│   │   ├── AuthPage.tsx       # Página de login
 │   │   └── ThemeProvider.tsx  # Tema dark/light
-│   ├── dashboard/             # Dashboard principal
-│   │   ├── LogisticsDashboard.tsx  # Container principal
-│   │   ├── Overview.tsx            # Métricas resumidas
-│   │   ├── SOTable.tsx             # Tabela de SOs
-│   │   ├── CargoCard.tsx           # Card de carga
-│   │   ├── CargoDetails.tsx        # Modal de detalhes
-│   │   ├── SODetails.tsx           # Modal de SO
-│   │   ├── Charts.tsx              # Gráficos
-│   │   ├── Reports.tsx             # Relatórios
-│   │   ├── NotificationCenter.tsx  # Central de notificações
-│   │   └── BulkCargoUpload.tsx     # Upload de Excel
-│   └── ui/                    # Componentes shadcn/ui
-│       ├── button.tsx
-│       ├── card.tsx
-│       ├── dialog.tsx
-│       └── ... (30+ componentes)
-├── hooks/
-│   ├── useSLACalculator.ts    # Hook de cálculo de SLA
-│   └── use-toast.ts           # Hook de toast notifications
+│   ├── dashboard/             # 21 componentes do dashboard
+│   │   ├── LogisticsDashboard.tsx    # Container principal
+│   │   ├── Overview.tsx              # Métricas resumidas
+│   │   ├── SOTable.tsx               # Tabela de SOs
+│   │   ├── CargoCard.tsx             # Card de carga
+│   │   ├── CargoDetails.tsx          # Modal de detalhes da carga
+│   │   ├── SODetails.tsx             # Modal de detalhes da SO
+│   │   ├── Timeline.tsx              # Histórico de eventos
+│   │   ├── Charts.tsx                # Gráficos Recharts
+│   │   ├── Reports.tsx               # Relatórios PDF/Excel
+│   │   ├── BulkCargoUpload.tsx       # Upload em massa de Excel
+│   │   ├── NotificationCenter.tsx    # Central de notificações
+│   │   ├── SmartAlerts.tsx           # Alertas inteligentes (em dev)
+│   │   ├── DataAuditPanel.tsx        # Painel de auditoria
+│   │   ├── DashboardHeader.tsx       # Header com ações
+│   │   ├── AdvancedAnalytics.tsx     # Análises avançadas (em dev)
+│   │   ├── StageTimingAnalysis.tsx   # Tempo por estágio
+│   │   ├── TrendsAnalysis.tsx        # Análise de tendências
+│   │   ├── Analytics.tsx             # Analytics gerais
+│   │   ├── ExecutiveDashboard.tsx    # Dashboard executivo
+│   │   └── StatusDetailDialog.tsx    # Dialog de status
+│   └── ui/                    # 40+ componentes shadcn/ui
+│       ├── button.tsx, card.tsx, dialog.tsx
+│       ├── table.tsx, tabs.tsx, input.tsx
+│       └── ... (40+ componentes)
+├── hooks/                     # 11 custom hooks (~2240 linhas)
+│   ├── useSLACalculator.ts    # Cálculo de SLA
+│   ├── useDashboardData.ts    # Dados do dashboard
+│   ├── useAnalytics.ts        # Dados analíticos
+│   ├── useAuditData.ts        # Auditoria de dados
+│   ├── useReportsData.ts      # Dados de relatórios
+│   ├── useStageTimingData.ts  # Timing por estágio
+│   ├── useAlertLevel.ts       # Nível de alertas
+│   ├── useChartsData.ts       # Dados para gráficos
+│   ├── useSOTimeline.ts       # Timeline de SO
+│   ├── use-mobile.tsx         # Detecção de mobile
+│   └── use-toast.ts           # Notificações toast
 ├── integrations/
 │   └── supabase/
-│       └── client.ts          # Cliente Supabase configurado
+│       ├── client.ts          # Cliente Supabase
+│       └── types.ts           # Tipos gerados
 ├── lib/
-│   └── utils.ts               # Funções utilitárias (cn, formatters)
+│   ├── utils.ts               # cn() e utilidades
+│   ├── formatters.ts          # Formatação de dados
+│   ├── statusNormalizer.ts    # Normalização de status
+│   └── security.ts            # Funções de segurança
 ├── pages/
-│   ├── Index.tsx              # Página principal (dashboard)
-│   └── Login.tsx              # Página de login
-└── App.tsx                    # Configuração de rotas
+│   ├── Index.tsx              # Dashboard principal
+│   └── NotFound.tsx           # Página 404
+└── App.tsx                    # Rotas e providers
 ```
 
 ### Convenções de Nomenclatura

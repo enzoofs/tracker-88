@@ -36,7 +36,30 @@ export const supabase = createClient(
 - `carga_sales_orders`: Relacionamento N:N
 - `notification_queue`: Fila de notificações
 - `profiles`: Perfis de usuários
+- `shipment_history`: Histórico de eventos
+- `auth_attempts`: Rastreamento de login
 - `auth.users`: Autenticação (gerenciada pelo Supabase)
+
+### Edge Functions (9 funções)
+
+Todas as Edge Functions estão em `/supabase/functions/` e usam `SUPABASE_SERVICE_ROLE_KEY` para bypass de RLS.
+
+| Função | Propósito |
+|---|---|
+| `ingest-envios` | Ingestion de SOs via HTTP POST (usado pelo n8n) |
+| `update-tracking` | Atualização de status/tracking de SOs |
+| `update-envio-data` | Atualização de datas de SO |
+| `query-envios` | Consulta de SOs com filtros e paginação |
+| `upsert-carga` | Inserção/atualização de cargas |
+| `link-sos-to-carga` | Vinculação de SOs a cargas |
+| `bulk-update-cargas` | Update em lote de múltiplas cargas |
+| `generate-report` | Geração de relatório em PDF |
+| `export-data` | Export completo de dados (CSV, XLSX, JSON) |
+
+**Código Compartilhado** (`_shared/`):
+- `rate-limiter.ts`: Proteção contra abuso de API
+- `translations.ts`: Mapeamento de status FedEx → português
+- `security.ts`: Funções de segurança e validação
 
 **Realtime Subscriptions**:
 ```tsx
