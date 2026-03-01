@@ -107,9 +107,10 @@ const Reports: FC = () => {
 
       {/* Relatórios Tabulares */}
       <Tabs defaultValue="clientes" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
+          <TabsTrigger value="sla">SLA & Tempos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="clientes" className="space-y-4">
@@ -119,8 +120,8 @@ const Reports: FC = () => {
                 <Users className="h-5 w-5" />
                 Relatório de Clientes
               </CardTitle>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => exportToExcel('Clientes', data.clientes)}
               >
@@ -162,8 +163,8 @@ const Reports: FC = () => {
                 <Building className="h-5 w-5" />
                 Relatório de Produtos
               </CardTitle>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => exportToExcel('Produtos', data.fornecedores)}
               >
@@ -196,6 +197,107 @@ const Reports: FC = () => {
                       </TableCell>
                     </TableRow>
                   ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sla" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="shadow-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Taxa de Conformidade SLA</CardTitle>
+                <Target className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${
+                  data.slaMetrics.complianceRate >= 80 ? 'text-status-delivered' :
+                  data.slaMetrics.complianceRate >= 60 ? 'text-status-production' :
+                  'text-destructive'
+                }`}>
+                  {data.slaMetrics.complianceRate.toFixed(1)}%
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {data.slaMetrics.withinSLA} de {data.slaMetrics.totalDelivered} dentro do SLA (15 dias úteis)
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Tempo Médio de Entrega</CardTitle>
+                <Truck className="h-4 w-4 text-status-shipping" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {data.slaMetrics.avgDeliveryDays.toFixed(1)} dias
+                </div>
+                <p className="text-xs text-muted-foreground">Dias úteis (meta: 15)</p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Entregues</CardTitle>
+                <Package className="h-4 w-4 text-status-delivered" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{data.slaMetrics.totalDelivered}</div>
+                <p className="text-xs text-muted-foreground">No período selecionado</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Comparativo Mensal
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportToExcel('SLA_Mensal', data.slaMetrics.monthlyComparison)}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mês</TableHead>
+                    <TableHead>Entregues</TableHead>
+                    <TableHead>Conformidade SLA</TableHead>
+                    <TableHead>Tempo Médio</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.slaMetrics.monthlyComparison.map((month, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{month.month}</TableCell>
+                      <TableCell>{month.delivered}</TableCell>
+                      <TableCell>
+                        <span className={`font-bold ${
+                          month.complianceRate >= 80 ? 'text-status-delivered' :
+                          month.complianceRate >= 60 ? 'text-status-production' :
+                          'text-destructive'
+                        }`}>
+                          {month.complianceRate.toFixed(1)}%
+                        </span>
+                      </TableCell>
+                      <TableCell>{month.avgDays.toFixed(1)} dias</TableCell>
+                    </TableRow>
+                  ))}
+                  {data.slaMetrics.monthlyComparison.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        Sem dados de entrega no período selecionado
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

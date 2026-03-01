@@ -40,6 +40,18 @@ interface ReportData {
     cliente: string;
     valorTotal: number;
   }>;
+  slaMetrics: {
+    totalDelivered: number;
+    withinSLA: number;
+    complianceRate: number;
+    avgDeliveryDays: number;
+    monthlyComparison: Array<{
+      month: string;
+      delivered: number;
+      complianceRate: number;
+      avgDays: number;
+    }>;
+  };
 }
 
 export const useReportsData = (timeRange: string = '30d') => {
@@ -51,7 +63,8 @@ export const useReportsData = (timeRange: string = '30d') => {
     representantes: [],
     entregas: [],
     pedidosPorStatus: [],
-    topClientesPorValor: []
+    topClientesPorValor: [],
+    slaMetrics: { totalDelivered: 0, withinSLA: 0, complianceRate: 0, avgDeliveryDays: 0, monthlyComparison: [] }
   });
   const [loading, setLoading] = useState(true);
 
@@ -64,10 +77,10 @@ export const useReportsData = (timeRange: string = '30d') => {
       '1y': 365,
       'all': 0
     };
-    
+
     const days = daysMap[timeRange] || 30;
     if (days === 0) return null;
-    
+
     const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
     return startDate.toISOString();
   };
@@ -101,7 +114,7 @@ export const useReportsData = (timeRange: string = '30d') => {
       enviosData?.forEach(envio => {
         const cliente = envio.cliente;
         const valor = Number(envio.valor_total) || 0;
-        
+
         if (clienteMap.has(cliente)) {
           const existing = clienteMap.get(cliente)!;
           existing.pedidos += 1;
@@ -145,7 +158,7 @@ export const useReportsData = (timeRange: string = '30d') => {
         });
       }
 
-      // Calculate real average delivery time: data_envio → cargas.data_entrega (dias úteis)
+      // Calculate real average delivery time: data_envio to cargas.data_entrega (business days)
       const deliveredOrders = enviosData?.filter(e => e.is_delivered && e.data_envio && deliveryDatesMap[e.sales_order]) || [];
       const avgDeliveryTime = deliveredOrders.length > 0
         ? deliveredOrders.reduce((sum, envio) => {
@@ -155,10 +168,56 @@ export const useReportsData = (timeRange: string = '30d') => {
           }, 0) / deliveredOrders.length
         : 0;
 
+      // SLA metrics
+      const SLA_THRESHOLD = 15; // 15 business days
+      const withinSLA = deliveredOrders.filter(envio => {
+        const shipDate = new Date(envio.data_envio!);
+        const deliveryDate = deliveryDatesMap[envio.sales_order];
+        return calculateBusinessDays(shipDate, deliveryDate) <= SLA_THRESHOLD;
+      }).length;
+
+      const complianceRate = deliveredOrders.length > 0
+        ? (withinSLA / deliveredOrders.length) * 100
+        : 0;
+
+      // Monthly comparison
+      const monthlyMap = new Map<string, { delivered: number; withinSLA: number; totalDays: number }>();
+      deliveredOrders.forEach(envio => {
+        const shipDate = new Date(envio.data_envio!);
+        const deliveryDate = deliveryDatesMap[envio.sales_order];
+        const bizDays = calculateBusinessDays(shipDate, deliveryDate);
+        const monthKey = deliveryDate.toISOString().slice(0, 7); // YYYY-MM
+
+        if (!monthlyMap.has(monthKey)) {
+          monthlyMap.set(monthKey, { delivered: 0, withinSLA: 0, totalDays: 0 });
+        }
+        const m = monthlyMap.get(monthKey)!;
+        m.delivered += 1;
+        if (bizDays <= SLA_THRESHOLD) m.withinSLA += 1;
+        m.totalDays += bizDays;
+      });
+
+      const monthlyComparison = Array.from(monthlyMap.entries())
+        .map(([month, m]) => ({
+          month,
+          delivered: m.delivered,
+          complianceRate: m.delivered > 0 ? (m.withinSLA / m.delivered) * 100 : 0,
+          avgDays: m.delivered > 0 ? m.totalDays / m.delivered : 0,
+        }))
+        .sort((a, b) => a.month.localeCompare(b.month));
+
+      const slaMetrics = {
+        totalDelivered: deliveredOrders.length,
+        withinSLA,
+        complianceRate,
+        avgDeliveryDays: avgDeliveryTime,
+        monthlyComparison,
+      };
+
       // Process fornecedores by carrier
       const fornecedorMap = new Map<string, { count: number; deliveryTimes: number[] }>();
       deliveredOrders.forEach(envio => {
-        const fornecedor = envio.carrier || 'Não informado';
+        const fornecedor = envio.carrier || 'Nao informado';
         if (!fornecedorMap.has(fornecedor)) {
           fornecedorMap.set(fornecedor, { count: 0, deliveryTimes: [] });
         }
@@ -175,7 +234,7 @@ export const useReportsData = (timeRange: string = '30d') => {
           totalPedidos: data.count,
           tempoMedioEntrega: data.deliveryTimes.reduce((a, b) => a + b, 0) / data.deliveryTimes.length
         }))
-        .filter(item => item.fornecedor !== 'Não informado')
+        .filter(item => item.fornecedor !== 'Nao informado')
         .sort((a, b) => b.totalPedidos - a.totalPedidos);
 
       // Representatives removed - no data available in schema
@@ -189,7 +248,7 @@ export const useReportsData = (timeRange: string = '30d') => {
       // Process entregas by status
       const statusMap = new Map<string, number>();
       enviosData?.forEach(envio => {
-        const status = envio.status_cliente || 'Não informado';
+        const status = envio.status_cliente || 'Nao informado';
         statusMap.set(status, (statusMap.get(status) || 0) + 1);
       });
 
@@ -211,12 +270,13 @@ export const useReportsData = (timeRange: string = '30d') => {
         representantes,
         entregas,
         pedidosPorStatus,
-        topClientesPorValor
+        topClientesPorValor,
+        slaMetrics
       });
 
     } catch (error) {
       console.error('Error loading reports data:', error);
-      toast({ title: 'Erro ao carregar relatórios', description: 'Não foi possível carregar os dados.', variant: 'destructive' });
+      toast({ title: 'Erro ao carregar relatorios', description: 'Nao foi possivel carregar os dados.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
