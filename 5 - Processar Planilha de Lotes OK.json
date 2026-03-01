@@ -62,6 +62,70 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.deve_criar_carga }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "id": "if-criar-carga-1"
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -144,
+        -200
+      ],
+      "id": "if-criar-carga-node",
+      "name": "Verificar Se Cria Carga"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aldwmdfveivkfxxvfoua.supabase.co/functions/v1/upsert-carga",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer p3Rma-STS_n8n_2025"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ numero_carga: $json.numero_carga.toString(), status: 'Em Consolidação' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        -200
+      ],
+      "id": "criar-carga-http-node",
+      "name": "Criar Carga via Supabase",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
         "fileFormat": "xlsx",
         "options": {
           "headerRow": true
@@ -111,13 +175,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json) }}",
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true
-            }
-          }
-        }
+        "options": {}
       },
       "id": "628714f9-da8b-4f5a-afbe-2d146c18ea8b",
       "name": "Vincular SO via Supabase",
@@ -128,102 +186,6 @@
         16
       ],
       "retryOnFail": true
-    },
-    {
-      "parameters": {
-        "tableId": "carga_sales_orders",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "numero_carga",
-              "fieldValue": "={{ $json.numero_carga }}"
-            },
-            {
-              "fieldId": "so_number",
-              "fieldValue": "={{ $json.so_number }}"
-            },
-            {
-              "fieldId": "item_count",
-              "fieldValue": "={{ $json.item_count }}"
-            },
-            {
-              "fieldId": "status",
-              "fieldValue": "={{ $json.status }}"
-            },
-            {
-              "fieldId": "created_at",
-              "fieldValue": "={{ $json.created_at }}"
-            }
-          ]
-        }
-      },
-      "id": "75b4bc56-f5af-4775-bd4e-4be10808a4fe",
-      "name": "Backup Inserir Vínculos",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        528,
-        16
-      ],
-      "retryOnFail": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "oD99Qqe2sNruP4u0",
-          "name": "Supabase - tracking@"
-        }
-      },
-      "continueOnFail": true
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "tableId": "envios_processados",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "sales_order",
-              "condition": "eq",
-              "keyValue": "={{ $json.so_number }}"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "status_atual",
-              "fieldValue": "Consolidado"
-            },
-            {
-              "fieldId": "status_cliente",
-              "fieldValue": "Em Importação"
-            },
-            {
-              "fieldId": "ultima_localizacao",
-              "fieldValue": "Armazém - Consolidado"
-            },
-            {
-              "fieldId": "data_ultima_atualizacao",
-              "fieldValue": "={{ new Date().toISOString() }}"
-            }
-          ]
-        }
-      },
-      "id": "c84b3ca1-93c7-407a-9db9-c757304a825f",
-      "name": "Backup Atualizar SOs",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        752,
-        16
-      ],
-      "retryOnFail": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "oD99Qqe2sNruP4u0",
-          "name": "Supabase - tracking@"
-        }
-      },
-      "continueOnFail": true
     },
     {
       "parameters": {
@@ -392,6 +354,35 @@
       "main": [
         [
           {
+            "node": "Verificar Se Cria Carga",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Se Cria Carga": {
+      "main": [
+        [
+          {
+            "node": "Criar Carga via Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ler Planilha Excel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Carga via Supabase": {
+      "main": [
+        [
+          {
             "node": "Ler Planilha Excel",
             "type": "main",
             "index": 0
@@ -422,28 +413,6 @@
       ]
     },
     "Vincular SO via Supabase": {
-      "main": [
-        [
-          {
-            "node": "Backup Inserir Vínculos",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Backup Inserir Vínculos": {
-      "main": [
-        [
-          {
-            "node": "Backup Atualizar SOs",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Backup Atualizar SOs": {
       "main": [
         [
           {
