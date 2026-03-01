@@ -36,7 +36,7 @@ Gráficos interativos (Line, Bar, Area, Pie) para análise de tendências de ent
 **Linguagem**: TypeScript 5.5.3
 **Framework Principal**: React 18.3.1 com Vite 7.3.1
 **Banco de Dados**: PostgreSQL 15 (via Supabase Cloud)
-**Infraestrutura**: Frontend hospedado no Lovable (alt: Vercel), Backend no Supabase Cloud, Automação via n8n
+**Infraestrutura**: Frontend hospedado no Vercel, Backend no Supabase Cloud, Automação via n8n
 
 ### Tecnologias Chave
 - **shadcn/ui + Radix UI**: Sistema de componentes acessíveis com 40+ componentes (Dialog, Tabs, Card, etc.)
@@ -83,7 +83,7 @@ Gráficos interativos (Line, Bar, Area, Pie) para análise de tendências de ent
 - **Dados trocados**: Emails com "Daily Order Report", planilhas Excel anexadas, notificações de embarque
 
 ### Dependências Externas Críticas
-- **Lovable**: Plataforma de deploy do frontend com CI/CD automático
+- **Vercel**: Plataforma de deploy do frontend com CI/CD automático
 - **date-fns**: Biblioteca essencial para cálculo de SLA e manipulação de datas
 - **XLSX (SheetJS)**: Parsing e geração de planilhas Excel para bulk upload e export
 
@@ -139,7 +139,7 @@ src/
 **Caminho Local**: `c:\sintese-tracker\tracker-88`
 **Documentação Completa**: [docs/](../docs/) na raiz do repositório
 **Tipo**: Frontend (SPA) + Automação Backend
-**Deploy**: [Lovable Production](https://lovable.dev/projects/8fd524cc-6a33-4a16-acee-60ff60b6e6e8) | Vercel (configurado)
+**Deploy**: Vercel (configurado em `vercel.json`)
 **Status**: Em produção desde 2024
 **Última Atualização**: Fevereiro 2026
 

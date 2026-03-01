@@ -28,7 +28,6 @@ Build tool e dev server ultra-rápido.
 
 **Plugins**:
 - `@vitejs/plugin-react-swc`: React com SWC compiler (extremamente rápido)
-- `lovable-tagger`: Dev tool para ambiente Lovable
 
 **Configuração**:
 - Hot Module Replacement (HMR)
@@ -212,9 +211,6 @@ Linter para identificar problemas no código.
 ### TypeScript ESLint 8.0.1
 Integração entre ESLint e TypeScript.
 
-### Lovable Tagger 1.1.7
-Ferramenta de desenvolvimento para ambiente Lovable.
-
 ## Arquitetura Geral
 
 ### Estrutura em Camadas
@@ -269,10 +265,9 @@ Ferramenta de desenvolvimento para ambiente Lovable.
 ### Hospedagem
 
 **Frontend**:
-- **Plataforma principal**: Lovable (https://lovable.dev)
-- **Alternativa**: Vercel (configurado em `vercel.json`)
+- **Plataforma**: Vercel (configurado em `vercel.json`)
 - **Build**: Vite production build
-- **CDN**: Automático via Lovable/Vercel
+- **CDN**: Automático via Vercel
 - **Domínio**: Pode ser customizado
 
 **Backend**:
@@ -287,13 +282,12 @@ Ferramenta de desenvolvimento para ambiente Lovable.
 ### CI/CD
 
 **Git Flow**:
-- Commits automáticos via Lovable
 - Push para GitHub
-- Deploy automático no Lovable
+- Deploy automático via Vercel
 
 **Build Pipeline**:
 ```bash
-npm install → vite build → deploy to Lovable CDN
+npm install → vite build → deploy to Vercel
 ```
 
 ## Decisões Arquiteturais Importantes
@@ -321,9 +315,10 @@ npm install → vite build → deploy to Lovable CDN
 
 ### Trade-offs
 
-**Lovable vs. Vercel/Netlify**:
-- ✅ Deploy automático e integrado com desenvolvimento
-- ⚠️ Menos controle sobre infraestrutura
+**Vercel**:
+- ✅ Deploy automático via GitHub integration
+- ✅ Preview deployments para cada branch/PR
+- ✅ CDN global com edge network
 
 **Supabase vs. Backend customizado**:
 - ✅ Desenvolvimento 10x mais rápido

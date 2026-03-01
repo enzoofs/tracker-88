@@ -76,7 +76,7 @@ Consolidação de múltiplas SOs em um embarque aéreo ou marítimo. Uma carga c
 ## Links Rápidos
 
 - **Repositório**: Local (c:\sintese-tracker\tracker-88)
-- **Frontend Deploy**: [Lovable](https://lovable.dev/projects/8fd524cc-6a33-4a16-acee-60ff60b6e6e8)
+- **Frontend Deploy**: Vercel (configurado em `vercel.json`)
 - **Backend**: Supabase Cloud
 - **Automação**: n8n (workflows JSON na raiz do projeto)
 

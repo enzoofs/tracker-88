@@ -438,7 +438,7 @@ docs: atualizar README com instruções de deploy
 - Review obrigatório antes de merge (se equipe)
 
 ### Code Style
-- Prettier configurado (ou seguir padrão Lovable)
+- Prettier configurado
 - ESLint rules habilitadas
 - Máximo de 300 linhas por arquivo (guideline, não regra rígida)
 - Preferir funções pequenas e focadas

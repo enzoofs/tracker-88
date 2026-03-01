@@ -310,23 +310,18 @@ n8n → HTTP Request → Supabase REST API → Database
 
 ## Dependências Externas Críticas
 
-### Lovable (Plataforma de Deploy)
-**Tipo**: Plataforma de desenvolvimento e deploy
+### Vercel (Plataforma de Deploy)
+**Tipo**: Plataforma de deploy e hosting
 **Propósito**: Hospedagem do frontend e CI/CD automático
-**URL**: https://lovable.dev/projects/8fd524cc-6a33-4a16-acee-60ff60b6e6e8
+**Configuração**: `vercel.json` na raiz do projeto
 
 **Funcionalidades**:
-- Build automático ao fazer commit
-- Deploy para CDN global
-- Integração com Git (bidirecional)
-- Preview environments
+- Build automático ao fazer push para GitHub
+- Deploy para CDN global (edge network)
+- Preview deployments para cada branch/PR
+- Domínio customizado
 
 **Dependência**: Crítica - Frontend hospedado na plataforma
-
-**Alternativas**:
-- Vercel
-- Netlify
-- Self-hosted (Nginx + Docker)
 
 ---
 

@@ -78,8 +78,7 @@ npm run dev
 
 ## Deploy
 
-- **Frontend**: [Lovable](https://lovable.dev/projects/8fd524cc-6a33-4a16-acee-60ff60b6e6e8) (CI/CD automático)
-- **Alternativo**: Vercel (configurado em `vercel.json`)
+- **Frontend**: Vercel (CI/CD automático, configurado em `vercel.json`)
 - **Backend**: Supabase Cloud
 
 ## Documentação
