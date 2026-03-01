@@ -67,13 +67,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json) }}",
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true
-            }
-          }
-        }
+        "options": {}
       },
       "id": "b5063577-eee7-429f-888a-17af5781df8e",
       "name": "Inserir via Supabase",
@@ -105,13 +99,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json) }}",
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true
-            }
-          }
-        }
+        "options": {}
       },
       "id": "9a685716-dd6a-4888-950f-d5d0d8564c6e",
       "name": "Atualizar via Supabase",
@@ -122,146 +110,6 @@
         720
       ],
       "retryOnFail": true
-    },
-    {
-      "parameters": {
-        "tableId": "envios_processados",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "sales_order",
-              "fieldValue": "={{ $('Preparar Insert1').item.json.sales_order }}"
-            },
-            {
-              "fieldId": "erp_order",
-              "fieldValue": "={{ $('Preparar Insert1').item.json.erp_order }}"
-            },
-            {
-              "fieldId": "cliente",
-              "fieldValue": "={{ $('Preparar Insert1').item.json.cliente }}"
-            },
-            {
-              "fieldId": "produtos",
-              "fieldValue": "={{ $('Preparar Insert1').item.json.produtos }}"
-            },
-            {
-              "fieldId": "valor_total",
-              "fieldValue": "={{ $('Preparar Insert1').item.json.valor_total }}"
-            },
-            {
-              "fieldId": "tracking_numbers",
-              "fieldValue": "={{ $('Preparar Insert1').item.json.tracking_numbers }}"
-            },
-            {
-              "fieldId": "data_envio",
-              "fieldValue": "={{ $('Preparar Insert1').item.json.data_envio }}"
-            },
-            {
-              "fieldId": "status",
-              "fieldValue": "Enviado"
-            },
-            {
-              "fieldId": "status_atual",
-              "fieldValue": "Enviado"
-            },
-            {
-              "fieldId": "ultima_localizacao",
-              "fieldValue": "Em Trânsito"
-            },
-            {
-              "fieldId": "data_ultima_atualizacao",
-              "fieldValue": "={{ $('Preparar Insert1').item.json.data_ultima_atualizacao }}"
-            },
-            {
-              "fieldId": "web_order",
-              "fieldValue": "={{ $('Preparar Insert1').item.json.web_order }}"
-            },
-            {
-              "fieldId": "created_at",
-              "fieldValue": "={{ $('Preparar Insert1').item.json.created_at }}"
-            }
-          ]
-        }
-      },
-      "id": "4548b3a2-cb86-4a7d-82ea-c95dbd834fb0",
-      "name": "Backup Supabase Insert",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        1120,
-        528
-      ],
-      "retryOnFail": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "oD99Qqe2sNruP4u0",
-          "name": "Supabase - tracking@"
-        }
-      },
-      "continueOnFail": true
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "tableId": "envios_processados",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "sales_order",
-              "condition": "eq",
-              "keyValue": "={{ $('Preparar Update1').item.json.sales_order }}"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "tracking_numbers",
-              "fieldValue": "={{ $('Preparar Update1').item.json.tracking_numbers }}"
-            },
-            {
-              "fieldId": "data_envio",
-              "fieldValue": "={{ $('Preparar Update1').item.json.data_envio }}"
-            },
-            {
-              "fieldId": "status",
-              "fieldValue": "Enviado"
-            },
-            {
-              "fieldId": "status_atual",
-              "fieldValue": "Enviado"
-            },
-            {
-              "fieldId": "ultima_localizacao",
-              "fieldValue": "Em Trânsito"
-            },
-            {
-              "fieldId": "data_ultima_atualizacao",
-              "fieldValue": "={{ $('Preparar Update1').item.json.data_ultima_atualizacao }}"
-            },
-            {
-              "fieldId": "tracking_numbers",
-              "fieldValue": "={{ $('Preparar Update1').item.json.tracking_numbers }}"
-            }
-          ]
-        }
-      },
-      "id": "7f81c362-f5a9-4910-a865-8c6f9633fd8d",
-      "name": "Backup Supabase Update",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        1120,
-        720
-      ],
-      "retryOnFail": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "oD99Qqe2sNruP4u0",
-          "name": "Supabase - tracking@"
-        }
-      },
-      "continueOnFail": true
     },
     {
       "parameters": {
@@ -524,28 +372,6 @@
       "main": [
         [
           {
-            "node": "Backup Supabase Insert",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Atualizar via Supabase": {
-      "main": [
-        [
-          {
-            "node": "Backup Supabase Update",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Backup Supabase Insert": {
-      "main": [
-        [
-          {
             "node": "Combinar Resultados1",
             "type": "main",
             "index": 0
@@ -553,7 +379,7 @@
         ]
       ]
     },
-    "Backup Supabase Update": {
+    "Atualizar via Supabase": {
       "main": [
         [
           {
