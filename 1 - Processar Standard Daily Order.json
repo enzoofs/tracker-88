@@ -132,7 +132,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://aldwmdfveivkfxxvfoua.supabase.co/functions/v1/ingest-envios",
+        "url": "=https://stkwoqcrrecwzeajhhxi.supabase.co/functions/v1/ingest-envios",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

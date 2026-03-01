@@ -40,3 +40,4 @@ scripts/migration_data/
 scripts/full_schema.sql
 scripts/audit_report.csv
 supabase/.temp/
+.env

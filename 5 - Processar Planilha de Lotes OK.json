@@ -95,7 +95,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://aldwmdfveivkfxxvfoua.supabase.co/functions/v1/upsert-carga",
+        "url": "https://stkwoqcrrecwzeajhhxi.supabase.co/functions/v1/upsert-carga",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -172,7 +172,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://aldwmdfveivkfxxvfoua.supabase.co/functions/v1/link-sos-to-carga",
+        "url": "https://stkwoqcrrecwzeajhhxi.supabase.co/functions/v1/link-sos-to-carga",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
