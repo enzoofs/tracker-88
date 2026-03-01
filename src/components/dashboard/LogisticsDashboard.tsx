@@ -284,15 +284,17 @@ const LogisticsDashboard: FC = () => {
                     <Package className="h-4 w-4" />
                     {showDeliveredCargas ? "Ocultar Entregues" : `Mostrar Entregues (${data.cargas.filter(c => c.status?.toLowerCase() === 'entregue').length})`}
                   </Button>
-                  <Button
-                    onClick={() => setShowBulkUpload(true)}
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 rounded-xl"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Importar Planilha
-                  </Button>
+                  {isAdmin && (
+                    <Button
+                      onClick={() => setShowBulkUpload(true)}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 rounded-xl"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Importar Planilha
+                    </Button>
+                  )}
                   <Badge className="bg-primary/10 text-primary">
                     {filteredCargas.length} cargas ativas
                   </Badge>
