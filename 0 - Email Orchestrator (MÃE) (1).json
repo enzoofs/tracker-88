@@ -11,9 +11,7 @@
           ]
         },
         "output": "raw",
-        "filters": {
-          "hasAttachments": false
-        },
+        "filters": {},
         "options": {
           "attachmentsPrefix": "attachment_",
           "downloadAttachments": true
