@@ -310,7 +310,8 @@
         -784,
         992
       ],
-      "retryOnFail": true
+      "retryOnFail": true,
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -324,7 +325,8 @@
         -112,
         736
       ],
-      "retryOnFail": true
+      "retryOnFail": true,
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -338,7 +340,8 @@
         320,
         640
       ],
-      "retryOnFail": true
+      "retryOnFail": true,
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -368,152 +371,7 @@
       "retryOnFail": true
     }
   ],
-  "pinData": {
-    "When Executed by Another Workflow": [
-      {
-        "json": {
-          "workflow_destino": "tracking_pos_armazem",
-          "workflow_id": "jYJlVMhTKVxoNkT1",
-          "tipo_email": "tracking_carga",
-          "email": {
-            "id": "AAMkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQBGAAAAAACJJbUa19cwTJ-q5cKIhmGZBwB5_z_ylZG-R54aMqDFRhSeAAAAAAEMAAB5_z_ylZG-R54aMqDFRhSeAAA5BRWRAAA=",
-            "conversationId": "AAQkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQAQAO-Xzfz_S-JOtphjwX61Uto=",
-            "internetMessageId": "<SCYP152MB7277F1D973F05D7629BE864EB1F1A@SCYP152MB7277.LAMP152.PROD.OUTLOOK.COM>",
-            "subject": "RES: ADVANCED - SINTESE WR93176 WR93205 GEL PACK - PO 895 - BHZFIA25100050",
-            "bodyPreview": "Enzo, boa tarde.\r\n\r\nSegue em anexo o follow-up do processo.\r\n\r\n  *   PREVISÃO DE EMBARQUE NA ORIGEM PARA O DIA 28/10.\r\n  *   PREVISÃO DE CHEGADA EM CONFINS PARA O DIA 29/10.\r\n\r\nVoltaremos, assim que possível, com o pré-alerta.\r\n\r\nFico à disposição.\r\n\r\nAte",
-            "body": {
-              "contentType": "html",
-              "content": "<html><head>\r\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><meta name=\"Generator\" content=\"Microsoft Word 15 (filtered medium)\"><style>\r\n<!--\r\n@font-face\r\n\t{font-family:Wingdings}\r\n@font-face\r\n\t{font-family:\"Cambria Math\"}\r\n@font-face\r\n\t{font-family:Calibri}\r\n@font-face\r\n\t{font-family:Aptos}\r\n@font-face\r\n\t{font-family:Tahoma}\r\np.MsoNormal, li.MsoNormal, div.MsoNormal\r\n\t{margin:0cm;\r\n\tfont-size:11.0pt;\r\n\tfont-family:\"Calibri\",sans-serif}\r\na:link, span.MsoHyperlink\r\n\t{color:#0563C1;\r\n\ttext-decoration:underline}\r\np.MsoListParagraph, li.MsoListParagraph, div.MsoListParagraph\r\n\t{margin-top:0cm;\r\n\tmargin-right:0cm;\r\n\tmargin-bottom:0cm;\r\n\tmargin-left:36.0pt;\r\n\tfont-size:11.0pt;\r\n\tfont-family:\"Calibri\",sans-serif}\r\nspan.EstiloDeEmail21\r\n\t{font-family:\"Tahoma\",sans-serif;\r\n\tcolor:windowtext;\r\n\tfont-weight:normal;\r\n\tfont-style:normal}\r\n.MsoChpDefault\r\n\t{font-size:10.0pt}\r\n@page WordSection1\r\n\t{margin:72.0pt 72.0pt 72.0pt 72.0pt}\r\ndiv.WordSection1\r\n\t{}\r\nol\r\n\t{margin-bottom:0cm}\r\nul\r\n\t{margin-bottom:0cm}\r\n-->\r\n</style></head><body lang=\"PT-BR\" link=\"#0563C1\" vlink=\"#954F72\" style=\"word-wrap:break-word\"><div class=\"WordSection1\"><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Enzo, boa tarde.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Segue em anexo o follow-up do processo.</span></p><ul type=\"disc\" style=\"margin-top:0cm\"><li class=\"MsoNormal\" style=\"\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">PREVISÃO DE EMBARQUE NA <b>ORIGEM</b> PARA O <b>DIA 28/10</b>.</span></li><li class=\"MsoNormal\" style=\"\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">PREVISÃO DE CHEGADA EM <b>CONFINS</b> PARA O <b>DIA 29/10</b>.</span></li></ul><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Voltaremos, assim que possível, com o pré-alerta.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Fico à disposição.</span></p><p class=\"MsoNormal\" style=\"margin-left:18.0pt\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Atenciosamente/ Best regards,</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"><img width=\"491\" height=\"151\" id=\"Imagem_x0020_973802627\" src=\"cid:image001.jpg@01DC4501.901DD3F0\" style=\"width:5.1145in; height:1.5729in\"><span style=\"\"></span></span></p></div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Pedro Henrique <br><b>Enviada em:</b> sexta-feira, 24 de outubro de 2025 11:23<br><b>Para:</b> Enzo Ferraz | Sintese Biotecnologia &lt;enzo@sintesebio.com.br&gt;; Alicézio Silva &lt;alicezio@globexlogistics.com&gt;; Lucas Campolina | Sintese Biotecnologia &lt;lucas@sintesebio.com.br&gt;; import &lt;import@sintesebio.com.br&gt;<br><b>Cc:</b> Rebecca Vallias &lt;Rebecca@fastglobal.com&gt;; Adonis Vallias &lt;adonis@globexlogistics.com&gt;; Operacional_Globex &lt;operacional@globexlogistics.com&gt;<br><b>Assunto:</b> RES: ADVANCED - SINTESE WR93176 WR93205 GEL PACK - PO 895 - BHZFIA25100050</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Enzo, bom dia.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Obrigado pela aprovação.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Seguiremos.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Voltaremos, assim que possível, com a reserva de voo.</span></p><div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Atenciosamente/ Best regards,</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"><img width=\"491\" height=\"151\" id=\"Imagem_x0020_1630638085\" src=\"cid:image001.jpg@01DC4501.901DD3F0\" style=\"width:5.1145in; height:1.5729in\"></span><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"></span></p></div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Enzo Ferraz | Sintese Biotecnologia &lt;<a href=\"mailto:enzo@sintesebio.com.br\">enzo@sintesebio.com.br</a>&gt; <br><b>Enviada em:</b> sexta-feira, 24 de outubro de 2025 09:34<br><b>Para:</b> Pedro Henrique &lt;<a href=\"mailto:pedro@globexlogistics.com\">pedro@globexlogistics.com</a>&gt;; Alicézio Silva &lt;<a href=\"mailto:alicezio@globexlogistics.com\">alicezio@globexlogistics.com</a>&gt;; Lucas Campolina | Sintese Biotecnologia &lt;<a href=\"mailto:lucas@sintesebio.com.br\">lucas@sintesebio.com.br</a>&gt;; import &lt;<a href=\"mailto:import@sintesebio.com.br\">import@sintesebio.com.br</a>&gt;<br><b>Cc:</b> Rebecca Vallias &lt;<a href=\"mailto:Rebecca@fastglobal.com\">Rebecca@fastglobal.com</a>&gt;; Adonis Vallias &lt;<a href=\"mailto:adonis@globexlogistics.com\">adonis@globexlogistics.com</a>&gt;; Operacional_Globex &lt;<a href=\"mailto:operacional@globexlogistics.com\">operacional@globexlogistics.com</a>&gt;<br><b>Assunto:</b> ADVANCED - SINTESE WR93176 WR93205 GEL PACK - PO 895 - BHZFIA25100050</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Pedro, bom dia!</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Draft aprovado.</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Obrigado!</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><div><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Atenciosamente, </span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\"><img border=\"0\" width=\"589\" height=\"191\" id=\"Imagem_x0020_1234474449\" src=\"cid:image002.jpg@01DC4501.901DD3F0\" style=\"width:6.1354in; height:1.9895in\"></span><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"></span></p></div><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Pedro Henrique &lt;<a href=\"mailto:pedro@globexlogistics.com\">pedro@globexlogistics.com</a>&gt; <br><b>Enviada em:</b> quinta-feira, 23 de outubro de 2025 18:34<br><b>Para:</b> Alicézio Silva &lt;<a href=\"mailto:alicezio@globexlogistics.com\">alicezio@globexlogistics.com</a>&gt;; Enzo Ferraz | Sintese Biotecnologia &lt;<a href=\"mailto:enzo@sintesebio.com.br\">enzo@sintesebio.com.br</a>&gt;; Lucas Campolina | Sintese Biotecnologia &lt;<a href=\"mailto:lucas@sintesebio.com.br\">lucas@sintesebio.com.br</a>&gt;; import &lt;<a href=\"mailto:import@sintesebio.com.br\">import@sintesebio.com.br</a>&gt;<br><b>Cc:</b> Rebecca Vallias &lt;<a href=\"mailto:Rebecca@fastglobal.com\">Rebecca@fastglobal.com</a>&gt;; Adonis Vallias &lt;<a href=\"mailto:adonis@globexlogistics.com\">adonis@globexlogistics.com</a>&gt;; Operacional_Globex &lt;<a href=\"mailto:operacional@globexlogistics.com\">operacional@globexlogistics.com</a>&gt;<br><b>Assunto:</b> RES: ADVANCED - SINTESE WR93176 WR93205 GEL PACK - PO 895 - BHZFIA25100050</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Enzo, boa tarde.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Tudo bem?</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Segue em anexo o follow-up do processo.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><b><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Encontra-se também o anexo do draft do HAWB para aprovação.</span></b></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><ul type=\"disc\" style=\"margin-top:0cm\"><li class=\"MsoNormal\" style=\"\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">DRAFTS RECEBIDOS.</span></li><li class=\"MsoNormal\" style=\"\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">SHIPPING STRUCTIONS ENVIADA AO NOSSO AGENTE.</span></li><li class=\"MsoNormal\" style=\"\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">HAWB ENVIADO PARA APROVAÇÃO DO IMPORTADOR.</span></li><li class=\"MsoListParagraph\" style=\"margin-left:0cm\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">AGUARDANDO PREVISÃO DE EMBARQUE NA ORIGEM</span></li><li class=\"MsoListParagraph\" style=\"margin-left:0cm\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">AGUARDANDO PREVISÃO DE CHEGADA EM CONFINS.</span></li></ul><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Voltaremos, assim que possível, com as demais etapas.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><ul type=\"disc\" style=\"margin-top:0cm\"><li class=\"MsoListParagraph\" style=\"margin-left:0cm\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">INVOICE: 0085622338 – 0085467192 (WR93176)<b></b></span></li><li class=\"MsoListParagraph\" style=\"margin-left:0cm\"><span lang=\"EN-US\" style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">INVOICE: 25SB1015 (WR93205)</span></li></ul><p class=\"MsoNormal\"><span lang=\"EN-US\" style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif; color:#0A2F41\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Obrigado.</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Fico à disposição.</span></p><div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">Atenciosamente/ Best regards,</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"><img border=\"0\" width=\"491\" height=\"151\" id=\"Imagem_x0020_642718582\" src=\"cid:image001.jpg@01DC4501.901DD3F0\" style=\"width:5.1145in; height:1.5729in\"></span><span style=\"font-size:12.0pt; font-family:&quot;Aptos&quot;,sans-serif\"></span></p></div><p class=\"MsoNormal\"><span style=\"font-size:10.0pt; font-family:&quot;Tahoma&quot;,sans-serif\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Alicézio Silva &lt;<a href=\"mailto:alicezio@globexlogistics.com\">alicezio@globexlogistics.com</a>&gt; <br><b>Enviada em:</b> quarta-feira, 22 de outubro de 2025 16:58<br><b>Para:</b> Enzo Ferraz | Sintese Biotecnologia &lt;<a href=\"mailto:enzo@sintesebio.com.br\">enzo@sintesebio.com.br</a>&gt;; Lucas Campolina | Sintese Biotecnologia &lt;<a href=\"mailto:lucas@sintesebio.com.br\">lucas@sintesebio.com.br</a>&gt;; import &lt;<a href=\"mailto:import@sintesebio.com.br\">import@sintesebio.com.br</a>&gt;<br><b>Cc:</b> Rebecca Vallias &lt;<a href=\"mailto:Rebecca@fastglobal.com\">Rebecca@fastglobal.com</a>&gt;; Adonis Vallias &lt;<a href=\"mailto:adonis@globexlogistics.com\">adonis@globexlogistics.com</a>&gt;; Operacional_Globex &lt;<a href=\"mailto:operacional@globexlogistics.com\">operacional@globexlogistics.com</a>&gt;<br><b>Assunto:</b> RES: ADVANCED - SINTESE WR93205 GEL PACK - PO 895</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Enzo, boa tarde.</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Ciente, considere o PO 895.</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">&nbsp;</span></p><div><div id=\"divtagdefaultwrapper\"><div><div><div><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Atenciosamente / Best Regards.</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\"><img border=\"0\" width=\"491\" height=\"151\" id=\"Imagem_x0020_1552576143\" src=\"cid:image003.jpg@01DC4501.901DD3F0\" style=\"width:5.1145in; height:1.5729in\"></span><span style=\"color:#0A2F41\"></span></p></div></div></div></div></div><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Enzo Ferraz | Sintese Biotecnologia &lt;<a href=\"mailto:enzo@sintesebio.com.br\">enzo@sintesebio.com.br</a>&gt; <br><b>Enviada em:</b> terça-feira, 21 de outubro de 2025 15:03<br><b>Para:</b> Alicézio Silva &lt;<a href=\"mailto:alicezio@globexlogistics.com\">alicezio@globexlogistics.com</a>&gt;; Lucas Campolina | Sintese Biotecnologia &lt;<a href=\"mailto:lucas@sintesebio.com.br\">lucas@sintesebio.com.br</a>&gt;; import &lt;<a href=\"mailto:import@sintesebio.com.br\">import@sintesebio.com.br</a>&gt;<br><b>Cc:</b> Rebecca Vallias &lt;<a href=\"mailto:Rebecca@fastglobal.com\">Rebecca@fastglobal.com</a>&gt;; Adonis Vallias &lt;<a href=\"mailto:adonis@globexlogistics.com\">adonis@globexlogistics.com</a>&gt;; Operacional_Globex &lt;<a href=\"mailto:operacional@globexlogistics.com\">operacional@globexlogistics.com</a>&gt;<br><b>Assunto:</b> ADVANCED - SINTESE WR93205 GEL PACK</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Alicézio, boa tarde!</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Gentileza consolidar com o WR93176 e seguir com o embarque.</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Obrigado!</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><div><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">Atenciosamente, </span></p><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\"><img border=\"0\" width=\"589\" height=\"191\" id=\"Imagem_x0020_871346594\" src=\"cid:image002.jpg@01DC4501.901DD3F0\" style=\"width:6.1354in; height:1.9895in\"></span></p></div><p class=\"MsoNormal\"><span style=\"font-size:12.0pt\">&nbsp;</span></p><div><div style=\"border:none; border-top:solid #E1E1E1 1.0pt; padding:3.0pt 0cm 0cm 0cm\"><p class=\"MsoNormal\"><b>De:</b> Alicézio Silva &lt;<a href=\"mailto:alicezio@globexlogistics.com\">alicezio@globexlogistics.com</a>&gt; <br><b>Enviada em:</b> segunda-feira, 20 de outubro de 2025 17:43<br><b>Para:</b> Lucas Campolina | Sintese Biotecnologia &lt;<a href=\"mailto:lucas@sintesebio.com.br\">lucas@sintesebio.com.br</a>&gt;; Enzo Ferraz | Sintese Biotecnologia &lt;<a href=\"mailto:enzo@sintesebio.com.br\">enzo@sintesebio.com.br</a>&gt;; import &lt;<a href=\"mailto:import@sintesebio.com.br\">import@sintesebio.com.br</a>&gt;<br><b>Cc:</b> Rebecca Vallias &lt;<a href=\"mailto:Rebecca@fastglobal.com\">Rebecca@fastglobal.com</a>&gt;; Adonis Vallias &lt;<a href=\"mailto:adonis@globexlogistics.com\">adonis@globexlogistics.com</a>&gt;; Operacional_Globex &lt;<a href=\"mailto:operacional@globexlogistics.com\">operacional@globexlogistics.com</a>&gt;<br><b>Assunto:</b> ADVANCED - SINTESE WR93205 GEL PACK</p></div></div><p class=\"MsoNormal\">&nbsp;</p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Lucas/Enzo, boa tarde.</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Recebemos uma nova ordem para a Síntese na Fast Global, segue em anexo cópia dos documentos.</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\">Podemos prosseguir com o embarque ou vamos aguardar mais mercadorias?</span></p><p class=\"MsoNormal\"><span lang=\"EN-US\" style=\"color:#0A2F41\">INVOICE: 25SB1015.</span></p><p class=\"MsoNormal\"><span lang=\"EN-US\" style=\"color:#0A2F41\">&nbsp;</span></p><div><div id=\"divtagdefaultwrapper\"><div><div><div><p class=\"MsoNormal\"><span lang=\"EN-US\" style=\"color:#0A2F41\">Atenciosamente / Best Regards.</span></p><p class=\"MsoNormal\"><span lang=\"EN-US\" style=\"color:#0A2F41\">&nbsp;</span></p><p class=\"MsoNormal\"><span style=\"color:#0A2F41\"><img border=\"0\" width=\"491\" height=\"151\" id=\"Imagem_x0020_244188473\" src=\"cid:image003.jpg@01DC4501.901DD3F0\" style=\"width:5.1145in; height:1.5729in\"></span></p></div></div></div></div></div></div></body></html>"
-            },
-            "from": {
-              "address": "pedro@globexlogistics.com",
-              "name": "Pedro Henrique"
-            },
-            "to": [
-              {
-                "emailAddress": {
-                  "name": "Enzo Ferraz | Sintese Biotecnologia",
-                  "address": "enzo@sintesebio.com.br"
-                }
-              },
-              {
-                "emailAddress": {
-                  "name": "Alicézio Silva",
-                  "address": "alicezio@globexlogistics.com"
-                }
-              },
-              {
-                "emailAddress": {
-                  "name": "Lucas Campolina | Sintese Biotecnologia",
-                  "address": "lucas@sintesebio.com.br"
-                }
-              },
-              {
-                "emailAddress": {
-                  "name": "import",
-                  "address": "import@sintesebio.com.br"
-                }
-              }
-            ],
-            "cc": [
-              {
-                "emailAddress": {
-                  "name": "Rebecca Vallias",
-                  "address": "Rebecca@fastglobal.com"
-                }
-              },
-              {
-                "emailAddress": {
-                  "name": "Adonis Vallias",
-                  "address": "adonis@globexlogistics.com"
-                }
-              },
-              {
-                "emailAddress": {
-                  "name": "Operacional_Globex",
-                  "address": "operacional@globexlogistics.com"
-                }
-              }
-            ],
-            "receivedAt": "2025-10-24T19:16:43Z",
-            "headers": null,
-            "hasAttachments": true,
-            "attachmentsMeta": [
-              {
-                "key": "attachment_0",
-                "fileName": "image001.jpg",
-                "mimeType": "image/jpeg",
-                "fileSize": "70 kB"
-              },
-              {
-                "key": "attachment_1",
-                "fileName": "image002.jpg",
-                "mimeType": "image/jpeg",
-                "fileSize": "785 kB"
-              },
-              {
-                "key": "attachment_2",
-                "fileName": "image003.jpg",
-                "mimeType": "image/jpeg",
-                "fileSize": "70 kB"
-              },
-              {
-                "key": "attachment_3",
-                "fileName": "FOLLOW-UP.pdf",
-                "mimeType": "application/pdf",
-                "fileSize": "275 kB"
-              }
-            ]
-          },
-          "email_norm": {
-            "subject_lc": "res: advanced - sintese wr93176 wr93205 gel pack - po 895 - bhzfia25100050",
-            "body_preview_lc": "enzo, boa tarde.\r\n\r\nsegue em anexo o follow-up do processo.\r\n\r\n  *   previsão de embarque na origem para o dia 28/10.\r\n  *   previsão de chegada em confins para o dia 29/10.\r\n\r\nvoltaremos, assim que possível, com o pré-alerta.\r\n\r\nfico à disposição.\r\n\r\nate",
-            "from_lc": "pedro@globexlogistics.com",
-            "from_name_lc": "pedro henrique",
-            "attachment_names_lc": "image001.jpg image002.jpg image003.jpg follow-up.pdf"
-          }
-        },
-        "binary": {
-          "attachment_0": {
-            "mimeType": "image/jpeg",
-            "fileType": "image",
-            "fileExtension": "jpg",
-            "data": "filesystem-v2",
-            "fileName": "image001.jpg",
-            "id": "filesystem-v2:workflows/d4ed9vH6sErTkEZN/executions/temp/binary_data/ff7ea32b-bff8-4519-9c6e-4a3d13e85d26",
-            "fileSize": "70 kB"
-          },
-          "attachment_1": {
-            "mimeType": "image/jpeg",
-            "fileType": "image",
-            "fileExtension": "jpg",
-            "data": "filesystem-v2",
-            "fileName": "image002.jpg",
-            "id": "filesystem-v2:workflows/d4ed9vH6sErTkEZN/executions/temp/binary_data/ad9c0064-c9f3-4f16-86b6-6041df5bb0c0",
-            "fileSize": "785 kB"
-          },
-          "attachment_2": {
-            "mimeType": "image/jpeg",
-            "fileType": "image",
-            "fileExtension": "jpg",
-            "data": "filesystem-v2",
-            "fileName": "image003.jpg",
-            "id": "filesystem-v2:workflows/d4ed9vH6sErTkEZN/executions/temp/binary_data/d9c703d0-a2e0-4c39-a557-8c8cfbcffc9b",
-            "fileSize": "70 kB"
-          },
-          "attachment_3": {
-            "mimeType": "application/pdf",
-            "fileType": "pdf",
-            "fileExtension": "pdf",
-            "data": "filesystem-v2",
-            "fileName": "FOLLOW-UP.pdf",
-            "id": "filesystem-v2:workflows/d4ed9vH6sErTkEZN/executions/temp/binary_data/78e2b63e-4d8e-4a84-85a7-8fd879e3d865",
-            "fileSize": "275 kB"
-          }
-        }
-      }
-    ]
-  },
+  "pinData": {},
   "connections": {
     "When Executed by Another Workflow": {
       "main": [

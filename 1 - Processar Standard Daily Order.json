@@ -260,7 +260,8 @@
         320
       ],
       "id": "4b309844-3d8b-4cfa-8fe6-1d944c50c928",
-      "name": "HTTP Request1"
+      "name": "HTTP Request1",
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -273,7 +274,8 @@
         320
       ],
       "id": "4a804d14-e03d-4089-8760-7a4b80bf87c4",
-      "name": "Preparar Dados do Log"
+      "name": "Preparar Dados do Log",
+      "continueOnFail": true
     }
   ],
   "pinData": {},

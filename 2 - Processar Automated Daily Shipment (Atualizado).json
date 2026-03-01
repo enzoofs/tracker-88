@@ -49,6 +49,20 @@
     },
     {
       "parameters": {
+        "jsCode": "// Deduplicar SOs — garantir que cada sales_order aparece apenas uma vez\n// Mantém a última ocorrência (dados mais recentes) de cada SO\nconst seen = new Map();\nconst items = $input.all();\n\nfor (const item of items) {\n  const so = item.json.sales_order;\n  if (so) {\n    seen.set(so, item);\n  }\n}\n\nconst deduplicated = Array.from(seen.values());\n\nconst removed = items.length - deduplicated.length;\nif (removed > 0) {\n  console.log(`Deduplicação: removidas ${removed} entradas duplicadas de ${items.length} total`);\n}\nconsole.log(`SOs únicos para processar: ${deduplicated.length}`);\n\nif (deduplicated.length === 0) {\n  throw new Error('Nenhum SO válido após deduplicação');\n}\n\nreturn deduplicated;"
+      },
+      "id": "c7a1e3f0-5d2a-4b8c-9e6f-1a2b3c4d5e6f",
+      "name": "Deduplicar SOs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        624
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://aldwmdfveivkfxxvfoua.supabase.co/functions/v1/ingest-envios",
         "sendHeaders": true,
@@ -176,56 +190,76 @@
         1792,
         624
       ],
-      "retryOnFail": true
+      "retryOnFail": true,
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "const allOrders = $input.all();\n\nif (allOrders.length === 0) {\n  throw new Error('Nenhum pedido para processar');\n}\n\nconst salesOrdersList = allOrders.map(order => order.json.sales_order);\n\nconsole.log(`Verificando ${salesOrdersList.length} pedidos`);\n\nreturn [{\n  json: {\n    salesOrdersList: salesOrdersList,\n    ordersData: allOrders\n  }\n}];"
+        "jsCode": "const allOrders = $input.all();\n\nif (allOrders.length === 0) {\n  throw new Error('Nenhum pedido para processar');\n}\n\nconst salesOrdersList = allOrders.map(order => order.json.sales_order);\n\n// Construir filtro PostgREST para buscar apenas SOs do batch atual\nconst soFilter = `in.(${salesOrdersList.map(so => `\"${so}\"`).join(',')})`;\n\nconsole.log(`Verificando ${salesOrdersList.length} pedidos no banco`);\nconsole.log(`Filtro: sales_order=${soFilter}`);\n\nreturn [{\n  json: {\n    salesOrdersList: salesOrdersList,\n    soFilter: soFilter,\n    ordersData: allOrders\n  }\n}];"
       },
       "id": "03762ae1-376c-4576-ba28-1d65449f4436",
       "name": "Preparar Verificação1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        0,
+        112,
         624
       ],
       "retryOnFail": true
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "envios_processados",
-        "returnAll": true
+        "method": "GET",
+        "url": "https://aldwmdfveivkfxxvfoua.supabase.co/rest/v1/envios_processados",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsZHdtZGZ2ZWl2a2Z4eHZmb3VhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczOTg4NjcsImV4cCI6MjA1Mjk3NDg2N30.clMqMIFJGRRKLFRuviMCMb_YMFIfByIfwjxu6loAFcA"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsZHdtZGZ2ZWl2a2Z4eHZmb3VhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczOTg4NjcsImV4cCI6MjA1Mjk3NDg2N30.clMqMIFJGRRKLFRuviMCMb_YMFIfByIfwjxu6loAFcA"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "sales_order"
+            },
+            {
+              "name": "sales_order",
+              "value": "={{ $json.soFilter }}"
+            }
+          ]
+        },
+        "options": {}
       },
       "id": "494213bd-8abd-465c-8ab7-5a4ac5633b6e",
       "name": "Verificar Existentes1",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
-        224,
+        336,
         624
       ],
       "alwaysOutputData": true,
-      "retryOnFail": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "oD99Qqe2sNruP4u0",
-          "name": "Supabase - tracking@"
-        }
-      },
-      "continueOnFail": true
+      "retryOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "const ordersToInsert = [];\nconst ordersToUpdate = [];\n\nconst originalData = $('Preparar Verificação1').item.json.ordersData;\nconst existingOrders = $input.all();\n\nconst existingSOs = new Set();\nexistingOrders.forEach(item => {\n  if (item.json?.sales_order) {\n    existingSOs.add(item.json.sales_order);\n  }\n});\n\noriginalData.forEach(order => {\n  if (existingSOs.has(order.json.sales_order)) {\n    ordersToUpdate.push(order.json);\n  } else {\n    ordersToInsert.push(order.json);\n  }\n});\n\nconsole.log(`${ordersToInsert.length} para inserir, ${ordersToUpdate.length} para atualizar`);\n\nreturn [{\n  json: {\n    ordersToInsert: ordersToInsert,\n    ordersToUpdate: ordersToUpdate,\n    summary: {\n      totalProcessed: originalData.length,\n      toInsert: ordersToInsert.length,\n      toUpdate: ordersToUpdate.length\n    }\n  }\n}];"
+        "jsCode": "const ordersToInsert = [];\nconst ordersToUpdate = [];\n\nconst originalData = $('Preparar Verificação1').item.json.ordersData;\n\n// O Verificar Existentes1 agora retorna array JSON via REST API\n// Pode ser um array no primeiro item, ou múltiplos items\nconst existingSOs = new Set();\nconst responseData = $input.all();\n\nfor (const item of responseData) {\n  // Se a resposta é um array (HTTP Request retorna array no body)\n  if (Array.isArray(item.json)) {\n    item.json.forEach(row => {\n      if (row.sales_order) existingSOs.add(row.sales_order);\n    });\n  } else if (item.json?.sales_order) {\n    existingSOs.add(item.json.sales_order);\n  }\n}\n\nconsole.log(`SOs já existentes no banco: ${existingSOs.size}`);\n\noriginalData.forEach(order => {\n  if (existingSOs.has(order.json.sales_order)) {\n    ordersToUpdate.push(order.json);\n  } else {\n    ordersToInsert.push(order.json);\n  }\n});\n\nconsole.log(`${ordersToInsert.length} para inserir, ${ordersToUpdate.length} para atualizar`);\n\nreturn [{\n  json: {\n    ordersToInsert: ordersToInsert,\n    ordersToUpdate: ordersToUpdate,\n    summary: {\n      totalProcessed: originalData.length,\n      toInsert: ordersToInsert.length,\n      toUpdate: ordersToUpdate.length\n    }\n  }\n}];"
       },
       "id": "a3c2966d-6961-411f-ab18-a92d67d380e3",
       "name": "Dividir Insert/Update1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        448,
+        560,
         624
       ],
       "retryOnFail": true
@@ -317,7 +351,8 @@
         624
       ],
       "id": "c3c1f208-4715-4728-8365-af72a939cf73",
-      "name": "HTTP Request1"
+      "name": "HTTP Request1",
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -330,7 +365,8 @@
         624
       ],
       "id": "04e0e2d0-b665-4c60-b4f2-2729a7e0ae49",
-      "name": "Preparar Dados do Log"
+      "name": "Preparar Dados do Log",
+      "continueOnFail": true
     }
   ],
   "pinData": {},
@@ -358,6 +394,17 @@
       ]
     },
     "Processar Dados Shipment": {
+      "main": [
+        [
+          {
+            "node": "Deduplicar SOs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicar SOs": {
       "main": [
         [
           {

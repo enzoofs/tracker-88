@@ -213,7 +213,8 @@
       ],
       "id": "3653780d-4e14-4ad3-836f-6794242a7c16",
       "name": "Preparar Dados do Log",
-      "retryOnFail": true
+      "retryOnFail": true,
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -247,7 +248,8 @@
       ],
       "id": "31ea886d-c047-4935-96f3-820942184a0d",
       "name": "HTTP Request1",
-      "retryOnFail": true
+      "retryOnFail": true,
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -261,72 +263,11 @@
         976,
         16
       ],
-      "retryOnFail": true
+      "retryOnFail": true,
+      "continueOnFail": true
     }
   ],
-  "pinData": {
-    "When Executed by Another Workflow": [
-      {
-        "json": {
-          "workflow_destino": "planilha_lotes",
-          "workflow_id": "G9ToKNnnyM4SPv3Q",
-          "tipo_email": "planilha_lotes",
-          "email": {
-            "id": "AAMkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQBGAAAAAACJJbUa19cwTJ-q5cKIhmGZBwB5_z_ylZG-R54aMqDFRhSeAAAAAAEMAAB5_z_ylZG-R54aMqDFRhSeAAA7-LaRAAA=",
-            "conversationId": "AAQkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQAQAJN2tKA98tNKuq6kUul6JSw=",
-            "internetMessageId": "<CPYP284MB1288DDD97CA36B063E0A284B82FCA@CPYP284MB1288.BRAP284.PROD.OUTLOOK.COM>",
-            "subject": "Planilha Lotes - CARGA 895 - IDT - AM",
-            "bodyPreview": "Boa tarde!\r\n\r\nSegue planilha de lotes da carga 895.\r\nFico à disposição",
-            "body": {
-              "contentType": "html",
-              "content": "<html>\r\n<head>\r\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\r\n<meta name=\"Generator\" content=\"Microsoft Exchange Server\">\r\n<!-- converted from rtf -->\r\n<style><!-- .EmailQuote { margin-left: 1pt; padding-left: 4pt; border-left: #800000 2px solid; } --></style>\r\n</head>\r\n<body>\r\n<font face=\"Calibri\" size=\"3\"><span style=\"font-size:12pt;\">\r\n<div>Boa tarde!</div>\r\n<div>&nbsp;</div>\r\n<div>Segue planilha de lotes da carga 895.</div>\r\n<div>Fico à disposição</div>\r\n<div>&nbsp;</div>\r\n<div><font face=\"Aptos\"><a href=\"cid:2AF6FD134E85327CA83F9A066606DBC8D29E581F@1\">Planilha Lotes - 895.xlsx</a> </font></div>\r\n<div><font face=\"Aptos\">&nbsp;</font></div>\r\n</span></font>\r\n</body>\r\n</html>\r\n"
-            },
-            "from": {
-              "address": "enzo@sintesebio.com.br",
-              "name": "Enzo Ferraz | Sintese Biotecnologia"
-            },
-            "to": [
-              {
-                "emailAddress": {
-                  "name": "tracking",
-                  "address": "tracking@sintesebio.com.br"
-                }
-              }
-            ],
-            "cc": [],
-            "receivedAt": "2025-10-27T18:24:56Z",
-            "headers": null,
-            "hasAttachments": true,
-            "attachmentsMeta": [
-              {
-                "key": "attachment_0",
-                "fileName": "Planilha Lotes - 895.xlsx",
-                "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "fileSize": "12.6 kB"
-              }
-            ]
-          },
-          "email_norm": {
-            "subject_lc": "planilha lotes - carga 895 - idt - am",
-            "body_preview_lc": "boa tarde!\r\n\r\nsegue planilha de lotes da carga 895.\r\nfico à disposição",
-            "from_lc": "enzo@sintesebio.com.br",
-            "from_name_lc": "enzo ferraz | sintese biotecnologia",
-            "attachment_names_lc": "planilha lotes - 895.xlsx"
-          }
-        },
-        "binary": {
-          "attachment_0": {
-            "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "fileExtension": "xlsx",
-            "data": "filesystem-v2",
-            "fileName": "Planilha Lotes - 895.xlsx",
-            "id": "filesystem-v2:workflows/d4ed9vH6sErTkEZN/executions/temp/binary_data/aff20621-3379-41fb-aac0-627e6c8762a1",
-            "fileSize": "12.6 kB"
-          }
-        }
-      }
-    ]
-  },
+  "pinData": {},
   "connections": {
     "Processar Anexos": {
       "main": [

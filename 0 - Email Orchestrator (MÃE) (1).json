@@ -374,7 +374,8 @@
       ],
       "id": "d0df25b7-40b3-42b8-a0a7-76a25c0fca13",
       "name": "Resumo Final1",
-      "retryOnFail": true
+      "retryOnFail": true,
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -412,76 +413,7 @@
       "retryOnFail": true
     }
   ],
-  "pinData": {
-    "TRIGGER UNICO": [
-      {
-        "json": {
-          "@odata.etag": "W/\"CQAAABYAAAB5+z+ylZG/R54aMqDFRhSeAABUIMVJ\"",
-          "id": "AAMkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQBGAAAAAACJJbUa19cwTJ-q5cKIhmGZBwB5_z_ylZG-R54aMqDFRhSeAAAAAAEMAAB5_z_ylZG-R54aMqDFRhSeAABUJAVwAAA=",
-          "createdDateTime": "2025-12-04T13:38:08Z",
-          "lastModifiedDateTime": "2025-12-04T13:38:25Z",
-          "changeKey": "CQAAABYAAAB5+z+ylZG/R54aMqDFRhSeAABUIMVJ",
-          "categories": [],
-          "receivedDateTime": "2025-12-04T13:38:08Z",
-          "sentDateTime": "2025-12-04T13:37:30Z",
-          "hasAttachments": true,
-          "internetMessageId": "<CPYP284MB1288A47C049E1EE91612CD5682A6A@CPYP284MB1288.BRAP284.PROD.OUTLOOK.COM>",
-          "subject": "CARGA 904 - IDT + INVIVOGEN - AM",
-          "bodyPreview": "Prezados, boa tarde!\r\n\r\nSegue anexo planilha de lotes da carga 904.",
-          "importance": "normal",
-          "parentFolderId": "AAMkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQAuAAAAAACJJbUa19cwTJ-q5cKIhmGZAQB5_z_ylZG-R54aMqDFRhSeAAAAAAEMAAA=",
-          "conversationId": "AAQkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQAQAKxaWDs7KLNOm0Nq2C_6E8k=",
-          "conversationIndex": "AQHcZSM5rFpYOzsos06bQ2rYL7oTyQ==",
-          "isDeliveryReceiptRequested": false,
-          "isReadReceiptRequested": false,
-          "isRead": false,
-          "isDraft": false,
-          "webLink": "https://outlook.office365.com/owa/?ItemID=AAMkAGE4ZWUwNzk4LWI2NDYtNGQwOS1hMjk0LTk0MTBiOTRiYWJlYQBGAAAAAACJJbUa19cwTJ%2Fq5cKIhmGZBwB5%2Bz%2BylZG%2FR54aMqDFRhSeAAAAAAEMAAB5%2Bz%2BylZG%2FR54aMqDFRhSeAABUJAVwAAA%3D&exvsurl=1&viewmodel=ReadMessageItem",
-          "inferenceClassification": "focused",
-          "body": {
-            "contentType": "html",
-            "content": "<html>\r\n<head>\r\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\r\n<meta name=\"Generator\" content=\"Microsoft Exchange Server\">\r\n<!-- converted from rtf -->\r\n<style><!-- .EmailQuote { margin-left: 1pt; padding-left: 4pt; border-left: #800000 2px solid; } --></style>\r\n</head>\r\n<body>\r\n<font face=\"Calibri\" size=\"3\"><span style=\"font-size:12pt;\">\r\n<div>Prezados, boa tarde!</div>\r\n<div>&nbsp;</div>\r\n<div>Segue anexo planilha de lotes da carga 904.</div>\r\n<div><font face=\"Aptos\">&nbsp;</font></div>\r\n<div><font face=\"Aptos\">&nbsp;</font></div>\r\n<div> <a href=\"cid:C78CB8A68B55DF55487B8AB251A7667ABB289E82@1\">Planilha Lotes - 904.xlsx</a> </div>\r\n<div><font face=\"Aptos\">&nbsp;</font></div>\r\n</span></font>\r\n</body>\r\n</html>\r\n"
-          },
-          "sender": {
-            "emailAddress": {
-              "name": "Enzo Ferraz | Sintese Biotecnologia",
-              "address": "enzo@sintesebio.com.br"
-            }
-          },
-          "from": {
-            "emailAddress": {
-              "name": "Enzo Ferraz | Sintese Biotecnologia",
-              "address": "enzo@sintesebio.com.br"
-            }
-          },
-          "toRecipients": [
-            {
-              "emailAddress": {
-                "name": "tracking",
-                "address": "tracking@sintesebio.com.br"
-              }
-            }
-          ],
-          "ccRecipients": [],
-          "bccRecipients": [],
-          "replyTo": [],
-          "flag": {
-            "flagStatus": "notFlagged"
-          }
-        },
-        "binary": {
-          "attachment_0": {
-            "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "fileExtension": "xlsx",
-            "data": "filesystem-v2",
-            "fileName": "Planilha Lotes - 904.xlsx",
-            "id": "filesystem-v2:workflows/d4ed9vH6sErTkEZN/executions/temp/binary_data/62475a41-0435-4071-8a17-d3f61f0d245c",
-            "fileSize": "1 MB"
-          }
-        }
-      }
-    ]
-  },
+  "pinData": {},
   "connections": {
     "TRIGGER UNICO": {
       "main": [
