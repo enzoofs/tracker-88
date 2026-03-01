@@ -5,7 +5,7 @@
 Sistema de rastreamento logístico para importação de produtos biotecnológicos. Frontend React/TypeScript + Supabase + n8n.
 
 - **Repositório**: `c:\sintese-tracker\tracker-88`
-- **Deploy**: Lovable (frontend) + Supabase Cloud (backend) + n8n (automação)
+- **Deploy**: Vercel (frontend) + Supabase Cloud (backend) + n8n Cloud (automação)
 - **Documentação completa**: `docs/` (stack, features, business-rules, integrations, patterns)
 - **Metaspec resumo**: `technical/tracker-88.md`
 - **Fluxo Product on Rails**: `docs/PRODUCT-ON-RAILS.md`
@@ -85,7 +85,9 @@ python scripts/audit_cargo_data.py --auto-fill   # corrigir
 - **Frontend**: usa anon key (`VITE_SUPABASE_ANON_KEY`) — sujeito a RLS
 - **Edge Functions**: usam `SUPABASE_SERVICE_ROLE_KEY` (bypass RLS)
 - **Scripts Python**: chamam Edge Functions via HTTP com anon key nos headers
-- **Lovable gerencia o Supabase** — não temos acesso direto ao dashboard. Para deploy de Edge Functions, enviar prompt ao Lovable.
+- **Frontend**: Vercel (deploy automático via GitHub)
+- **Edge Functions**: deploy via Supabase CLI (`npx supabase functions deploy`)
+- **Acesso direto ao dashboard Supabase** — podemos gerenciar migrations, Edge Functions e dados diretamente
 
 ## Qualidade
 
