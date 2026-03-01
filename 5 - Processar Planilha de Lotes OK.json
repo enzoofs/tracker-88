@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "// Processar anexos do email\nconst outputItems = [];\n\nfor (const item of $input.all()) {\n  console.log('=== PROCESSANDO EMAIL ===');\n  console.log('Subject:', item.json.subject);\n  console.log('From:', item.json.from);\n  \n  if (item.binary && Object.keys(item.binary).length > 0) {\n    console.log('Anexos encontrados:', Object.keys(item.binary));\n    \n    for (const [key, attachment] of Object.entries(item.binary)) {\n      const fileName = attachment.fileName || attachment.name || key;\n      const mimeType = attachment.mimeType || attachment.type || '';\n      \n      console.log(`Arquivo: ${fileName}`);\n      console.log(`Tipo: ${mimeType}`);\n      \n      // Aceitar planilhas Excel\n      if (fileName.toLowerCase().includes('.xls') || \n          mimeType.includes('sheet') ||\n          mimeType.includes('excel')) {\n        \n        // Extrair número da carga - REGEX MELHORADA\n        const subject = item.json.subject || '';\n        \n        // Tentar vários padrões:\n        // 1. \"carga 890\", \"carga-890\", \"carga_890\"\n        // 2. \"lotes 890\", \"lote 890\"\n        // 3. Apenas números após hífen ou underline: \"- 890\", \"_890\"\n        // 4. Qualquer número de 3+ dígitos\n        let numeroCarga = null;\n        \n        const patterns = [\n          /(?:carga|lote|lotes)[:\\s_-]*(\\d+)/i,\n          /[:\\s_-](\\d{3,})/,\n          /(\\d{3,})/\n        ];\n        \n        for (const pattern of patterns) {\n          const match = subject.match(pattern) || fileName.match(pattern);\n          if (match) {\n            numeroCarga = parseInt(match[1]);\n            console.log(`Número da carga encontrado: ${numeroCarga} (padrão: ${pattern})`);\n            break;\n          }\n        }\n        \n        if (!numeroCarga) {\n          console.error('Número da carga não encontrado');\n          console.error('Subject:', subject);\n          console.error('Filename:', fileName);\n          continue;\n        }\n        \n        outputItems.push({\n          json: {\n            emailFrom: item.json.from || '',\n            emailSubject: item.json.subject || '',\n            emailDate: item.json.receivedDateTime || new Date().toISOString(),\n            fileName: fileName,\n            numero_carga: numeroCarga,\n            emailId: item.json.id || ''\n          },\n          binary: {\n            data: attachment\n          }\n        });\n        \n        console.log(`✅ Planilha adicionada para carga ${numeroCarga}`);\n      }\n    }\n  } else {\n    console.log('AVISO: Nenhum anexo encontrado');\n  }\n}\n\nif (outputItems.length === 0) {\n  throw new Error('Nenhuma planilha de lotes encontrada');\n}\n\nconsole.log(`Total processado: ${outputItems.length}`);\nreturn outputItems;"
+        "jsCode": "// Processar anexos do email\nconst outputItems = [];\n\nfor (const item of $input.all()) {\n  console.log('=== PROCESSANDO EMAIL ===');\n  console.log('Subject:', item.json.subject);\n  console.log('From:', item.json.from);\n  \n  if (item.binary && Object.keys(item.binary).length > 0) {\n    console.log('Anexos encontrados:', Object.keys(item.binary));\n    \n    for (const [key, attachment] of Object.entries(item.binary)) {\n      const fileName = attachment.fileName || attachment.name || key;\n      const mimeType = attachment.mimeType || attachment.type || '';\n      \n      console.log(`Arquivo: ${fileName}`);\n      console.log(`Tipo: ${mimeType}`);\n      \n      // Aceitar planilhas Excel\n      if (fileName.toLowerCase().includes('.xls') || \n          mimeType.includes('sheet') ||\n          mimeType.includes('excel')) {\n        \n        // Extrair número da carga - REGEX MELHORADA\n        const subject = item.json.subject || '';\n        \n        // Tentar vários padrões (do mais específico ao mais geral):\n        // 1. \"carga 890\", \"carga-890\", \"carga_890\", \"carga #890\"\n        // 2. \"lotes 890\", \"lote 890\", \"lote #890\"\n        // 3. \"#890\" (número com hash)\n        // 4. Número isolado de 3-4 dígitos (cargo numbers são tipicamente 3-4 dígitos)\n        let numeroCarga = null;\n        \n        const patterns = [\n          /(?:carga|lote|lotes)[:\\s_#-]*(\\d{3,5})/i,\n          /#(\\d{3,5})/,\n          /\\b(\\d{3,4})\\b/\n        ];\n        \n        for (const pattern of patterns) {\n          const match = subject.match(pattern) || fileName.match(pattern);\n          if (match) {\n            numeroCarga = parseInt(match[1]);\n            console.log(`Número da carga encontrado: ${numeroCarga} (padrão: ${pattern})`);\n            break;\n          }\n        }\n        \n        if (!numeroCarga) {\n          console.error('Número da carga não encontrado');\n          console.error('Subject:', subject);\n          console.error('Filename:', fileName);\n          continue;\n        }\n        \n        outputItems.push({\n          json: {\n            emailFrom: item.json.from || '',\n            emailSubject: item.json.subject || '',\n            emailDate: item.json.receivedDateTime || new Date().toISOString(),\n            fileName: fileName,\n            numero_carga: numeroCarga,\n            emailId: item.json.id || ''\n          },\n          binary: {\n            data: attachment\n          }\n        });\n        \n        console.log(`✅ Planilha adicionada para carga ${numeroCarga}`);\n      }\n    }\n  } else {\n    console.log('AVISO: Nenhum anexo encontrado');\n  }\n}\n\nif (outputItems.length === 0) {\n  throw new Error('Nenhuma planilha de lotes encontrada');\n}\n\nconsole.log(`Total processado: ${outputItems.length}`);\nreturn outputItems;"
       },
       "id": "94787b93-3e1f-4c6a-9146-264c70e1f082",
       "name": "Processar Anexos",
@@ -111,7 +111,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ numero_carga: $json.numero_carga.toString(), status: 'Em Consolidação' }) }}",
+        "jsonBody": "={{ JSON.stringify({ numero_carga: $json.numero_carga.toString(), status_atual: 'Em Consolidação' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -122,6 +122,20 @@
       ],
       "id": "criar-carga-http-node",
       "name": "Criar Carga via Supabase",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Restaurar binary data após criação da carga via HTTP\n// O HTTP Request node perde o binary - recuperamos do Processar Anexos\nconst originalItem = $('Processar Anexos').item;\nconst criacaoResult = $input.item.json;\n\nconsole.log('Carga criada:', JSON.stringify(criacaoResult, null, 2));\nconsole.log('Restaurando binary data do Processar Anexos...');\n\nreturn [{\n  json: {\n    ...originalItem.json,\n    carga_criada: true,\n    carga_resultado: criacaoResult\n  },\n  binary: originalItem.binary\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        -200
+      ],
+      "id": "restaurar-binary-node",
+      "name": "Restaurar Binary Apos Criacao",
       "retryOnFail": true
     },
     {
@@ -321,6 +335,17 @@
       ]
     },
     "Criar Carga via Supabase": {
+      "main": [
+        [
+          {
+            "node": "Restaurar Binary Apos Criacao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restaurar Binary Apos Criacao": {
       "main": [
         [
           {
