@@ -16,8 +16,8 @@ Uso:
     python cleanup_old_cargas.py              # Executa a limpeza
 
 Variaveis de ambiente (.env):
-    SUPABASE_URL          URL do projeto Supabase
-    SUPABASE_SERVICE_KEY  Service role key (nao expor no frontend)
+    SUPABASE_URL               URL do projeto Supabase
+    SUPABASE_SERVICE_ROLE_KEY  Service role key (nao expor no frontend)
 """
 
 import os
@@ -162,13 +162,13 @@ def load_credentials() -> tuple[str, str]:
     load_dotenv(env_path)
 
     supabase_url = os.getenv("SUPABASE_URL", "").strip()
-    service_key = os.getenv("SUPABASE_SERVICE_KEY", "").strip()
+    service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
 
     missing = []
     if not supabase_url:
         missing.append("SUPABASE_URL")
     if not service_key:
-        missing.append("SUPABASE_SERVICE_KEY")
+        missing.append("SUPABASE_SERVICE_ROLE_KEY")
 
     if missing:
         print("Erro: as seguintes variaveis de ambiente sao obrigatorias:")
