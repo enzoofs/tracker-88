@@ -30,11 +30,11 @@ const CargoCard = ({ carga, onClick, isAdmin = false, isSelected = false, onSele
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'no armazém':
-        return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+        return 'bg-status-shipping/10 text-status-shipping border-status-shipping/20';
       case 'em preparação':
-        return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+        return 'bg-status-production/10 text-status-production border-status-production/20';
       case 'despachada':
-        return 'bg-green-500/10 text-green-500 border-green-500/20';
+        return 'bg-status-delivered/10 text-status-delivered border-status-delivered/20';
       case 'entregue':
         return 'bg-status-delivered text-status-delivered-foreground border-status-delivered/30 font-bold';
       default:
@@ -43,7 +43,7 @@ const CargoCard = ({ carga, onClick, isAdmin = false, isSelected = false, onSele
   };
 
   const getTempIcon = (temp: string) => {
-    return temp?.toLowerCase() === 'controlada' ? '🌡️' : '🏠';
+    return temp?.toLowerCase() === 'controlada' ? 'Controlada' : 'Ambiente';
   };
 
   // Verificar dados faltantes (para cargas não em consolidação)
@@ -64,7 +64,7 @@ const CargoCard = ({ carga, onClick, isAdmin = false, isSelected = false, onSele
   return (
     <TooltipProvider>
       <Card
-        className={`p-6 cursor-pointer hover:shadow-lg transition-all duration-200 border-border/50 bg-card hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${hasMissingData ? 'ring-1 ring-amber-500/30' : ''} ${isSelected ? 'ring-2 ring-primary bg-primary/5' : ''}`}
+        className={`p-6 cursor-pointer transition-colors bg-card hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${hasMissingData ? 'border-amber-500/50' : ''} ${isSelected ? 'ring-2 ring-primary bg-primary/5' : ''}`}
         tabIndex={0}
         role="button"
         aria-label={`Carga ${carga.numero_carga} — ${carga.status}`}
@@ -83,12 +83,10 @@ const CargoCard = ({ carga, onClick, isAdmin = false, isSelected = false, onSele
                   />
                 </div>
               )}
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Package className="h-5 w-5 text-primary" />
-              </div>
+              <Package className="h-5 w-5 text-primary" />
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-lg">CARGA {carga.numero_carga}</h3>
+                  <h3 className="font-semibold text-base">CARGA {carga.numero_carga}</h3>
                   {hasMissingData && (
                     <Tooltip>
                       <TooltipTrigger>
@@ -120,9 +118,7 @@ const CargoCard = ({ carga, onClick, isAdmin = false, isSelected = false, onSele
         {/* Temperatura */}
         <div className="flex items-center gap-2">
           <Thermometer className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm">
-            {getTempIcon(carga.tipo_temperatura)} {carga.tipo_temperatura}
-          </span>
+          <span className="text-sm">{carga.tipo_temperatura}</span>
         </div>
 
         {/* Rota */}

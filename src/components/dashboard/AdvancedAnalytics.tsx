@@ -607,7 +607,7 @@ const AdvancedAnalytics: FC = () => {
                         className={`p-3 rounded-lg border ${
                           risk.level === 'high' ? 'bg-destructive/5 border-destructive/20' :
                           risk.level === 'medium' ? 'bg-status-production/5 border-status-production/20' :
-                          'bg-blue-500/5 border-blue-500/20'
+                          'bg-primary/5 border-primary/20'
                         }`}
                       >
                         <div className="flex items-center justify-between">

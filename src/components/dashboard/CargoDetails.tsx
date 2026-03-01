@@ -160,11 +160,11 @@ const CargoDetails: FC<CargoDetailsProps> = ({ cargo, onClose }) => {
   const getStatusIcon = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'em trânsito':
-        return <Truck className="h-4 w-4 text-yellow-500" />;
+        return <Truck className="h-4 w-4 text-status-production" />;
       case 'entregue':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-status-delivered" />;
       default:
-        return <Plane className="h-4 w-4 text-blue-500" />;
+        return <Plane className="h-4 w-4 text-primary" />;
     }
   };
 
@@ -633,8 +633,8 @@ const CargoDetails: FC<CargoDetailsProps> = ({ cargo, onClose }) => {
                             <span className="text-sm text-muted-foreground">Tempo total de entrega:</span>
                             <span className={`text-sm font-bold ${
                               Math.ceil((new Date(selectedDataEntrega).getTime() - new Date(selectedDataArmazem).getTime()) / (1000 * 60 * 60 * 24)) <= 15
-                                ? 'text-green-500'
-                                : 'text-red-500'
+                                ? 'text-status-delivered'
+                                : 'text-destructive'
                             }`}>
                               {Math.ceil((new Date(selectedDataEntrega).getTime() - new Date(selectedDataArmazem).getTime()) / (1000 * 60 * 60 * 24))} dias
                               {Math.ceil((new Date(selectedDataEntrega).getTime() - new Date(selectedDataArmazem).getTime()) / (1000 * 60 * 60 * 24)) <= 15 

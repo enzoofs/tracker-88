@@ -239,7 +239,7 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false, isAdmin
   const uniqueCargas = [...new Set(data.map(so => so.cargoNumber).filter(c => c))].sort();
   
   return (
-    <Card className="shadow-card">
+    <Card className="border shadow-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Filter className="h-5 w-5 text-primary" />
@@ -254,13 +254,13 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false, isAdmin
               placeholder="Buscar por SO, WO, cliente ou produto..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 transition-all duration-300 focus:ring-2 focus:ring-primary/20"
+              className="pl-8"
             />
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
+              <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="z-50 bg-background">
@@ -272,7 +272,7 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false, isAdmin
             </Select>
             
             <Select value={clienteFilter} onValueChange={setClienteFilter}>
-              <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
+              <SelectTrigger>
                 <SelectValue placeholder="Cliente" />
               </SelectTrigger>
               <SelectContent className="z-50 bg-background">
@@ -284,7 +284,7 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false, isAdmin
             </Select>
             
             <Select value={productFilter} onValueChange={setProductFilter}>
-              <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
+              <SelectTrigger>
                 <SelectValue placeholder="Produto" />
               </SelectTrigger>
               <SelectContent className="z-50 bg-background">
@@ -296,7 +296,7 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false, isAdmin
             </Select>
 
             <Select value={cargoFilter} onValueChange={setCargoFilter}>
-              <SelectTrigger className="transition-all duration-300 hover:border-primary/50">
+              <SelectTrigger>
                 <SelectValue placeholder="Carga" />
               </SelectTrigger>
               <SelectContent className="z-50 bg-background">
@@ -428,7 +428,7 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false, isAdmin
                    <TableRow
                      key={so.id}
                      className={`hover:bg-muted/50 cursor-pointer transition-colors ${
-                       delayed ? 'bg-destructive/10 border-l-4 border-l-destructive' : ''
+                       delayed ? 'border-l-4 border-l-destructive' : ''
                      } ${arrivingToday ? 'bg-status-production/10 border-l-4 border-l-status-production' : ''} ${
                        isNew ? 'bg-primary/5 border-l-4 border-l-primary' : ''
                      } ${selectedSOs.has(so.salesOrder) ? 'bg-primary/10' : ''}`}
@@ -513,7 +513,7 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false, isAdmin
         </div>
         
         {!isLoading && filteredData.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground animate-fade-in">
+          <div className="text-center py-12 text-muted-foreground">
             <div className="flex flex-col items-center gap-3">
               <Search className="h-12 w-12 text-muted-foreground/50" />
               <p className="text-lg font-medium">Nenhuma SO encontrada</p>

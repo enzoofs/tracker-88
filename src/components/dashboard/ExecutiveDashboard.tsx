@@ -33,7 +33,7 @@ const ExecutiveDashboard: FC = () => {
   const getBadgeIcon = (badge: 'ouro' | 'prata' | 'bronze') => {
     switch (badge) {
       case 'ouro':
-        return <Trophy className="h-4 w-4 text-yellow-500" />;
+        return <Trophy className="h-4 w-4 text-status-production" />;
       case 'prata':
         return <Medal className="h-4 w-4 text-gray-400" />;
       case 'bronze':
@@ -44,7 +44,7 @@ const ExecutiveDashboard: FC = () => {
   const getBadgeColor = (badge: 'ouro' | 'prata' | 'bronze') => {
     switch (badge) {
       case 'ouro':
-        return 'bg-yellow-50 text-yellow-800 border-yellow-200';
+        return 'bg-status-production/10 text-status-production border-status-production/20';
       case 'prata':
         return 'bg-gray-50 text-gray-800 border-gray-200';
       case 'bronze':
@@ -162,7 +162,7 @@ const ExecutiveDashboard: FC = () => {
       <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-yellow-500" />
+            <Trophy className="h-5 w-5 text-status-production" />
             Top Clientes por Valor
           </CardTitle>
         </CardHeader>

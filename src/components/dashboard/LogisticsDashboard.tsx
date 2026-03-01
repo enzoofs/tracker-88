@@ -231,22 +231,22 @@ const LogisticsDashboard: FC = () => {
 
       <div className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full max-w-6xl grid-cols-4 mx-auto glass p-1 rounded-2xl">
-            <TabsTrigger value="sos" className="rounded-xl font-tech">
+          <TabsList className="grid w-full max-w-6xl grid-cols-4 mx-auto bg-muted p-1 rounded-lg">
+            <TabsTrigger value="sos" className="rounded-md font-medium">
               Sales Orders
             </TabsTrigger>
-            <TabsTrigger value="cargas" className="rounded-xl font-tech">
+            <TabsTrigger value="cargas" className="rounded-md font-medium">
               Cargas
             </TabsTrigger>
-            <TabsTrigger value="charts" className="rounded-xl font-tech">
+            <TabsTrigger value="charts" className="rounded-md font-medium">
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="reports" className="rounded-xl font-tech">
+            <TabsTrigger value="reports" className="rounded-md font-medium">
               Relatórios
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="sos" className="animate-fade-in">
+          <TabsContent value="sos">
             <div className="space-y-8">
               <div className="flex justify-end">
                 <Button
@@ -270,7 +270,7 @@ const LogisticsDashboard: FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="cargas" className="animate-fade-in">
+          <TabsContent value="cargas">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold">Cargas Consolidadas</h2>
@@ -367,11 +367,11 @@ const LogisticsDashboard: FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="charts" className="animate-fade-in">
+          <TabsContent value="charts">
             <Charts />
           </TabsContent>
 
-          <TabsContent value="reports" className="animate-fade-in">
+          <TabsContent value="reports">
             <Reports />
           </TabsContent>
         </Tabs>
@@ -436,10 +436,10 @@ const LogisticsDashboard: FC = () => {
 
       {loading && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-lg z-40 flex items-center justify-center">
-          <Card className="glass p-8 border-border/50">
+          <Card className="p-8 border">
             <div className="flex items-center gap-4">
               <RefreshCw className="h-6 w-6 animate-spin text-primary" />
-              <span className="font-tech text-lg text-foreground">Carregando dados...</span>
+              <span className="text-lg font-medium text-foreground">Carregando dados...</span>
             </div>
           </Card>
         </div>

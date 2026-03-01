@@ -45,9 +45,9 @@ const DataAuditPanel: FC<DataAuditPanelProps> = ({
   const [missingDataDialogOpen, setMissingDataDialogOpen] = useState(false);
 
   const getCoverageBadgeColor = (percent: number): string => {
-    if (percent >= 80) return 'bg-green-500';
-    if (percent >= 50) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (percent >= 80) return 'bg-status-delivered';
+    if (percent >= 50) return 'bg-status-production';
+    return 'bg-destructive';
   };
 
   const handleIndicatorClick = (indicator: AuditIndicator) => {
@@ -294,13 +294,13 @@ const DataAuditPanel: FC<DataAuditPanelProps> = ({
                         <TableCell>{record.businessDays ?? '-'}</TableCell>
                         <TableCell>
                           {record.onTime === true && (
-                            <Badge className="bg-green-500">
+                            <Badge className="bg-status-delivered">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               No Prazo
                             </Badge>
                           )}
                           {record.onTime === false && (
-                            <Badge className="bg-red-500">
+                            <Badge className="bg-destructive">
                               <XCircle className="h-3 w-3 mr-1" />
                               Atrasado
                             </Badge>
@@ -396,7 +396,7 @@ const DataAuditPanel: FC<DataAuditPanelProps> = ({
                     </TableCell>
                     <TableCell>
                       {record.isDelivered ? (
-                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <CheckCircle className="h-4 w-4 text-status-delivered" />
                       ) : (
                         <XCircle className="h-4 w-4 text-gray-400" />
                       )}

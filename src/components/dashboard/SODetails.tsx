@@ -336,7 +336,7 @@ const SODetails: FC<SODetailsProps> = ({ so, onClose }) => {
               <Card className="shadow-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5 text-green-500" />
+                    <DollarSign className="h-5 w-5 text-status-delivered" />
                     Valor Total
                   </CardTitle>
                 </CardHeader>

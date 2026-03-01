@@ -1,11 +1,14 @@
 import { FC } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Package, 
-  Plane, 
-  Truck, 
-  MapPin, 
-  Clock,
+import {
+  Factory,
+  Package,
+  Warehouse,
+  CalendarCheck,
+  PlaneTakeoff,
+  Globe,
+  Plane,
+  FileSearch,
   CheckCircle,
   Circle
 } from 'lucide-react';
@@ -28,33 +31,34 @@ interface TimelineProps {
 
 const Timeline: FC<TimelineProps> = ({ events, className = '' }) => {
   const getEventIcon = (tipo: string, status: string) => {
-    const iconClass = status === 'completed' ? 'text-status-delivered' : 
-                     status === 'current' ? 'text-primary' : 'text-muted-foreground';
-    
-    // Mapear eventos para status padronizados
+    const iconClass = `h-5 w-5 ${
+      status === 'completed' ? 'text-white' :
+      status === 'current' ? 'text-primary' : 'text-muted-foreground'
+    }`;
+
     const eventStatus = mapEventToStatus(tipo);
-    
+
     switch (eventStatus) {
       case 'em_producao':
-        return <div className={`text-2xl ${iconClass}`}>🏭</div>;
+        return <Factory className={iconClass} />;
       case 'fedex':
-        return <div className={`text-2xl ${iconClass}`}>📦</div>;
+        return <Package className={iconClass} />;
       case 'no_armazem':
-        return <div className={`text-2xl ${iconClass}`}>🏢</div>;
+        return <Warehouse className={iconClass} />;
       case 'embarque_agendado':
-        return <div className={`text-2xl ${iconClass}`}>📅</div>;
+        return <CalendarCheck className={iconClass} />;
       case 'embarque_confirmado':
-        return <div className={`text-2xl ${iconClass}`}>🛫</div>;
+        return <PlaneTakeoff className={iconClass} />;
       case 'chegada_brasil':
-        return <div className={`text-2xl ${iconClass}`}>🇧🇷</div>;
+        return <Globe className={iconClass} />;
       case 'voo_internacional':
-        return <div className={`text-2xl ${iconClass}`}>✈️</div>;
+        return <Plane className={iconClass} />;
       case 'desembaraco':
-        return <div className={`text-2xl ${iconClass}`}>📋</div>;
+        return <FileSearch className={iconClass} />;
       case 'entregue':
-        return <div className={`text-2xl ${iconClass}`}>✅</div>;
+        return <CheckCircle className={iconClass} />;
       default:
-        return <Circle className={`h-5 w-5 ${iconClass}`} />;
+        return <Circle className={iconClass} />;
     }
   };
 
@@ -222,7 +226,6 @@ const Timeline: FC<TimelineProps> = ({ events, className = '' }) => {
   };
 
   // Just use the events as received - no filtering or deduplication
-  console.log('📊 Timeline recebeu eventos:', events.length, events);
 
   const isDelayed = (dataReal: string, dataPrevista?: string) => {
     if (!dataPrevista) return false;
@@ -243,10 +246,10 @@ const Timeline: FC<TimelineProps> = ({ events, className = '' }) => {
             )}
             
             {/* Ícone do evento */}
-            <div className={`relative z-10 p-3 rounded-full border-2 transition-all ${
-              event.status === 'completed' ? 'bg-status-delivered/20 border-status-delivered' :
-              event.status === 'current' ? 'bg-primary/20 border-primary' :
-              'bg-muted border-border'
+            <div className={`relative z-10 p-2.5 rounded-full transition-all ${
+              event.status === 'completed' ? 'bg-primary text-white' :
+              event.status === 'current' ? 'bg-primary/10 border-2 border-primary ring-4 ring-primary/10' :
+              'bg-muted border border-border'
             }`}>
               {getEventIcon(event.tipo, event.status)}
             </div>

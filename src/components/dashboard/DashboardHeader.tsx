@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { Globe, Bell, User, LogOut, Sun, Moon, FileSpreadsheet, RefreshCw, ChevronDown } from 'lucide-react';
+import { Bell, User, LogOut, Sun, Moon, FileSpreadsheet, RefreshCw, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -36,17 +36,14 @@ const DashboardHeader: FC<DashboardHeaderProps> = ({
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="border-b border-border/50 bg-gradient-tech/5 backdrop-blur-sm">
-      <div className="container mx-auto px-6 py-8">
+    <div className="border-b bg-card">
+      <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-gradient-tech shadow-tech">
-              <Globe className="h-8 w-8 text-white" />
-            </div>
             <div>
-              <h1 className="text-3xl font-tech text-foreground">Síntese Tracker</h1>
-              <p className="text-muted-foreground font-medium">
-                Rastreamento Inteligente de Cargas
+              <h1 className="text-xl font-semibold text-foreground">Síntese Tracker</h1>
+              <p className="text-sm text-muted-foreground">
+                Rastreamento de Cargas
               </p>
               <p className="text-xs text-muted-foreground/70 mt-1">
                 Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
@@ -61,11 +58,11 @@ const DashboardHeader: FC<DashboardHeaderProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onNotificationsOpen}
-                className="p-3 rounded-xl hover:bg-primary/10 transition-colors"
+                className="p-2 hover:bg-muted transition-colors"
               >
                 <Bell className="h-5 w-5" />
                 {unreadNotifications > 0 && (
-                  <Badge className="absolute -top-2 -right-2 px-2 py-1 text-xs bg-gradient-alert glow-accent">
+                  <Badge className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground">
                     {unreadNotifications}
                   </Badge>
                 )}
@@ -75,13 +72,11 @@ const DashboardHeader: FC<DashboardHeaderProps> = ({
             {/* User Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-3 px-4 py-2 rounded-xl glass">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-tech flex items-center justify-center">
-                    <User className="h-4 w-4 text-white" />
+                <Button variant="ghost" className="flex items-center gap-2 px-3 py-2">
+                  <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="text-sm text-left">
-                    <div className="font-tech text-foreground">{userName}</div>
-                  </div>
+                  <span className="text-sm font-medium text-foreground">{userName}</span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>

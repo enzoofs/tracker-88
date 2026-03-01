@@ -493,7 +493,7 @@ const BulkCargoUpload: FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSuccess 
                 <Badge variant="outline" className="gap-2 px-3 py-1">
                   <span className="font-normal">Total:</span> {stats.total}
                 </Badge>
-                <Badge className="gap-2 px-3 py-1 bg-green-500/10 text-green-600 border-green-500/20">
+                <Badge className="gap-2 px-3 py-1 bg-status-delivered/10 text-status-delivered border-status-delivered/20">
                   <CheckCircle className="h-3 w-3" />
                   Válidos: {stats.valid}
                 </Badge>
@@ -535,7 +535,7 @@ const BulkCargoUpload: FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSuccess 
                             result.warnings.length > 0 ? (
                               <AlertTriangle className="h-4 w-4 text-amber-500" />
                             ) : (
-                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <CheckCircle className="h-4 w-4 text-status-delivered" />
                             )
                           ) : (
                             <AlertCircle className="h-4 w-4 text-destructive" />
@@ -630,7 +630,7 @@ const BulkCargoUpload: FC<BulkCargoUploadProps> = ({ isOpen, onClose, onSuccess 
                       <TableRow key={index}>
                         <TableCell>
                           {result.success ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <CheckCircle className="h-4 w-4 text-status-delivered" />
                           ) : (
                             <X className="h-4 w-4 text-destructive" />
                           )}

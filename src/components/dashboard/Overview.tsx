@@ -255,33 +255,27 @@ const Overview: FC<OverviewProps> = ({ data, allSOs = [] }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6">
       {/* Modern KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {metricCards.map((metric, index) => {
           const Icon = metric.icon;
           
           return (
-            <Card 
-              key={metric.title} 
-              className="corporate-card hover-corporate border-border/50 group animate-fade-in"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
+            <Card key={metric.title} className="border shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-corporate text-muted-foreground">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {metric.title}
                 </CardTitle>
-                <div className="p-2 rounded-lg bg-gradient-corporate shadow-corporate">
-                  <Icon className="h-5 w-5 text-white" />
-                </div>
+                <Icon className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-corporate font-semibold text-foreground group-hover:text-primary transition-colors">
+                <div className="text-2xl font-semibold tabular-nums text-foreground">
                   {metric.value}
                 </div>
-                <Badge className="mt-2 bg-primary/10 text-primary border-primary/20 font-corporate">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {metric.trend}
-                </Badge>
+                </p>
               </CardContent>
             </Card>
           );
@@ -290,9 +284,9 @@ const Overview: FC<OverviewProps> = ({ data, allSOs = [] }) => {
 
 
       {/* Real-time Status */}
-      <Card className="shadow-corporate bg-gradient-card">
+      <Card className="border shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-corporate">
+          <CardTitle className="flex items-center gap-2 font-medium">
             <Plane className="h-5 w-5 text-primary" />
             Status em Tempo Real
           </CardTitle>
@@ -300,31 +294,31 @@ const Overview: FC<OverviewProps> = ({ data, allSOs = [] }) => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div 
-              className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate cursor-pointer transition-all hover:shadow-md hover:scale-105"
+              className="text-center p-4 rounded-lg bg-card border cursor-pointer transition-colors hover:bg-muted/50"
               onClick={() => handleCardClick('producao')}
             >
-              <div className="text-2xl font-corporate font-bold text-status-production">
+              <div className="text-2xl font-semibold text-status-production">
                 {data.statusCounts?.emProducao || 0}
               </div>
-              <div className="text-sm text-muted-foreground font-corporate">Em Produção</div>
+              <div className="text-sm text-muted-foreground font-medium">Em Produção</div>
             </div>
             <div 
-              className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate cursor-pointer transition-all hover:shadow-md hover:scale-105"
+              className="text-center p-4 rounded-lg bg-card border cursor-pointer transition-colors hover:bg-muted/50"
               onClick={() => handleCardClick('importacao')}
             >
-              <div className="text-2xl font-corporate font-bold text-status-shipping">
+              <div className="text-2xl font-semibold text-status-shipping">
                 {data.statusCounts?.emImportacao || 0}
               </div>
-              <div className="text-sm text-muted-foreground font-corporate">Em Importação</div>
+              <div className="text-sm text-muted-foreground font-medium">Em Importação</div>
             </div>
             <div 
-              className="text-center p-4 rounded-lg bg-card border border-border/50 hover-corporate cursor-pointer transition-all hover:shadow-md hover:scale-105"
+              className="text-center p-4 rounded-lg bg-card border cursor-pointer transition-colors hover:bg-muted/50"
               onClick={() => handleCardClick('atrasadas')}
             >
-              <div className="text-2xl font-corporate font-bold text-destructive">
+              <div className="text-2xl font-semibold text-destructive">
                 {data.statusCounts?.atrasadas || 0}
               </div>
-              <div className="text-sm text-muted-foreground font-corporate">Atrasadas</div>
+              <div className="text-sm text-muted-foreground font-medium">Atrasadas</div>
             </div>
           </div>
         </CardContent>

@@ -17,12 +17,12 @@ const ReportFilters: FC<ReportFiltersProps> = ({ selectedPeriod, onPeriodChange 
 
   return (
     <div className="flex items-center gap-2 mb-6">
-      <span className="text-sm font-corporate font-medium text-muted-foreground">Período:</span>
+      <span className="text-sm font-medium text-muted-foreground">Período:</span>
       {periods.map((period) => (
         <Badge
           key={period.key}
           variant={selectedPeriod === period.key ? "default" : "outline"}
-          className="cursor-pointer transition-hover hover:scale-105 font-corporate"
+          className="cursor-pointer transition-colors font-medium"
           onClick={() => onPeriodChange(period.key)}
         >
           {period.label}

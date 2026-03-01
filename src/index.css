@@ -9,7 +9,7 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Corporate Theme - Empresa Colors */
-    --background: 0 0% 98%;           /* light gray background */
+    --background: 220 14% 96%;
     --foreground: 0 0% 9%;            /* dark text */
 
     --card: 0 0% 100%;                /* white cards */
@@ -18,18 +18,18 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
 
-    /* Corporate Blue Primary - #39bde6 */
-    --primary: 198 77% 56%;           /* corporate light blue */
+    /* Corporate Blue Primary */
+    --primary: 217 91% 53%;
     --primary-foreground: 0 0% 100%;
 
-    /* Corporate Dark Blue Secondary - #253786 */
-    --secondary: 230 54% 34%;         /* corporate dark blue */
+    /* Corporate Dark Blue Secondary */
+    --secondary: 224 76% 48%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96%;             /* very light muted */
+    --muted: 220 14% 96%;
     --muted-foreground: 215 16% 47%;  /* muted text */
 
-    --accent: 198 77% 56%;            /* same as primary for consistency */
+    --accent: 217 91% 53%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;         /* red for errors */
@@ -37,18 +37,18 @@ All colors MUST be HSL.
 
     --border: 220 13% 91%;            /* subtle borders */
     --input: 0 0% 100%;               /* white inputs */
-    --ring: 198 77% 56%;              /* focus rings */
+    --ring: 217 91% 53%;
 
-    --radius: 0.375rem;               /* smaller, more corporate radius */
+    --radius: 0.5rem;
 
     /* Enhanced Status Colors - Corporate */
-    --status-production: 45 93% 47%;       /* amber for production */
+    --status-production: 38 92% 50%;
     --status-production-foreground: 0 0% 100%;
     
-    --status-shipping: 198 77% 56%;        /* corporate blue */
+    --status-shipping: 217 91% 53%;
     --status-shipping-foreground: 0 0% 100%;
     
-    --status-transit: 230 54% 34%;         /* dark blue */
+    --status-transit: 224 76% 48%;
     --status-transit-foreground: 0 0% 100%;
     
     --status-delivered: 142 76% 36%;       /* green */
@@ -67,24 +67,10 @@ All colors MUST be HSL.
     --temp-ambient: 45 93% 47%;
     --temp-controlled: 230 54% 34%;
 
-    /* Corporate Gradients - Subtle */
-    --gradient-corporate: linear-gradient(135deg, hsl(198 77% 56%), hsl(230 54% 34%));
-    --gradient-tech: linear-gradient(135deg, hsl(198 77% 56%), hsl(230 54% 34%));
-    --gradient-light: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 13% 95%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 69% 58%));
-    --gradient-alert: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 72% 51%));
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
     
-    /* Corporate Shadows - Clean & Subtle */
-    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px 0 hsl(0 0% 0% / 0.06);
-    --shadow-corporate: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.06);
-    --shadow-hover: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -2px hsl(0 0% 0% / 0.05);
-    
-    /* Smooth Corporate Animations */
-    --transition-all: all 0.2s ease-in-out;
-    --transition-transform: transform 0.15s ease-in-out;
-    --transition-hover: all 0.15s ease-in-out;
-
     /* Sidebar Modern */
     --sidebar-background: 220 27% 6%;
     --sidebar-foreground: 210 40% 98%;
@@ -104,9 +90,9 @@ All colors MUST be HSL.
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 4%;
     --popover-foreground: 0 0% 98%;
-    --primary: 198 77% 56%;           /* corporate blue */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 230 54% 34%;         /* dark blue */
+    --secondary: 224 76% 55%;
     --secondary-foreground: 0 0% 100%;
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 63%;
@@ -122,10 +108,10 @@ All colors MUST be HSL.
     --status-production: 45 93% 60%;       /* lighter amber */
     --status-production-foreground: 0 0% 100%;
     
-    --status-shipping: 198 77% 65%;        /* lighter blue */
+    --status-shipping: 217 91% 65%;
     --status-shipping-foreground: 0 0% 100%;
     
-    --status-transit: 230 54% 55%;         /* lighter dark blue */
+    --status-transit: 224 76% 55%;
     --status-transit-foreground: 0 0% 100%;
     
     --status-delivered: 142 76% 45%;       /* lighter green */
@@ -133,9 +119,6 @@ All colors MUST be HSL.
     
     --status-alert: 0 84% 70%;             /* lighter red */
     --status-alert-foreground: 0 0% 100%;
-
-    /* Dark Mode Gradients */
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 12%), hsl(0 0% 8%));
   }
 }
 
@@ -149,79 +132,4 @@ All colors MUST be HSL.
     font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 
-  /* Corporate Card Utility */
-  .corporate-card {
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    box-shadow: var(--shadow-card);
-  }
-
-  /* Corporate Hover Effects */
-  .hover-corporate {
-    transition: var(--transition-hover);
-  }
-
-  .hover-corporate:hover {
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-1px);
-  }
-
-  /* Corporate Typography */
-  .text-corporate {
-    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-  }
-
-  .text-corporate-mono {
-    font-family: 'Source Code Pro', 'Monaco', monospace;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Glass Effect */
-  .glass {
-    background: hsl(var(--card) / 0.8);
-    backdrop-filter: blur(8px);
-    border: 1px solid hsl(var(--border) / 0.5);
-  }
-
-  /* Tech Font */
-  .font-tech {
-    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }
-
-  /* Background Variants */
-  .bg-gradient-dark {
-    background: hsl(var(--background));
-  }
-
-  .bg-gradient-tech {
-    background: var(--gradient-corporate);
-  }
-
-  .bg-gradient-logistics {
-    background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--muted)));
-  }
-
-  /* Shadow Tech */
-  .shadow-tech {
-    box-shadow: 0 4px 12px hsl(198 77% 56% / 0.25);
-  }
-
-  /* Glow Accent */
-  .glow-accent {
-    box-shadow: 0 0 12px hsl(0 84% 60% / 0.4);
-  }
-
-  /* Glow Pulse Animation */
-  .animate-glow-pulse {
-    animation: glow-pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes glow-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-  }
 }
