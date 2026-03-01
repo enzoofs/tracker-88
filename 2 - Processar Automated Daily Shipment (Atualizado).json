@@ -195,7 +195,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const allOrders = $input.all();\n\nif (allOrders.length === 0) {\n  throw new Error('Nenhum pedido para processar');\n}\n\nconst salesOrdersList = allOrders.map(order => order.json.sales_order);\n\n// Construir filtro PostgREST para buscar apenas SOs do batch atual\nconst soFilter = `in.(${salesOrdersList.map(so => `\"${so}\"`).join(',')})`;\n\nconsole.log(`Verificando ${salesOrdersList.length} pedidos no banco`);\nconsole.log(`Filtro: sales_order=${soFilter}`);\n\nreturn [{\n  json: {\n    salesOrdersList: salesOrdersList,\n    soFilter: soFilter,\n    ordersData: allOrders\n  }\n}];"
+        "jsCode": "const allOrders = $input.all();\n\nif (allOrders.length === 0) {\n  throw new Error('Nenhum pedido para processar');\n}\n\nconst salesOrdersList = allOrders.map(order => order.json.sales_order);\n\nconsole.log(`Verificando ${salesOrdersList.length} pedidos`);\n\nreturn [{\n  json: {\n    salesOrdersList: salesOrdersList,\n    ordersData: allOrders\n  }\n}];"
       },
       "id": "03762ae1-376c-4576-ba28-1d65449f4436",
       "name": "Preparar Verificação1",
@@ -209,50 +209,34 @@
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "https://aldwmdfveivkfxxvfoua.supabase.co/rest/v1/envios_processados",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsZHdtZGZ2ZWl2a2Z4eHZmb3VhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczOTg4NjcsImV4cCI6MjA1Mjk3NDg2N30.clMqMIFJGRRKLFRuviMCMb_YMFIfByIfwjxu6loAFcA"
-            },
-            {
-              "name": "Authorization",
-              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsZHdtZGZ2ZWl2a2Z4eHZmb3VhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczOTg4NjcsImV4cCI6MjA1Mjk3NDg2N30.clMqMIFJGRRKLFRuviMCMb_YMFIfByIfwjxu6loAFcA"
-            }
-          ]
-        },
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "select",
-              "value": "sales_order"
-            },
-            {
-              "name": "sales_order",
-              "value": "={{ $json.soFilter }}"
-            }
-          ]
-        },
-        "options": {}
+        "operation": "getAll",
+        "tableId": "envios_processados",
+        "returnAll": true,
+        "options": {
+          "columns": "sales_order"
+        }
       },
       "id": "494213bd-8abd-465c-8ab7-5a4ac5633b6e",
       "name": "Verificar Existentes1",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
       "position": [
         336,
         624
       ],
       "alwaysOutputData": true,
-      "retryOnFail": true
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "oD99Qqe2sNruP4u0",
+          "name": "Supabase - tracking@"
+        }
+      },
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "const ordersToInsert = [];\nconst ordersToUpdate = [];\n\nconst originalData = $('Preparar Verificação1').item.json.ordersData;\n\n// O Verificar Existentes1 agora retorna array JSON via REST API\n// Pode ser um array no primeiro item, ou múltiplos items\nconst existingSOs = new Set();\nconst responseData = $input.all();\n\nfor (const item of responseData) {\n  // Se a resposta é um array (HTTP Request retorna array no body)\n  if (Array.isArray(item.json)) {\n    item.json.forEach(row => {\n      if (row.sales_order) existingSOs.add(row.sales_order);\n    });\n  } else if (item.json?.sales_order) {\n    existingSOs.add(item.json.sales_order);\n  }\n}\n\nconsole.log(`SOs já existentes no banco: ${existingSOs.size}`);\n\noriginalData.forEach(order => {\n  if (existingSOs.has(order.json.sales_order)) {\n    ordersToUpdate.push(order.json);\n  } else {\n    ordersToInsert.push(order.json);\n  }\n});\n\nconsole.log(`${ordersToInsert.length} para inserir, ${ordersToUpdate.length} para atualizar`);\n\nreturn [{\n  json: {\n    ordersToInsert: ordersToInsert,\n    ordersToUpdate: ordersToUpdate,\n    summary: {\n      totalProcessed: originalData.length,\n      toInsert: ordersToInsert.length,\n      toUpdate: ordersToUpdate.length\n    }\n  }\n}];"
+        "jsCode": "const ordersToInsert = [];\nconst ordersToUpdate = [];\n\nconst originalData = $('Preparar Verificação1').item.json.ordersData;\nconst existingOrders = $input.all();\n\nconst existingSOs = new Set();\nexistingOrders.forEach(item => {\n  if (item.json?.sales_order) {\n    existingSOs.add(item.json.sales_order);\n  }\n});\n\nconsole.log(`SOs existentes no banco: ${existingSOs.size}`);\n\noriginalData.forEach(order => {\n  if (existingSOs.has(order.json.sales_order)) {\n    ordersToUpdate.push(order.json);\n  } else {\n    ordersToInsert.push(order.json);\n  }\n});\n\nconsole.log(`${ordersToInsert.length} para inserir, ${ordersToUpdate.length} para atualizar`);\n\nreturn [{\n  json: {\n    ordersToInsert: ordersToInsert,\n    ordersToUpdate: ordersToUpdate,\n    summary: {\n      totalProcessed: originalData.length,\n      toInsert: ordersToInsert.length,\n      toUpdate: ordersToUpdate.length\n    }\n  }\n}];"
       },
       "id": "a3c2966d-6961-411f-ab18-a92d67d380e3",
       "name": "Dividir Insert/Update1",
