@@ -120,7 +120,7 @@
         }
       },
       "id": "628714f9-da8b-4f5a-afbe-2d146c18ea8b",
-      "name": "Vincular SO via Lovable",
+      "name": "Vincular SO via Supabase",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -414,14 +414,14 @@
       "main": [
         [
           {
-            "node": "Vincular SO via Lovable",
+            "node": "Vincular SO via Supabase",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Vincular SO via Lovable": {
+    "Vincular SO via Supabase": {
       "main": [
         [
           {

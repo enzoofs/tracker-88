@@ -250,7 +250,7 @@
         }
       },
       "id": "379cceec-5155-48a4-9802-c16a731d6903",
-      "name": "Inserir Carga via Lovable1",
+      "name": "Inserir Carga via Supabase",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -289,7 +289,7 @@
         }
       },
       "id": "913247a6-8d2c-497b-94d3-2d541361fde8",
-      "name": "Atualizar Carga via Lovable1",
+      "name": "Atualizar Carga via Supabase",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -628,21 +628,21 @@
       "main": [
         [
           {
-            "node": "Inserir Carga via Lovable1",
+            "node": "Inserir Carga via Supabase",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Atualizar Carga via Lovable1",
+            "node": "Atualizar Carga via Supabase",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Inserir Carga via Lovable1": {
+    "Inserir Carga via Supabase": {
       "main": [
         [
           {
@@ -653,7 +653,7 @@
         ]
       ]
     },
-    "Atualizar Carga via Lovable1": {
+    "Atualizar Carga via Supabase": {
       "main": [
         [
           {

@@ -76,7 +76,7 @@
         }
       },
       "id": "b5063577-eee7-429f-888a-17af5781df8e",
-      "name": "Inserir via Lovable Cloud",
+      "name": "Inserir via Supabase",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -114,7 +114,7 @@
         }
       },
       "id": "9a685716-dd6a-4888-950f-d5d0d8564c6e",
-      "name": "Atualizar via Lovable Cloud",
+      "name": "Atualizar via Supabase",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -520,7 +520,7 @@
         ]
       ]
     },
-    "Inserir via Lovable Cloud": {
+    "Inserir via Supabase": {
       "main": [
         [
           {
@@ -531,7 +531,7 @@
         ]
       ]
     },
-    "Atualizar via Lovable Cloud": {
+    "Atualizar via Supabase": {
       "main": [
         [
           {
@@ -617,7 +617,7 @@
       "main": [
         [
           {
-            "node": "Inserir via Lovable Cloud",
+            "node": "Inserir via Supabase",
             "type": "main",
             "index": 0
           }
@@ -628,7 +628,7 @@
       "main": [
         [
           {
-            "node": "Atualizar via Lovable Cloud",
+            "node": "Atualizar via Supabase",
             "type": "main",
             "index": 0
           }
