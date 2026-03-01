@@ -360,7 +360,8 @@
       ],
       "id": "3fe20593-5a32-40b7-a866-5e9f116996d1",
       "name": "No Operation, do nothing1",
-      "retryOnFail": true
+      "retryOnFail": true,
+      "continueOnFail": true
     },
     {
       "parameters": {

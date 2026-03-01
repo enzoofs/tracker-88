@@ -369,6 +369,54 @@
         544
       ],
       "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node: Preparar Dados do Log\nconst allItems = $input.all();\nlet workflowMetrics = {};\nlet mainMessage = \"Workflow executado\";\nif ($workflow.name.includes(\"Tracking\")) {\n  workflowMetrics = {\n    emails_processed: allItems.length,\n    cargas_processadas: allItems.filter(i => i.json.numero_carga).length\n  };\n  mainMessage = allItems.length + \" emails de tracking processados\";\n} else {\n  workflowMetrics = { items_count: allItems.length };\n  mainMessage = allItems.length + \" items processados\";\n}\nreturn [{\n  json: {\n    workflow_name: $workflow.name,\n    workflow_id: $workflow.id,\n    execution_id: $execution.id,\n    level: \"info\",\n    message: mainMessage,\n    data: workflowMetrics,\n    performance: { duration_ms: null, items_processed: allItems.length },\n    context: { execution_mode: $execution.mode, timestamp: new Date().toISOString() }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        640
+      ],
+      "id": "a1b2c3d4-e5f6-4a7b-8c9d-prep-log-wf04",
+      "name": "Preparar Dados do Log",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sintesebio.app.n8n.cloud/webhook/logger",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "p3Rma-STS_n8n_2025"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        768,
+        640
+      ],
+      "id": "a1b2c3d4-e5f6-4a7b-8c9d-http-log-wf04",
+      "name": "HTTP Request1",
+      "continueOnFail": true
     }
   ],
   "pinData": {},
@@ -546,7 +594,13 @@
     },
     "Resumo Final1": {
       "main": [
-        []
+        [
+          {
+            "node": "Preparar Dados do Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Filtro HTML": {
@@ -565,6 +619,17 @@
         [
           {
             "node": "Pode Continuar?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Dados do Log": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
             "type": "main",
             "index": 0
           }
