@@ -414,6 +414,7 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false, isAdmin
                     )}
                   </div>
                 </TableHead>
+                <TableHead>Previsão</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -503,6 +504,18 @@ const SOTable: FC<SOTableProps> = ({ data, onSOClick, isLoading = false, isAdmin
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(so.dataUltimaAtualizacao).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      if (so.isDelivered) {
+                        return <Badge className="bg-status-delivered/10 text-status-delivered border-0">Entregue</Badge>;
+                      }
+                      if (!slaInfo) return null;
+                      if (slaInfo.urgency === 'overdue') {
+                        return <Badge variant="destructive">{Math.abs(slaInfo.daysRemaining)}d atrasado</Badge>;
+                      }
+                      return <Badge variant="outline">{slaInfo.daysRemaining}d restantes</Badge>;
+                    })()}
                   </TableCell>
                   </TableRow>
                 );
